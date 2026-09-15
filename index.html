@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0f1c" />
+  <title>BusTrack Pro — Rastreo de flotas en tiempo real</title>
+  <meta name="description" content="Panel de rastreo de flotas de buses: mapa en vivo, estado de la flota, rutas, alertas y reportes." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b6ef5'/><rect x='8' y='7' width='16' height='16' rx='4' fill='none' stroke='white' stroke-width='2'/><path d='M8 15h16' stroke='white' stroke-width='2'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#mainContent">Saltar al contenido</a>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+ 
+  <!-- ============ MENÚ PRINCIPAL (pantalla de entrada) ============ -->
+  <div class="home-screen" id="homeScreen">
+    <div class="home-inner">
+      <header class="home-head">
+        <span class="home-logo" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="9" fill="url(#homeGrad)"/>
+            <path d="M8 11.5C8 10 9.2 8.8 10.7 8.8h10.6c1.5 0 2.7 1.2 2.7 2.7v8c0 1.5-1.2 2.7-2.7 2.7H10.7C9.2 22.2 8 21 8 19.5v-8Z" stroke="white" stroke-width="1.4"/>
+            <path d="M11 22.2v1.8M21 22.2v1.8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M8 15.4h16" stroke="white" stroke-width="1.4"/>
+            <circle cx="11.6" cy="19" r="1.3" fill="white"/><circle cx="20.4" cy="19" r="1.3" fill="white"/>
+            <path d="M11.8 12.2h8.4" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+            <defs><linearGradient id="homeGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#5b6ef5"/><stop offset="1" stop-color="#7c4ddb"/></linearGradient></defs>
+          </svg>
+        </span>
+        <h1 class="home-title">BusTrack <span>Pro</span></h1>
+        <p class="home-sub">Elegí por dónde querés empezar</p>
+        <p class="home-status"><span class="pulse-dot small"></span><span id="homeStatus">Cargando flota…</span></p>
+      </header>
+ 
+      <nav class="home-grid" aria-label="Menú principal">
+        <button class="home-tile" data-go="dashboard" style="--tone:var(--route-a)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="13" rx="3"/><path d="M3 10.5h18M7 18v2M17 18v2"/>
+              <circle cx="7.6" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="16.4" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Panel Principal</span>
+            <span class="home-tile-desc">Resumen del día y estado general</span>
+          </span>
+          <span class="home-chip" id="chipDashboard">—</span>
+        </button>
+ 
+        <button class="home-tile" data-go="map" style="--tone:var(--route-c)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 4 3 6.4v13.2L9 17.2l6 2.4 6-2.4V4l-6 2.4L9 4Z"/><path d="M9 4v13.2M15 6.4v13.2"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Mapa en Vivo</span>
+            <span class="home-tile-desc">Posición de cada unidad en ruta</span>
+          </span>
+          <span class="home-chip live" id="chipMap">VIVO</span>
+        </button>
+ 
+        <button class="home-tile" data-go="fleet" style="--tone:var(--brand-alt)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 7.5A1.5 1.5 0 0 1 3.5 6h9A1.5 1.5 0 0 1 14 7.5V16H2V7.5Z"/>
+              <path d="M14 10h3.6l2.9 3.4V16H14v-6Z"/><circle cx="6" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Flota</span>
+            <span class="home-tile-desc">Tabla completa, filtros y exportación</span>
+          </span>
+          <span class="home-chip" id="chipFleet">—</span>
+        </button>
+ 
+        <button class="home-tile" data-go="routes" style="--tone:var(--route-d)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="5.5" cy="5.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+              <path d="M5.5 8v4.5A3.5 3.5 0 0 0 9 16h6"/><path d="M18.5 16v-4.5A3.5 3.5 0 0 0 15 8H9"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Rutas</span>
+            <span class="home-tile-desc">Cobertura y paradas por recorrido</span>
+          </span>
+          <span class="home-chip" id="chipRoutes">—</span>
+        </button>
+ 
+        <button class="home-tile" data-go="alerts" style="--tone:var(--warn)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8.6a6 6 0 1 0-12 0v4.2L4.6 15a.9.9 0 0 0 .7 1.4h13.4a.9.9 0 0 0 .7-1.4L18 12.8V8.6Z"/>
+              <path d="M9.8 19.4a2.4 2.4 0 0 0 4.4 0"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Alertas</span>
+            <span class="home-tile-desc">Avisos críticos y advertencias</span>
+          </span>
+          <span class="home-chip" id="chipAlerts">—</span>
+        </button>
+ 
+        <button class="home-tile" data-go="reports" style="--tone:var(--brand-500)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 3.5h7.2L19 9v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 20V5a1.5 1.5 0 0 1 1-1.5Z"/>
+              <path d="M13 3.6V9h5.4M9 17v-2.5M12 17v-5M15 17v-3.5"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Reportes</span>
+            <span class="home-tile-desc">Gráficos, resumen e impresión</span>
+          </span>
+          <span class="home-chip" id="chipReports">—</span>
+        </button>
+ 
+        <button class="home-tile" data-go="drivers" style="--tone:var(--ok)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"/>
+              <path d="M16 5.2a3.2 3.2 0 0 1 0 5.6M17 14.6a5.5 5.5 0 0 1 3.5 4.9"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Conductores</span>
+            <span class="home-tile-desc">Turnos, viajes y calificación</span>
+          </span>
+          <span class="home-chip" id="chipDrivers">—</span>
+        </button>
+      </nav>
+ 
+      <p class="home-foot">Datos simulados · sin cuentas ni base de datos · podés volver a este menú desde "Inicio"</p>
+    </div>
+  </div>
+ 
+ 
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo" id="logoHome" role="button" tabindex="0" title="Volver al menú principal">
+        <span class="logo-icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="url(#logoGrad)"/>
+            <path d="M7 11C7 9.34 8.34 8 10 8h12c1.66 0 3 1.34 3 3v9c0 1.66-1.34 3-3 3H10c-1.66 0-3-1.34-3-3v-9Z" stroke="white" stroke-width="1.5"/>
+            <path d="M10 23v2M22 23v2" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <path d="M7 15h18" stroke="white" stroke-width="1.5"/>
+            <circle cx="11" cy="19" r="1.5" fill="white"/>
+            <circle cx="21" cy="19" r="1.5" fill="white"/>
+            <path d="M11 12h10" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                <stop stop-color="var(--brand-500, #5b6ef5)"/>
+                <stop offset="1" stop-color="var(--brand-700, #7c4ddb)"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </span>
+        <span class="logo-text">
+          <span class="logo-name">BusTrack</span>
+          <span class="logo-badge">PRO</span>
+        </span>
+      </div>
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Contraer o expandir el menú" aria-expanded="true">
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm6 5a1 1 0 011-1h6a1 1 0 110 2h-6a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+      </button>
+    </div>
+ 
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+      <div class="nav-section">
+        <span class="nav-label">Principal</span>
+        <ul class="nav-list">
+          <li class="nav-item" id="nav-home" data-home="1" role="button" tabindex="0" title="Menú principal">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.7 2.3a1 1 0 0 0-1.4 0l-7 6.6A1 1 0 0 0 3 10.6V16a2 2 0 0 0 2 2h3v-4.5h4V18h3a2 2 0 0 0 2-2v-5.4a1 1 0 0 0-.3-1.7l-7-6.6Z"/></svg>
+            <span>Inicio</span>
+          </li>
+          <li class="nav-item active" id="nav-dashboard" data-view="dashboard" role="button" tabindex="0" title="Panel Principal">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm11-1a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
+            <span>Panel Principal</span>
+          </li>
+          <li class="nav-item" id="nav-map" data-view="map" role="button" tabindex="0" title="Mapa en Vivo">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zm10.586 0L12 5.586v12.828l2.293 2.293A1 1 0 0016 20V4a1 1 0 00-1.293-.707z" clip-rule="evenodd"/></svg>
+            <span>Mapa en Vivo</span>
+            <span class="nav-count live-pulse">VIVO</span>
+          </li>
+          <li class="nav-item" id="nav-fleet" data-view="fleet" role="button" tabindex="0" title="Flota">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/><path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-1h3v1a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H19a1 1 0 001-1v-2a4 4 0 00-.92-2.55L17.15 8H15V6a2 2 0 00-2-2H3zm11 2h2.15l1.55 2H14V6z"/></svg>
+            <span>Flota</span>
+            <span class="nav-count" id="fleetCountBadge">12</span>
+          </li>
+          <li class="nav-item" id="nav-routes" data-view="routes" role="button" tabindex="0" title="Rutas">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M4 3a2 2 0 100 4 2 2 0 000-4zm12 10a2 2 0 100 4 2 2 0 000-4zM4 8.5v3a3.5 3.5 0 003.5 3.5h5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M16 11.5v-3A3.5 3.5 0 0012.5 5h-5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+            <span>Rutas</span>
+          </li>
+          <li class="nav-item" id="nav-alerts" data-view="alerts" role="button" tabindex="0" title="Alertas">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+            <span>Alertas</span>
+            <span class="nav-count alert-badge" id="alertsCountBadge">3</span>
+          </li>
+        </ul>
+      </div>
+      <div class="nav-section">
+        <span class="nav-label">Análisis</span>
+        <ul class="nav-list">
+          <li class="nav-item" id="nav-reports" data-view="reports" role="button" tabindex="0" title="Reportes">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v7a1 1 0 102 0V8z" clip-rule="evenodd"/></svg>
+            <span>Reportes</span>
+          </li>
+          <li class="nav-item" id="nav-drivers" data-view="drivers" role="button" tabindex="0" title="Conductores">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+            <span>Conductores</span>
+          </li>
+        </ul>
+      </div>
+    </nav>
+ 
+    <div class="sidebar-footer">
+      <div class="user-profile" id="userProfile" role="button" tabindex="0" title="Preferencias">
+        <span class="user-avatar">GA</span>
+        <span class="user-info">
+          <span class="user-name">Gerente Admin</span>
+          <span class="user-role">Administrador</span>
+        </span>
+        <button class="user-settings" id="settingsBtn" aria-label="Abrir preferencias">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.53 1.53 0 01-2.29.95c-1.37-.84-2.94.73-2.1 2.1.54.89.06 2.05-.95 2.29-1.56.38-1.56 2.6 0 2.98.89.21 1.49 1.4.95 2.29-.84 1.37.73 2.94 2.1 2.1a1.53 1.53 0 012.29.95c.38 1.56 2.6 1.56 2.98 0a1.53 1.53 0 012.29-.95c1.37.84 2.94-.73 2.1-2.1a1.53 1.53 0 01.95-2.29c1.56-.38 1.56-2.6 0-2.98a1.53 1.53 0 01-.95-2.29c.84-1.37-.73-2.94-2.1-2.1a1.53 1.53 0 01-2.29-.95zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+ 
+  <main class="main-content" id="mainContent">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú" aria-expanded="false">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="topbar-titles">
+          <h1 class="page-title" id="pageTitle">Panel Principal</h1>
+          <p class="breadcrumb">
+            <span>BusTrack Pro</span>
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.29 14.71a1 1 0 010-1.42L10.59 10 7.29 6.71a1 1 0 111.42-1.42l4 4a1 1 0 010 1.42l-4 4a1 1 0 01-1.42 0z" clip-rule="evenodd"/></svg>
+            <span id="breadcrumbCurrent">Panel Principal</span>
+          </p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="search-bar">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.48l4.82 4.81a1 1 0 01-1.42 1.42l-4.81-4.82A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+          <input type="search" id="globalSearch" placeholder="Buscar bus, placa, ruta o conductor" aria-label="Búsqueda global" autocomplete="off" />
+        </div>
+        <button class="icon-btn only-mobile" id="mobileSearchBtn" aria-label="Buscar">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.48l4.82 4.81a1 1 0 01-1.42 1.42l-4.81-4.82A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+        </button>
+        <button class="icon-btn" id="notifBtn" aria-label="Notificaciones" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+          <span class="notif-dot" id="notifDot"></span>
+        </button>
+        <button class="live-indicator" id="liveToggle" title="Pausar o reanudar la actualización automática" aria-pressed="true">
+          <span class="pulse-dot" id="livePulse"></span>
+          <span id="liveLabel">Actualizando</span>
+        </button>
+      </div>
+    </header>
+ 
+    <!-- ============ PANEL PRINCIPAL ============ -->
+    <section class="view active" id="view-dashboard">
+      <div class="stats-grid">
+        <article class="stat-card">
+          <span class="stat-icon buses" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 11h18M7 19v2M17 19v2"/><circle cx="7.5" cy="15.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="16.5" cy="15.5" r="1.1" fill="currentColor" stroke="none"/></svg>
+          </span>
+          <div class="stat-content">
+            <p class="stat-value" id="activeCount">0</p>
+            <p class="stat-label">Buses en circulación</p>
+            <p class="stat-change positive">+4 esta semana</p>
+          </div>
+          <canvas class="stat-sparkline" id="sparkline1" width="80" height="40" aria-hidden="true"></canvas>
+        </article>
+ 
+        <article class="stat-card">
+          <span class="stat-icon routes" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
+          </span>
+          <div class="stat-content">
+            <p class="stat-value" id="routeCount">4</p>
+            <p class="stat-label">Rutas operando</p>
+            <p class="stat-change positive">100% operativas</p>
+          </div>
+          <canvas class="stat-sparkline" id="sparkline2" width="80" height="40" aria-hidden="true"></canvas>
+        </article>
+ 
+        <article class="stat-card">
+          <span class="stat-icon passengers" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          </span>
+          <div class="stat-content">
+            <p class="stat-value" id="passengersToday">2.847</p>
+            <p class="stat-label">Pasajeros hoy</p>
+            <p class="stat-change positive">+12,4% vs ayer</p>
+          </div>
+          <canvas class="stat-sparkline" id="sparkline3" width="80" height="40" aria-hidden="true"></canvas>
+        </article>
+ 
+        <article class="stat-card">
+          <span class="stat-icon delay" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2" stroke-linecap="round"/></svg>
+          </span>
+          <div class="stat-content">
+            <p class="stat-value" id="avgDelay">2,3<small>min</small></p>
+            <p class="stat-label">Retraso promedio</p>
+            <p class="stat-change positive">−0,8 min vs ayer</p>
+          </div>
+          <canvas class="stat-sparkline" id="sparkline4" width="80" height="40" aria-hidden="true"></canvas>
+        </article>
+      </div>
+ 
+      <div class="dashboard-grid">
+        <div class="card map-widget">
+          <div class="card-header">
+            <div class="card-title">
+              <h2>Mapa en tiempo real</h2>
+              <span class="live-badge"><span class="pulse-dot small"></span>VIVO</span>
+            </div>
+            <button class="btn-ghost btn-sm" id="expandMapBtn">Expandir</button>
+          </div>
+          <div class="map-container">
+            <div class="map-bg">
+              <svg id="cityMap" data-map="mini" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Mapa esquemático con la posición de los buses">
+                <rect x="-2000" y="-2000" width="5000" height="5000" fill="var(--map-bg)"/>
+                <g stroke="var(--map-grid)" stroke-width="1" opacity="0.7">
+                  <path d="M100 0V450M200 0V450M300 0V450M400 0V450M500 0V450M600 0V450M700 0V450"/>
+                  <path d="M0 75H800M0 150H800M0 225H800M0 300H800M0 375H800"/>
+                </g>
+                <g stroke="var(--map-road)" stroke-width="5" stroke-linecap="round">
+                  <path d="M0 150H800M0 300H800M0 225H800"/>
+                  <path d="M200 0V450M600 0V450"/>
+                </g>
+                <g fill="var(--map-block)" stroke="var(--map-road)" stroke-width="0.5">
+                  <rect x="220" y="20" width="80" height="60" rx="4"/><rect x="320" y="20" width="60" height="60" rx="4"/>
+                  <rect x="420" y="20" width="70" height="60" rx="4"/><rect x="220" y="170" width="80" height="60" rx="4"/>
+                  <rect x="320" y="170" width="60" height="60" rx="4"/><rect x="420" y="170" width="70" height="60" rx="4"/>
+                  <rect x="220" y="320" width="80" height="60" rx="4"/><rect x="420" y="320" width="70" height="60" rx="4"/>
+                  <rect x="620" y="170" width="60" height="60" rx="4"/><rect x="620" y="320" width="60" height="60" rx="4"/>
+                  <rect x="620" y="20" width="60" height="60" rx="4"/><rect x="50" y="170" width="60" height="60" rx="4"/>
+                  <rect x="50" y="320" width="60" height="60" rx="4"/><rect x="50" y="20" width="60" height="60" rx="4"/>
+                </g>
+                <g id="miniRoutePaths" opacity="0.65" fill="none" stroke-width="3" stroke-dasharray="10 5"></g>
+                <g id="miniStops"></g>
+                <g id="busMarkers"></g>
+              </svg>
+              <div class="map-controls">
+                <button class="map-btn" data-zoom="in" data-map="mini" aria-label="Acercar">+</button>
+                <button class="map-btn" data-zoom="out" data-map="mini" aria-label="Alejar">−</button>
+                <button class="map-btn" data-zoom="reset" data-map="mini" aria-label="Centrar mapa">⌖</button>
+              </div>
+              <div class="map-legend" id="miniLegend"></div>
+            </div>
+          </div>
+        </div>
+ 
+        <div class="card buses-list-card">
+          <div class="card-header">
+            <div class="card-title"><h2>Estado de buses</h2></div>
+            <div class="filter-tabs" role="group" aria-label="Filtrar buses">
+              <button class="filter-tab active" data-filter="all">Todos</button>
+              <button class="filter-tab" data-filter="active">Activos</button>
+              <button class="filter-tab" data-filter="delayed">Retrasados</button>
+            </div>
+          </div>
+          <div class="bus-list" id="busList"></div>
+        </div>
+ 
+        <div class="card activity-card">
+          <div class="card-header">
+            <div class="card-title"><h2>Actividad reciente</h2></div>
+            <button class="btn-ghost btn-sm" id="toggleActivityBtn" aria-expanded="false">Ver todo</button>
+          </div>
+          <div class="activity-feed" id="activityFeed"></div>
+        </div>
+ 
+        <div class="card chart-card">
+          <div class="card-header">
+            <div class="card-title"><h2>Pasajeros</h2></div>
+            <div class="chart-period" role="group" aria-label="Período del gráfico">
+              <button class="period-btn active" data-period="day">Hoy</button>
+              <button class="period-btn" data-period="week">Semana</button>
+              <button class="period-btn" data-period="month">Mes</button>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="mainChart" height="180"></canvas>
+            <p class="chart-caption" id="chartCaption"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- ============ FLOTA ============ -->
+    <section class="view" id="view-fleet">
+      <div class="fleet-toolbar">
+        <div class="toolbar-left">
+          <input type="search" class="fleet-search" id="fleetSearch" placeholder="Buscar en la flota" aria-label="Buscar en la flota" />
+          <select class="filter-select" id="statusFilter" aria-label="Filtrar por estado">
+            <option value="">Todos los estados</option>
+            <option value="active">En servicio</option>
+            <option value="delayed">Retrasado</option>
+            <option value="stopped">Detenido</option>
+            <option value="maintenance">Mantenimiento</option>
+          </select>
+          <select class="filter-select" id="routeFilter" aria-label="Filtrar por ruta">
+            <option value="">Todas las rutas</option>
+          </select>
+          <button class="btn-ghost btn-sm" id="resetFiltersBtn">Limpiar filtros</button>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn-ghost" id="exportCsvBtn">Exportar CSV</button>
+          <button class="btn-primary" id="addBusBtn">Agregar bus</button>
+        </div>
+      </div>
+      <p class="results-note" id="fleetCount"></p>
+      <div class="fleet-table-wrapper">
+        <table class="fleet-table">
+          <thead>
+            <tr>
+              <th data-sort="id" tabindex="0" role="button">Bus</th>
+              <th data-sort="plate" tabindex="0" role="button">Placa</th>
+              <th data-sort="route" tabindex="0" role="button">Ruta</th>
+              <th data-sort="driver" tabindex="0" role="button">Conductor</th>
+              <th data-sort="speed" tabindex="0" role="button">Velocidad</th>
+              <th data-sort="passengers" tabindex="0" role="button">Pasajeros</th>
+              <th data-sort="status" tabindex="0" role="button">Estado</th>
+              <th>Actualización</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="fleetTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+ 
+    <!-- ============ ALERTAS ============ -->
+    <section class="view" id="view-alerts">
+      <div class="alerts-container">
+        <div class="alerts-header">
+          <h2>Centro de alertas</h2>
+          <div class="report-actions">
+            <button class="btn-ghost" id="clearAlertsBtn">Marcar todo como leído</button>
+            <button class="btn-primary" id="newAlertBtn">Simular alerta</button>
+          </div>
+        </div>
+        <div class="filter-tabs alerts-filter" role="group" aria-label="Filtrar alertas">
+          <button class="filter-tab active" data-alert-filter="all">Todas</button>
+          <button class="filter-tab" data-alert-filter="critical">Críticas</button>
+          <button class="filter-tab" data-alert-filter="warning">Advertencias</button>
+          <button class="filter-tab" data-alert-filter="info">Informativas</button>
+        </div>
+        <div class="alerts-list" id="alertsList"></div>
+      </div>
+    </section>
+ 
+    <!-- ============ MAPA COMPLETO ============ -->
+    <section class="view" id="view-map">
+      <div class="full-map-container">
+        <div class="map-sidebar-panel">
+          <div class="card-title"><h2>Buses en ruta</h2></div>
+          <div class="map-bus-list" id="mapBusList"></div>
+        </div>
+        <div class="full-map">
+          <div class="full-map-bg">
+            <svg id="fullMap" data-map="full" viewBox="0 0 1200 650" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mapa ampliado con la posición de los buses">
+              <rect x="-3000" y="-3000" width="8000" height="8000" fill="var(--map-bg)"/>
+              <g stroke="var(--map-grid)" stroke-width="1.5" opacity="0.8">
+                <path d="M150 0V650M300 0V650M450 0V650M600 0V650M750 0V650M900 0V650M1050 0V650"/>
+                <path d="M0 108H1200M0 216H1200M0 325H1200M0 433H1200M0 541H1200"/>
+              </g>
+              <g stroke="var(--map-road)" stroke-width="6" stroke-linecap="round">
+                <path d="M0 216H1200M0 433H1200M0 325H1200"/>
+                <path d="M300 0V650M900 0V650"/>
+              </g>
+              <g fill="var(--map-block)" stroke="var(--map-road)" stroke-width="1">
+                <rect x="330" y="30" width="120" height="90" rx="6"/><rect x="480" y="30" width="90" height="90" rx="6"/>
+                <rect x="630" y="30" width="110" height="90" rx="6"/><rect x="330" y="246" width="120" height="90" rx="6"/>
+                <rect x="480" y="246" width="90" height="90" rx="6"/><rect x="630" y="246" width="110" height="90" rx="6"/>
+                <rect x="330" y="463" width="120" height="90" rx="6"/><rect x="630" y="463" width="110" height="90" rx="6"/>
+                <rect x="930" y="246" width="90" height="90" rx="6"/><rect x="930" y="463" width="90" height="90" rx="6"/>
+                <rect x="930" y="30" width="90" height="90" rx="6"/><rect x="60" y="246" width="90" height="90" rx="6"/>
+                <rect x="60" y="463" width="90" height="90" rx="6"/><rect x="60" y="30" width="90" height="90" rx="6"/>
+                <rect x="1060" y="246" width="90" height="90" rx="6"/><rect x="1060" y="463" width="90" height="90" rx="6"/>
+              </g>
+              <g id="fullRoutePaths" opacity="0.7" fill="none" stroke-width="4" stroke-dasharray="14 7"></g>
+              <g id="fullStops"></g>
+              <g id="fullMapBusMarkers"></g>
+            </svg>
+            <div class="map-controls map-controls-top">
+              <button class="map-btn" data-zoom="in" data-map="full" aria-label="Acercar">+</button>
+              <button class="map-btn" data-zoom="out" data-map="full" aria-label="Alejar">−</button>
+              <button class="map-btn" data-zoom="reset" data-map="full" aria-label="Centrar mapa">⌖</button>
+            </div>
+            <div class="map-legend" id="fullLegend"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- ============ RUTAS ============ -->
+    <section class="view" id="view-routes">
+      <div class="routes-grid" id="routesGrid"></div>
+    </section>
+ 
+    <!-- ============ REPORTES ============ -->
+    <section class="view" id="view-reports">
+      <div class="reports-container">
+        <div class="reports-header">
+          <h2>Reportes y analíticas</h2>
+          <div class="report-actions">
+            <button class="btn-ghost" id="printReportBtn">Imprimir / PDF</button>
+            <button class="btn-primary" id="generateReportBtn">Generar reporte</button>
+          </div>
+        </div>
+        <div class="report-summary" id="reportSummary" hidden></div>
+        <div class="reports-grid">
+          <div class="card report-card"><h3>Eficiencia por ruta</h3><canvas id="reportChart1" height="200"></canvas></div>
+          <div class="card report-card"><h3>Pasajeros por ruta</h3><canvas id="reportChart2" height="200"></canvas></div>
+          <div class="card report-card full-width"><h3>Retraso promedio — últimas 4 semanas</h3><canvas id="reportChart3" height="160"></canvas></div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- ============ CONDUCTORES ============ -->
+    <section class="view" id="view-drivers">
+      <div class="drivers-grid" id="driversGrid"></div>
+    </section>
+  </main>
+ 
+  <!-- Detalle de bus -->
+  <div class="modal-overlay" id="busModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalBusTitle">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <span class="modal-bus-icon" id="modalBusIcon"></span>
+          <div>
+            <h2 id="modalBusTitle">Bus</h2>
+            <p id="modalBusSubtitle"></p>
+          </div>
+        </div>
+        <button class="modal-close" id="modalClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-stats-row">
+          <div class="modal-stat"><span class="modal-stat-label">Velocidad</span><span class="modal-stat-value" id="modalSpeed">—</span></div>
+          <div class="modal-stat"><span class="modal-stat-label">Pasajeros</span><span class="modal-stat-value" id="modalPassengers">—</span></div>
+          <div class="modal-stat"><span class="modal-stat-label">Retraso</span><span class="modal-stat-value" id="modalDelay">—</span></div>
+          <div class="modal-stat"><span class="modal-stat-label">Combustible</span><span class="modal-stat-value" id="modalFuel">—</span></div>
+        </div>
+        <div class="modal-info-grid">
+          <div class="modal-info-item"><span class="info-label">Conductor</span><span class="info-value" id="modalDriver">—</span></div>
+          <div class="modal-info-item"><span class="info-label">Placa</span><span class="info-value" id="modalPlate">—</span></div>
+          <div class="modal-info-item"><span class="info-label">Próxima parada</span><span class="info-value" id="modalNextStop">—</span></div>
+          <div class="modal-info-item"><span class="info-label">Llegada estimada</span><span class="info-value" id="modalETA">—</span></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-primary" id="trackBusBtn">Rastrear en el mapa</button>
+          <button class="btn-ghost" id="contactDriverBtn">Contactar conductor</button>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- Preferencias -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal modal-narrow" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <div>
+            <h2 id="settingsTitle">Preferencias</h2>
+            <p>Se guardan en este navegador</p>
+          </div>
+        </div>
+        <button class="modal-close" id="settingsClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-row">
+          <div>
+            <p class="setting-name">Color de acento</p>
+            <p class="setting-desc">Define el color base de toda la interfaz</p>
+          </div>
+          <div class="accent-picker" id="accentPicker" role="group" aria-label="Color de acento"></div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <p class="setting-name">Movimiento de los buses</p>
+            <p class="setting-desc">Desactivalo si el equipo va lento</p>
+          </div>
+          <button class="switch" id="motionSwitch" role="switch" aria-checked="true"><span></span></button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <p class="setting-name">Actualización automática</p>
+            <p class="setting-desc">Refresca velocidades y pasajeros cada 3 s</p>
+          </div>
+          <button class="switch" id="liveSwitch" role="switch" aria-checked="true"><span></span></button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <p class="setting-name">Densidad compacta</p>
+            <p class="setting-desc">Menos espacio entre elementos</p>
+          </div>
+          <button class="switch" id="densitySwitch" role="switch" aria-checked="false"><span></span></button>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-ghost" id="resetDataBtn">Regenerar datos de la flota</button>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- Notificaciones -->
+  <div class="notif-dropdown" id="notifDropdown">
+    <div class="notif-header">
+      <h3>Notificaciones</h3>
+      <button class="btn-ghost btn-sm" id="clearNotifsBtn">Limpiar</button>
+    </div>
+    <div class="notif-list" id="notifList"></div>
+  </div>
+ 
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+ 
+  <script src="app.js"></script>
+</body>
+</html>
