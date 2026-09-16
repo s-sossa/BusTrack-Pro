@@ -969,7 +969,11 @@ function closeModal(el) {
 function openBusModal(busId) {
   const b = buses.find(x => x.id === busId);
   if (!b) return;
-  busModal.dataset.bus = b.id;
+  // Se guarda en una propiedad de JS, no como atributo del DOM: si fuera
+  // data-bus en el propio modal, closest('[data-bus]') encontraría al
+  // contenedor entero y cualquier clic adentro (cerrar, rastrear, contactar)
+  // reabriría el modal en vez de dejarlo cerrar.
+  busModal.currentBusId = b.id;
  
   $('modalBusTitle').textContent = b.id;
   $('modalBusSubtitle').textContent = `Ruta ${b.route.id} · ${b.route.name} · ${statusLabel(b.status)}`;
@@ -1004,13 +1008,13 @@ $('settingsClose').addEventListener('click', () => closeModal(settingsModal));
 });
  
 $('trackBusBtn').addEventListener('click', () => {
-  const id = busModal.dataset.bus;
+  const id = busModal.currentBusId;
   closeModal(busModal);
   focusBus(id);
 });
  
 $('contactDriverBtn').addEventListener('click', () => {
-  const b = buses.find(x => x.id === busModal.dataset.bus);
+  const b = buses.find(x => x.id === busModal.currentBusId);
   if (b) toast('Llamando a ' + b.driver.name + ' (' + b.id + ')…');
 });
  
@@ -1207,6 +1211,12 @@ $('mobileSearchBtn').addEventListener('click', e => {
 /* ---------- Delegación general de clics ---------- */
  
 document.addEventListener('click', e => {
+  // Los botones dentro de un modal (cerrar, rastrear, contactar) ya
+  // tienen su propio listener. Si un modal llegara a tener data-bus,
+  // data-route, etc. en el contenedor, esto evita que closest() suba
+  // hasta él y vuelva a disparar una acción de apertura.
+  if (e.target.closest('.modal-overlay')) return;
+ 
   const track = e.target.closest('[data-track]');
   if (track) { focusBus(track.dataset.track); return; }
  
@@ -1641,3 +1651,4 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+ 
