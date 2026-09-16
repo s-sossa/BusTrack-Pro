@@ -441,7 +441,7 @@ button, input, select { font-family: inherit; }
   background: color-mix(in srgb, var(--bg-card) 88%, transparent);
   backdrop-filter: blur(8px); border: 1px solid var(--line);
 }
-
+ 
 /* Aviso de seguimiento continuo sobre el mapa completo */
 .tracking-banner {
   position: absolute; left: 14px; top: 14px; z-index: 11;
@@ -505,7 +505,7 @@ button, input, select { font-family: inherit; }
 .status-delayed     { background: color-mix(in srgb, var(--warn) 18%, transparent);  color: #f0c073; }
 .status-stopped     { background: rgba(148,163,200,0.14);                            color: var(--text); }
 .status-maintenance { background: color-mix(in srgb, var(--risk) 18%, transparent);  color: #f09aa8; }
-
+ 
 /* Select editable de estado: hereda los colores de .status-active/etc,
    solo agrega la forma de píldora y quita el estilo nativo del <select>. */
 .status-select, .status-select-lg {
@@ -1071,3 +1071,4 @@ button, input, select { font-family: inherit; }
 }
  
 @media print { .home-screen { display: none !important; } }
+ 
