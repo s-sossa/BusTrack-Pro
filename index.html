@@ -496,6 +496,11 @@
               <g id="fullStops"></g>
               <g id="fullMapBusMarkers"></g>
             </svg>
+            <div class="tracking-banner" id="trackingBanner" hidden>
+              <span class="pulse-dot small"></span>
+              <span id="trackingBannerText">Siguiendo</span>
+              <button class="tracking-stop" id="trackingStopBtn" aria-label="Dejar de seguir este bus" title="Dejar de seguir">✕</button>
+            </div>
             <div class="map-controls map-controls-top">
               <button class="map-btn" data-zoom="in" data-map="full" aria-label="Acercar">+</button>
               <button class="map-btn" data-zoom="out" data-map="full" aria-label="Alejar">−</button>
@@ -556,6 +561,15 @@
           <div class="modal-stat"><span class="modal-stat-label">Pasajeros</span><span class="modal-stat-value" id="modalPassengers">—</span></div>
           <div class="modal-stat"><span class="modal-stat-label">Retraso</span><span class="modal-stat-value" id="modalDelay">—</span></div>
           <div class="modal-stat"><span class="modal-stat-label">Combustible</span><span class="modal-stat-value" id="modalFuel">—</span></div>
+        </div>
+        <div class="modal-status-row">
+          <span class="info-label">Estado del bus</span>
+          <select class="status-select-lg" id="modalStatusSelect" aria-label="Editar el estado del bus">
+            <option value="active">En servicio</option>
+            <option value="delayed">Retrasado</option>
+            <option value="stopped">Detenido</option>
+            <option value="maintenance">Mantenimiento</option>
+          </select>
         </div>
         <div class="modal-info-grid">
           <div class="modal-info-item"><span class="info-label">Conductor</span><span class="info-value" id="modalDriver">—</span></div>
@@ -633,4 +647,3 @@
   <script src="app.js"></script>
 </body>
 </html>
- 

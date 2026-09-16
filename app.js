@@ -63,6 +63,37 @@ const STATUS_LABELS = {
   maintenance: 'Mantenimiento',
 };
 const STATUS_ORDER = { active: 0, delayed: 1, stopped: 2, maintenance: 3 };
+
+// Ajusta los datos derivados del bus para que un estado elegido a mano
+// tenga sentido: un bus "Detenido" no debería seguir mostrando velocidad,
+// uno que pasa a "En servicio" recupera una velocidad razonable, etc.
+function applyBusStatus(bus, status) {
+  bus.status = status;
+  if (status === 'stopped' || status === 'maintenance') {
+    bus.speed = 0;
+    bus.delay = 0;
+  } else if (status === 'active') {
+    bus.delay = 0;
+    if (bus.speed === 0) bus.speed = randInt(24, 62);
+  } else if (status === 'delayed') {
+    if (bus.speed === 0) bus.speed = randInt(24, 62);
+    if (bus.delay === 0) bus.delay = randInt(3, 11);
+  }
+}
+
+// Refresca todas las vistas que puedan mostrar el estado de un bus
+// después de un cambio manual.
+function refreshAfterStatusChange(bus) {
+  refreshCounters();
+  if (state.view === 'dashboard') renderBusList();
+  if (state.view === 'fleet') renderFleet();
+  if (state.view === 'map') renderMapBusList();
+  if (state.view === 'routes') renderRoutes();
+  drawMapMarkers(true);
+  if (busModal.classList.contains('open') && busModal.currentBusId === bus.id) {
+    fillBusModal(bus);
+  }
+}
  
 const $ = id => document.getElementById(id);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
@@ -126,6 +157,7 @@ const state = {
   chartPeriod: 'day',
   sort: { key: 'id', dir: 1 },
   highlightBus: null,
+  trackingBus: null,   // bus que la cámara del mapa sigue mientras se mueve
 };
  
 /* ==========================================================
@@ -409,7 +441,14 @@ function renderFleet() {
           ${b.passengers}/${b.capacity}
         </span>
       </td>
-      <td><span class="status-badge status-${b.status}">${statusLabel(b.status)}</span></td>
+      <td>
+        <select class="status-select status-${b.status}" data-status-select="${b.id}" aria-label="Cambiar el estado de ${b.id}">
+          <option value="active" ${b.status === 'active' ? 'selected' : ''}>En servicio</option>
+          <option value="delayed" ${b.status === 'delayed' ? 'selected' : ''}>Retrasado</option>
+          <option value="stopped" ${b.status === 'stopped' ? 'selected' : ''}>Detenido</option>
+          <option value="maintenance" ${b.status === 'maintenance' ? 'selected' : ''}>Mantenimiento</option>
+        </select>
+      </td>
       <td style="color:var(--text-soft)">hace ${b.updatedAgo} min</td>
       <td>
         <span class="table-actions">
@@ -424,6 +463,16 @@ function renderFleet() {
 $('fleetSearch').addEventListener('input', renderFleet);
 $('statusFilter').addEventListener('change', renderFleet);
 $('routeFilter').addEventListener('change', renderFleet);
+
+$('fleetTableBody').addEventListener('change', e => {
+  const sel = e.target.closest('[data-status-select]');
+  if (!sel) return;
+  const bus = buses.find(b => b.id === sel.dataset.statusSelect);
+  if (!bus) return;
+  applyBusStatus(bus, sel.value);
+  refreshAfterStatusChange(bus);
+  toast('Estado de ' + bus.id + ' actualizado a ' + statusLabel(bus.status), 'ok');
+});
  
 $('resetFiltersBtn').addEventListener('click', () => {
   $('fleetSearch').value = '';
@@ -610,6 +659,12 @@ function tick(ts) {
       if (fn) b.pos = fn(b._t);
     });
   }
+
+  if (state.trackingBus && state.view === 'map') {
+    const stillThere = centerMapOnBus(state.trackingBus, false);
+    if (!stillThere) stopTracking();
+  }
+
   drawMapMarkers(false);
 }
  
@@ -703,6 +758,9 @@ function setupMap(key, svgId) {
     const p = toLocal(e.clientX, e.clientY);
     const dx = p.x - last.x, dy = p.y - last.y;
     moved += Math.abs(dx) + Math.abs(dy);
+    // Un arrastre real en el mapa completo significa que el usuario quiere
+    // mover la cámara a mano: se corta el seguimiento automático.
+    if (key === 'full' && moved > 4) stopTracking('Dejaste de seguir el bus al mover el mapa');
     v.box.x -= dx; v.box.y -= dy;
     clampBox(key);
     applyViewBox(key);
@@ -737,7 +795,10 @@ $$('.map-btn[data-zoom]').forEach(btn => {
     const action = btn.dataset.zoom;
     if (action === 'in') zoomMap(key, 0.75);
     if (action === 'out') zoomMap(key, 1.33);
-    if (action === 'reset') resetMap(key);
+    if (action === 'reset') {
+      if (key === 'full') stopTracking('Dejaste de seguir el bus');
+      resetMap(key);
+    }
   });
 });
  
@@ -753,21 +814,58 @@ function renderMapBusList() {
     </div>`).join('');
 }
  
-// Centra el mapa completo sobre un bus
-function focusBus(busId) {
+// Centra el viewport del mapa completo sobre un bus. Con resetZoom en true
+// además fija el nivel de acercamiento inicial; en false solo recalcula el
+// centro y respeta el zoom que el usuario tenga puesto (así el seguimiento
+// continuo no le pisa el zoom mientras el bus se mueve).
+function centerMapOnBus(busId, resetZoom) {
   const bus = buses.find(b => b.id === busId);
-  if (!bus) return;
-  state.highlightBus = busId;
-  navigate('map');
+  if (!bus) return false;
   const v = viewports.full;
-  v.box.w = v.base.w * 0.45;
-  v.box.h = v.base.h * 0.45;
+  if (resetZoom) {
+    v.box.w = v.base.w * 0.45;
+    v.box.h = v.base.h * 0.45;
+  }
   v.box.x = bus.pos.x * SX - v.box.w / 2;
   v.box.y = bus.pos.y * SY - v.box.h / 2;
   clampBox('full');
   applyViewBox('full');
+  return true;
+}
+
+// Muestra u oculta el aviso "Siguiendo BUS-XXX" sobre el mapa completo.
+function updateTrackingBanner() {
+  const banner = $('trackingBanner');
+  if (!banner) return;
+  if (state.trackingBus) {
+    banner.hidden = false;
+    $('trackingBannerText').textContent = 'Siguiendo ' + state.trackingBus;
+  } else {
+    banner.hidden = true;
+  }
+}
+
+// Corta el seguimiento continuo sin tocar el resaltado del bus en el mapa.
+function stopTracking(msg) {
+  if (!state.trackingBus) return;
+  state.trackingBus = null;
+  updateTrackingBanner();
+  if (msg) toast(msg);
+}
+
+// Centra el mapa completo sobre un bus y deja la cámara siguiéndolo mientras
+// se mueve. El seguimiento se corta si el usuario arrastra el mapa o pide
+// centrar de nuevo, o con el botón del aviso.
+function focusBus(busId) {
+  const bus = buses.find(b => b.id === busId);
+  if (!bus) return;
+  state.highlightBus = busId;
+  state.trackingBus = busId;
+  navigate('map');
+  centerMapOnBus(busId, true);
   renderMapBusList();
   drawMapMarkers(true);
+  updateTrackingBanner();
   toast('Siguiendo ' + busId);
 }
  
@@ -966,6 +1064,35 @@ function closeModal(el) {
   if (lastFocus && lastFocus.focus) lastFocus.focus();
 }
  
+function fillBusModal(b) {
+  $('modalBusTitle').textContent = b.id;
+  $('modalBusSubtitle').textContent = `Ruta ${b.route.id} · ${b.route.name} · ${statusLabel(b.status)}`;
+  const icon = $('modalBusIcon');
+  icon.style.background = b.route.color + '22';
+  icon.style.color = b.route.color;
+  icon.textContent = b.num;
+
+  $('modalSpeed').textContent = b.speed + ' km/h';
+  $('modalPassengers').textContent = b.passengers + '/' + b.capacity;
+
+  const delay = $('modalDelay');
+  delay.textContent = b.delay > 0 ? '+' + b.delay + ' min' : 'En tiempo';
+  delay.style.color = b.delay > 0 ? cssVar('--warn') : cssVar('--ok');
+
+  const fuel = $('modalFuel');
+  fuel.textContent = b.fuel + '%';
+  fuel.style.color = b.fuel < 20 ? cssVar('--risk') : '';
+
+  $('modalDriver').textContent = b.driver.name;
+  $('modalPlate').textContent = b.plate;
+  $('modalNextStop').textContent = b.nextStop;
+  $('modalETA').textContent = b.etaMin ? b.etaMin + ' min' : '—';
+
+  const statusSelect = $('modalStatusSelect');
+  statusSelect.value = b.status;
+  statusSelect.className = 'status-select-lg status-' + b.status;
+}
+
 function openBusModal(busId) {
   const b = buses.find(x => x.id === busId);
   if (!b) return;
@@ -974,30 +1101,7 @@ function openBusModal(busId) {
   // contenedor entero y cualquier clic adentro (cerrar, rastrear, contactar)
   // reabriría el modal en vez de dejarlo cerrar.
   busModal.currentBusId = b.id;
- 
-  $('modalBusTitle').textContent = b.id;
-  $('modalBusSubtitle').textContent = `Ruta ${b.route.id} · ${b.route.name} · ${statusLabel(b.status)}`;
-  const icon = $('modalBusIcon');
-  icon.style.background = b.route.color + '22';
-  icon.style.color = b.route.color;
-  icon.textContent = b.num;
- 
-  $('modalSpeed').textContent = b.speed + ' km/h';
-  $('modalPassengers').textContent = b.passengers + '/' + b.capacity;
- 
-  const delay = $('modalDelay');
-  delay.textContent = b.delay > 0 ? '+' + b.delay + ' min' : 'En tiempo';
-  delay.style.color = b.delay > 0 ? cssVar('--warn') : cssVar('--ok');
- 
-  const fuel = $('modalFuel');
-  fuel.textContent = b.fuel + '%';
-  fuel.style.color = b.fuel < 20 ? cssVar('--risk') : '';
- 
-  $('modalDriver').textContent = b.driver.name;
-  $('modalPlate').textContent = b.plate;
-  $('modalNextStop').textContent = b.nextStop;
-  $('modalETA').textContent = b.etaMin ? b.etaMin + ' min' : '—';
- 
+  fillBusModal(b);
   openModal(busModal);
 }
  
@@ -1016,6 +1120,15 @@ $('trackBusBtn').addEventListener('click', () => {
 $('contactDriverBtn').addEventListener('click', () => {
   const b = buses.find(x => x.id === busModal.currentBusId);
   if (b) toast('Llamando a ' + b.driver.name + ' (' + b.id + ')…');
+});
+
+$('modalStatusSelect').addEventListener('change', function () {
+  const b = buses.find(x => x.id === busModal.currentBusId);
+  if (!b) return;
+  applyBusStatus(b, this.value);
+  fillBusModal(b);
+  refreshAfterStatusChange(b);
+  toast('Estado de ' + b.id + ' actualizado a ' + statusLabel(b.status), 'ok');
 });
  
 document.addEventListener('keydown', e => {
@@ -1082,6 +1195,7 @@ bindSwitch('densitySwitch', v => {
 $('resetDataBtn').addEventListener('click', () => {
   buses = generateBuses(12);
   state.highlightBus = null;
+  stopTracking();
   refreshCounters();
   renderBusList();
   renderFleet();
@@ -1589,6 +1703,7 @@ $('liveToggle').addEventListener('click', () => {
 });
  
 $('expandMapBtn').addEventListener('click', () => navigate('map'));
+$('trackingStopBtn').addEventListener('click', () => stopTracking('Dejaste de seguir el bus'));
  
 function updateLiveData() {
   if (!prefs.live) return;
@@ -1632,6 +1747,7 @@ function init() {
   renderBusList();
   renderActivity();
   renderNotifs();
+  updateTrackingBanner();
   buildAccentPicker();
   syncLiveIndicator();
   drawSparklines();
@@ -1651,4 +1767,3 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
- 
