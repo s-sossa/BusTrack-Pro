@@ -2924,31 +2924,9 @@ function init() {
     landingGoogleBtn.addEventListener('click', () => openOAuthPrompt('google'));
   }
 
-  if ($('landingAppleAuthBtn')) {
-    ($('landingAppleAuthBtn')).addEventListener('click', () => openOAuthPrompt('apple'));
-  }
-
   const landingAppleBtn = $('landingAppleAuthBtn');
-  if ($('landingAppleAuthBtn')) {
-    ($('landingAppleAuthBtn')).addEventListener('click', async () => {
-      try {
-        const res = await api.loginApple({
-          appleToken: 'mock_apple_oauth_token',
-          email: `apple_user_${Math.floor(Math.random()*1000)}@privaterelay.appleid.com`,
-          name: 'Usuario Apple'
-        });
-        if (res.status === 'success') {
-          currentUser = res.user;
-          isGuestSession = false;
-          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-          localStorage.setItem('bustrack_auth_token', res.token);
-          toast('Sesión iniciada con Apple ID', 'ok');
-          updateAuthUserUI();
-        }
-      } catch (_) {
-        toast('Error en autenticación con Apple', 'warn');
-      }
-    });
+  if (landingAppleBtn) {
+    landingAppleBtn.addEventListener('click', () => openOAuthPrompt('apple'));
   }
 
   // Guest Explore Button

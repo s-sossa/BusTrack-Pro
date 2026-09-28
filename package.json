@@ -20,20 +20,16 @@
   "author": "BusTrack Architecture Team",
   "license": "ISC",
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.2",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
-<<<<<<< HEAD
-    "dotenv": "^18.0.4",
-=======
->>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-rate-limit": "^8.7.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
-<<<<<<< HEAD
-    "pg": "^8.23.0",
-=======
->>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
+    "pg": "^8.13.3",
     "ws": "^8.18.0"
   }
 }
