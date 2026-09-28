@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /api/v1/
+
+# Admin and debug endpoints
+Disallow: /admin
+Disallow: /debug
+Disallow: /.env
+Disallow: /server/
+
+Sitemap: https://bustrack.example.com/sitemap.xml

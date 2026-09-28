@@ -51,6 +51,19 @@
           </span>
           <span class="home-chip" id="chipDashboard">—</span>
         </button>
+
+        <button class="home-tile" data-go="passenger" style="--tone:#2bb885; border: 1.5px solid rgba(43,184,133,0.4);">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">🎓 Modo Pasajero (Fidélitas)</span>
+            <span class="home-tile-desc">¿A qué hora llega mi bus? Cuenta regresiva en vivo</span>
+          </span>
+          <span class="home-chip" style="background:#2bb885;color:#fff;font-weight:700">PILOTO CR</span>
+        </button>
  
         <button class="home-tile" data-go="map" style="--tone:var(--route-c)">
           <span class="home-icon">
@@ -183,6 +196,13 @@
             <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm11-1a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
             <span>Panel Principal</span>
           </li>
+          <li class="nav-item nav-passenger-highlight" id="nav-passenger" data-view="passenger" role="button" tabindex="0" title="Modo Pasajero (U Fidélitas)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            <span>🎓 Modo Pasajero</span>
+            <span class="nav-count" style="background:#2bb885;color:#fff;font-weight:700">FIDÉLITAS</span>
+          </li>
           <li class="nav-item" id="nav-map" data-view="map" role="button" tabindex="0" title="Mapa en Vivo">
             <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zm10.586 0L12 5.586v12.828l2.293 2.293A1 1 0 0016 20V4a1 1 0 00-1.293-.707z" clip-rule="evenodd"/></svg>
             <span>Mapa en Vivo</span>
@@ -220,15 +240,23 @@
     </nav>
  
     <div class="sidebar-footer">
-      <div class="user-profile" id="userProfile" role="button" tabindex="0" title="Preferencias">
-        <span class="user-avatar">GA</span>
+      <div class="user-profile" id="userProfile" role="button" tabindex="0" title="Iniciar sesión o ver perfil">
+        <span class="user-avatar" id="userAvatarSlot">GA</span>
         <span class="user-info">
-          <span class="user-name">Gerente Admin</span>
-          <span class="user-role">Administrador</span>
+          <span class="user-name" id="userNameSlot">Gerente Admin</span>
+          <span class="user-role" id="userRoleSlot">Administrador</span>
         </span>
-        <button class="user-settings" id="settingsBtn" aria-label="Abrir preferencias">
+        <button class="user-settings" id="authBtn" aria-label="Iniciar sesión o perfil" title="Iniciar sesión">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+        </button>
+        <button class="user-settings" id="settingsBtn" aria-label="Abrir preferencias" title="Preferencias">
           <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.53 1.53 0 01-2.29.95c-1.37-.84-2.94.73-2.1 2.1.54.89.06 2.05-.95 2.29-1.56.38-1.56 2.6 0 2.98.89.21 1.49 1.4.95 2.29-.84 1.37.73 2.94 2.1 2.1a1.53 1.53 0 012.29.95c.38 1.56 2.6 1.56 2.98 0a1.53 1.53 0 012.29-.95c1.37.84 2.94-.73 2.1-2.1a1.53 1.53 0 01.95-2.29c1.56-.38 1.56-2.6 0-2.98a1.53 1.53 0 01-.95-2.29c.84-1.37-.73-2.94-2.1-2.1a1.53 1.53 0 01-2.29-.95zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
         </button>
+      </div>
+      <div class="sidebar-legal-links">
+        <a href="/privacy" target="_blank">Privacidad</a> ·
+        <a href="/terms" target="_blank">Términos</a> ·
+        <a href="/cookies" target="_blank">Cookies</a>
       </div>
     </div>
   </aside>
@@ -260,6 +288,13 @@
           <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
           <span class="notif-dot" id="notifDot"></span>
         </button>
+        <button class="passenger-switch-btn" id="passengerSwitchBtn" title="Alternar al Modo Pasajero (Piloto Fidélitas)">
+          <span>🎓 Modo Pasajero</span>
+        </button>
+        <div class="server-status-pill" id="serverStatusPill" title="Conexión en tiempo real con el backend">
+          <span class="status-dot"></span>
+          <span id="serverStatusLabel">Detectando API...</span>
+        </div>
         <button class="live-indicator" id="liveToggle" title="Pausar o reanudar la actualización automática" aria-pressed="true">
           <span class="pulse-dot" id="livePulse"></span>
           <span id="liveLabel">Actualizando</span>
@@ -351,9 +386,11 @@
                 </g>
                 <g id="miniRoutePaths" opacity="0.65" fill="none" stroke-width="3" stroke-dasharray="10 5"></g>
                 <g id="miniStops"></g>
+                <g id="userMarkerMini"></g>
                 <g id="busMarkers"></g>
               </svg>
               <div class="map-controls">
+                <button class="map-btn map-btn-geo" id="locateUserBtnMini" data-map="mini" aria-label="Mi Ubicación" title="Centrar en mi ubicación">📍</button>
                 <button class="map-btn" data-zoom="in" data-map="mini" aria-label="Acercar">+</button>
                 <button class="map-btn" data-zoom="out" data-map="mini" aria-label="Alejar">−</button>
                 <button class="map-btn" data-zoom="reset" data-map="mini" aria-label="Centrar mapa">⌖</button>
@@ -494,6 +531,7 @@
               </g>
               <g id="fullRoutePaths" opacity="0.7" fill="none" stroke-width="4" stroke-dasharray="14 7"></g>
               <g id="fullStops"></g>
+              <g id="userMarkerFull"></g>
               <g id="fullMapBusMarkers"></g>
             </svg>
             <div class="tracking-banner" id="trackingBanner" hidden>
@@ -501,7 +539,13 @@
               <span id="trackingBannerText">Siguiendo</span>
               <button class="tracking-stop" id="trackingStopBtn" aria-label="Dejar de seguir este bus" title="Dejar de seguir">✕</button>
             </div>
+            <div class="user-location-bar" id="userLocationBar" hidden>
+              <span class="user-loc-icon">📍</span>
+              <span id="userLocationText">Adaptando mapa a tu ubicación...</span>
+              <button class="btn-sm btn-ghost" id="recenterUserBtn" style="padding: 2px 8px; font-size:11px;">Centrar</button>
+            </div>
             <div class="map-controls map-controls-top">
+              <button class="map-btn map-btn-geo" id="locateUserBtnFull" data-map="full" aria-label="Mi Ubicación" title="Centrar en mi ubicación">📍</button>
               <button class="map-btn" data-zoom="in" data-map="full" aria-label="Acercar">+</button>
               <button class="map-btn" data-zoom="out" data-map="full" aria-label="Alejar">−</button>
               <button class="map-btn" data-zoom="reset" data-map="full" aria-label="Centrar mapa">⌖</button>
@@ -539,6 +583,95 @@
     <!-- ============ CONDUCTORES ============ -->
     <section class="view" id="view-drivers">
       <div class="drivers-grid" id="driversGrid"></div>
+    </section>
+
+    <!-- ============ MODO PASAJERO (PILOTO UNIVERSIDAD FIDÉLITAS) ============ -->
+    <section class="view" id="view-passenger">
+      <div class="passenger-view-wrapper">
+        <!-- Hero Pilot Header -->
+        <div class="passenger-hero-card">
+          <div class="passenger-hero-header">
+            <span class="cr-badge">🇨🇷 Piloto Costa Rica · San Pedro / Montes de Oca</span>
+            <span class="live-status-pill"><span class="pulse-dot"></span> EN VIVO</span>
+          </div>
+          <h2 class="passenger-hero-title">¿A qué hora llega mi bus?</h2>
+          <p class="passenger-hero-desc">
+            Tiempos de llegada en tiempo real para estudiantes y usuarios de la <strong>Universidad Fidélitas (Campus San Pedro)</strong> y el corredor de Montes de Oca.
+          </p>
+        </div>
+
+        <!-- Stop Selector Card -->
+        <div class="passenger-stop-panel">
+          <div class="stop-select-group">
+            <div class="stop-icon-circle">📍</div>
+            <div class="stop-text-area">
+              <label for="passengerStopSelect" class="stop-group-label">Parada donde estás esperando:</label>
+              <select id="passengerStopSelect" class="passenger-stop-dropdown">
+                <!-- Se pobla automáticamente desde la API -->
+              </select>
+            </div>
+            <button class="stop-refresh-icon-btn" id="refreshArrivalsBtn" title="Actualizar tiempos">
+              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+            </button>
+          </div>
+
+          <!-- Quick Chips -->
+          <div class="quick-chips-container" id="quickStopsBar">
+            <span class="chips-label">Atajos:</span>
+            <!-- Chips añadidos dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Active Proximity Alarm Banner -->
+        <div class="proximity-alert-box" id="proximityBanner" hidden>
+          <div class="proximity-box-content">
+            <span class="proximity-bell">🔔</span>
+            <div>
+              <p class="proximity-title" id="proximityTitle">Alarma de proximidad activada</p>
+              <p class="proximity-desc" id="proximityDesc">Te avisaremos con sonido y notificación en pantalla cuando el bus esté a 3 minutos para que salgas del aula a la parada.</p>
+            </div>
+          </div>
+          <button class="proximity-dismiss-btn" id="cancelProximityBtn">Cancelar alarma</button>
+        </div>
+
+        <!-- Section Title -->
+        <div class="arrivals-header-bar">
+          <div>
+            <h3 class="arrivals-main-title">Próximos buses en camino</h3>
+            <p class="arrivals-subtitle" id="arrivalsStopSubtitle">Calculando llegadas para esta parada...</p>
+          </div>
+          <span class="incoming-count-tag" id="incomingCountTag">4 unidades</span>
+        </div>
+
+        <!-- Dynamic Incoming Bus Cards Grid -->
+        <div class="arrivals-cards-grid" id="passengerArrivalsList">
+          <p class="empty-state">Consultando telemetría del corredor Fidélitas...</p>
+        </div>
+
+        <!-- Corridor Route Information & Timeline -->
+        <div class="corridor-guide-box">
+          <div class="guide-box-header">
+            <h4>🗺️ Trazado del Corredor Estudiantil</h4>
+            <span class="operator-tag">Autotransportes Cesmag & Interlíneas</span>
+          </div>
+          <p class="guide-box-info">
+            Este corredor cubre el flujo de estudiantes entre <strong>San José Centro</strong>, <strong>Los Yoses / Mall San Pedro</strong>, <strong>Plaza del Sol</strong>, <strong>Lourdes</strong>, <strong>Vargas Araya</strong> y la <strong>Entrada Principal de la Universidad Fidélitas</strong>.
+          </p>
+          <div class="corridor-stepper">
+            <span class="corridor-node">San José</span>
+            <span class="corridor-line">➔</span>
+            <span class="corridor-node">Mall San Pedro</span>
+            <span class="corridor-line">➔</span>
+            <span class="corridor-node">Plaza del Sol</span>
+            <span class="corridor-line">➔</span>
+            <span class="corridor-node">Súper Lourdes</span>
+            <span class="corridor-line">➔</span>
+            <span class="corridor-node">Vargas Araya</span>
+            <span class="corridor-line">➔</span>
+            <span class="corridor-node active-target">🎓 U Fidélitas</span>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
  
@@ -626,6 +759,13 @@
           </div>
           <button class="switch" id="densitySwitch" role="switch" aria-checked="false"><span></span></button>
         </div>
+        <div class="setting-row">
+          <div>
+            <p class="setting-name">Adaptar mapa a tu ubicación</p>
+            <p class="setting-desc">Geolocalización para centrar automáticamente</p>
+          </div>
+          <button class="switch" id="geoSwitch" role="switch" aria-checked="false"><span></span></button>
+        </div>
         <div class="modal-actions">
           <button class="btn-ghost" id="resetDataBtn">Regenerar datos de la flota</button>
         </div>
@@ -633,7 +773,128 @@
     </div>
   </div>
  
-  <!-- Notificaciones -->
+  <!-- ============ MODAL AUTENTICACIÓN (LOGIN / REGISTRO) ============ -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal modal-narrow" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <h2 id="authTitle">Cuenta de Usuario</h2>
+          <p id="authSubtitle">Inicia sesión o regístrate para gestionar la flota</p>
+        </div>
+        <button class="modal-close" id="authClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Auth Tabs -->
+        <div class="auth-tabs" role="tablist">
+          <button class="auth-tab active" id="tabLogin" role="tab" aria-selected="true">Iniciar Sesión</button>
+          <button class="auth-tab" id="tabRegister" role="tab" aria-selected="false">Registrarse</button>
+        </div>
+
+        <!-- OAuth Quick Action Buttons (Google & Apple) -->
+        <div class="oauth-buttons-container">
+          <button class="btn-oauth btn-google" id="googleAuthBtn" type="button">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+            <span>Continuar con Google</span>
+          </button>
+          <button class="btn-oauth btn-apple" id="appleAuthBtn" type="button">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.63c.66-.82 1.12-1.96.99-3.11-1 .04-2.23.67-2.94 1.5-.64.74-1.2 1.92-1.05 3.05 1.12.09 2.34-.62 3-1.44z"/></svg>
+            <span>Continuar con Apple</span>
+          </button>
+        </div>
+
+        <div class="auth-divider"><span>o con tu correo</span></div>
+
+        <!-- Form: Iniciar Sesión -->
+        <form id="loginForm" class="auth-form">
+          <div class="form-group">
+            <label for="loginEmail">Correo Electrónico</label>
+            <input type="email" id="loginEmail" placeholder="ejemplo@empresa.com" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Contraseña</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" />
+          </div>
+          <button type="submit" class="btn-primary full-width" id="loginSubmitBtn">Iniciar Sesión</button>
+        </form>
+
+        <!-- Form: Registrarse -->
+        <form id="registerForm" class="auth-form" hidden>
+          <div class="form-group">
+            <label for="regName">Nombre Completo</label>
+            <input type="text" id="regName" placeholder="Juan Pérez" required autocomplete="name" />
+          </div>
+          <div class="form-group">
+            <label for="regEmail">Correo Electrónico</label>
+            <input type="email" id="regEmail" placeholder="ejemplo@empresa.com" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Contraseña (mínimo 6 caracteres)</label>
+            <input type="password" id="regPassword" placeholder="••••••••" required minlength="6" autocomplete="new-password" />
+          </div>
+          <div class="form-consent-box">
+            <label class="consent-label">
+              <input type="checkbox" id="regConsent" required />
+              <span>Acepto los <a href="/terms" target="_blank">Términos y Condiciones</a> y la <a href="/privacy" target="_blank">Política de Privacidad</a> (Ley 8968 Costa Rica).</span>
+            </label>
+          </div>
+          <button type="submit" class="btn-primary full-width" id="registerSubmitBtn">Crear Cuenta</button>
+        </form>
+
+        <!-- Current User Profile Info (When logged in) -->
+        <div id="userProfileActiveBox" hidden>
+          <div class="user-active-card">
+            <img id="userActiveAvatar" src="" alt="Avatar de usuario" class="user-active-img" />
+            <div>
+              <p class="user-active-name" id="userActiveName"></p>
+              <p class="user-active-email" id="userActiveEmail"></p>
+              <span class="user-active-badge" id="userActiveBadge"></span>
+            </div>
+          </div>
+          <button class="btn-ghost full-width danger-text" id="logoutBtn" style="margin-top:1rem">Cerrar Sesión</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ COMMAND PALETTE (CTRL + K) ============ -->
+  <div class="modal-overlay" id="commandPaletteModal">
+    <div class="command-palette-box" role="dialog" aria-modal="true" aria-label="Búsqueda rápida y comandos">
+      <div class="cmd-header">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.48l4.82 4.81a1 1 0 01-1.42 1.42l-4.81-4.82A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+        <input type="search" id="cmdInput" placeholder="Escribe un comando o busca un bus, ruta, conductor..." autocomplete="off" />
+        <span class="cmd-key">ESC</span>
+      </div>
+      <div class="cmd-results" id="cmdResults">
+        <div class="cmd-section-label">Acciones Rápidas</div>
+        <div class="cmd-item" data-action="go-dashboard"><span class="cmd-icon">📊</span> Panel Principal</div>
+        <div class="cmd-item" data-action="go-passenger"><span class="cmd-icon">🎓</span> Modo Pasajero (Fidélitas)</div>
+        <div class="cmd-item" data-action="go-map"><span class="cmd-icon">🗺️</span> Mapa en Vivo</div>
+        <div class="cmd-item" data-action="go-fleet"><span class="cmd-icon">🚍</span> Ver Flota Completa</div>
+        <div class="cmd-item" data-action="toggle-theme"><span class="cmd-icon">🌙</span> Alternar Modo Oscuro / Claro</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BANNER DE CONSENTIMIENTO DE COOKIES ============ -->
+  <div class="cookie-banner" id="cookieConsentBanner" hidden role="region" aria-label="Consentimiento de cookies y privacidad">
+    <div class="cookie-content">
+      <p class="cookie-title">🍪 Privacidad y Almacenamiento Local</p>
+      <p class="cookie-text">
+        Usamos <code>localStorage</code> únicamente para guardar tus preferencias (tema, vista activa). No usamos cookies de rastreo ni compartimos datos con terceros. Consulta nuestra <a href="/privacy" target="_blank">Política de Privacidad</a> y <a href="/cookies" target="_blank">Política de Cookies</a>.
+      </p>
+    </div>
+    <div class="cookie-actions">
+      <button class="btn-ghost btn-sm" id="cookieRejectBtn">Rechazar Opcionales</button>
+      <button class="btn-primary btn-sm" id="cookieAcceptBtn">Aceptar Todo</button>
+    </div>
+  </div>
+
+  <!-- ============ CTA FLOTANTE MÓVIL ============ -->
+  <button class="mobile-floating-cta" id="mobileFloatingCta" aria-label="Ir al Modo Pasajero">
+    <span class="cta-pulse"></span>
+    <span>🎓 Ver Llegadas en Vivo</span>
+  </button>
+
   <div class="notif-dropdown" id="notifDropdown">
     <div class="notif-header">
       <h3>Notificaciones</h3>
@@ -641,9 +902,9 @@
     </div>
     <div class="notif-list" id="notifList"></div>
   </div>
- 
+
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
- 
+
   <script src="app.js"></script>
 </body>
 </html>
