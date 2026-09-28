@@ -2675,7 +2675,6 @@ function init() {
     if (authLandingScreen) {
       if (currentUser || isGuestSession) {
         authLandingScreen.hidden = true;
-        if (homeOpen) hideHome();
       } else {
         authLandingScreen.hidden = false;
       }
@@ -2810,8 +2809,7 @@ function init() {
           localStorage.setItem('bustrack_auth_token', res.token);
           toast(`¡Sesión iniciada con ${currentOAuthProvider === 'google' ? 'Google' : 'Apple'}! Bienvenido, ${currentUser.name}`, 'ok');
           updateAuthUserUI();
-          hideHome();
-          navigate('dashboard');
+          showHome();
           if (oauthPromptModal) oauthPromptModal.classList.remove('active');
           if (authModal) authModal.classList.remove('active');
         } else {
@@ -2860,8 +2858,7 @@ function init() {
           localStorage.setItem('bustrack_auth_token', res.token);
           toast(`¡Cuenta creada con éxito! Bienvenido a BusTrack Pro, ${currentUser.name}`, 'ok');
           updateAuthUserUI();
-          hideHome();
-          navigate('dashboard');
+          showHome();
         } else {
           toast(res.detail || 'Error en el registro', 'warn');
         }
@@ -2887,8 +2884,7 @@ function init() {
           localStorage.setItem('bustrack_auth_token', res.token);
           toast(`¡Bienvenido de nuevo, ${currentUser.name}!`, 'ok');
           updateAuthUserUI();
-          hideHome();
-          navigate('dashboard');
+          showHome();
         } else {
           toast(res.detail || 'Credenciales incorrectas', 'warn');
         }
@@ -2909,16 +2905,15 @@ function init() {
     landingAppleBtn.addEventListener('click', () => openOAuthPrompt('apple'));
   }
 
-  // Guest Explore Button: lleva directamente al menú principal y dashboard
+  // Guest Explore Button: lleva directamente al menú principal de selección
   const guestBtn = $('guestExploreBtn');
   if (guestBtn) {
     guestBtn.addEventListener('click', () => {
       isGuestSession = true;
       sessionStorage.setItem('bustrack_guest', 'true');
-      toast('Explorando como Invitado — Modo Pasajero', 'info');
+      toast('Explorando como Invitado — Menú Principal', 'info');
       updateAuthUserUI();
-      hideHome();
-      navigate('dashboard');
+      showHome();
     });
   }
 
