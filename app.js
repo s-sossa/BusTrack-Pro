@@ -2612,6 +2612,7 @@ function init() {
   };
 
   // ------------------------------------------------------------------
+<<<<<<< HEAD
   // AUTHENTICATION & LANDING GATE LOGIC (Email, Google, Apple)
   // ------------------------------------------------------------------
   const api = {
@@ -2661,6 +2662,16 @@ function init() {
 
   const authLandingScreen = $('authLandingScreen');
 
+=======
+  // AUTHENTICATION MODAL LOGIC (Email, Google, Apple)
+  // ------------------------------------------------------------------
+  let currentUser = null;
+  try {
+    const savedUser = localStorage.getItem('bustrack_user');
+    if (savedUser) currentUser = JSON.parse(savedUser);
+  } catch (_) {}
+
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
   function updateAuthUserUI() {
     const avatarSlot = $('userAvatarSlot');
     const nameSlot = $('userNameSlot');
@@ -2671,6 +2682,7 @@ function init() {
     const oauthBox = document.querySelector('.oauth-buttons-container');
     const divider = document.querySelector('.auth-divider');
 
+<<<<<<< HEAD
     // Manage Fullscreen Landing Screen visibility
     if (authLandingScreen) {
       if (currentUser || isGuestSession) {
@@ -2680,6 +2692,8 @@ function init() {
       }
     }
 
+=======
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
     if (currentUser) {
       if (avatarSlot) avatarSlot.textContent = currentUser.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
       if (nameSlot) nameSlot.textContent = currentUser.name;
@@ -2700,8 +2714,13 @@ function init() {
       if (tabs) tabs.style.display = 'none';
     } else {
       if (avatarSlot) avatarSlot.textContent = 'GA';
+<<<<<<< HEAD
       if (nameSlot) nameSlot.textContent = isGuestSession ? 'Invitado' : 'Inicia Sesión';
       if (roleSlot) roleSlot.textContent = isGuestSession ? 'Modo Lectura' : 'Inicia Sesión';
+=======
+      if (nameSlot) nameSlot.textContent = 'Invitado';
+      if (roleSlot) roleSlot.textContent = 'Inicia Sesión';
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
 
       if (activeBox) activeBox.hidden = true;
       if (oauthBox) oauthBox.style.display = 'flex';
@@ -2717,6 +2736,7 @@ function init() {
   }
   updateAuthUserUI();
 
+<<<<<<< HEAD
   // Auth Button & Modal controls
   const authBtn = $('authBtn');
   const authModal = $('authModal');
@@ -2724,6 +2744,12 @@ function init() {
   const oauthPromptModal = $('oauthPromptModal');
   const oauthPromptClose = $('oauthPromptClose');
 
+=======
+  // Auth Button & Auto-Open triggers modal
+  const authBtn = $('authBtn');
+  const authModal = $('authModal');
+  const authClose = $('authClose');
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
   if (authBtn && authModal) {
     authBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2733,6 +2759,7 @@ function init() {
   if (authClose && authModal) {
     authClose.addEventListener('click', () => authModal.classList.remove('active'));
   }
+<<<<<<< HEAD
   if (oauthPromptClose && oauthPromptModal) {
     oauthPromptClose.addEventListener('click', () => oauthPromptModal.classList.remove('active'));
   }
@@ -2936,6 +2963,17 @@ function init() {
   }
 
   // --- MODAL FORM HANDLERS ---
+=======
+
+  // Auto-open auth modal on app entry if user is not logged in
+  if (!currentUser && authModal) {
+    setTimeout(() => {
+      authModal.classList.add('active');
+    }, 400);
+  }
+
+  // Auth Tabs
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
   const tabLogin = $('tabLogin');
   const tabRegister = $('tabRegister');
   if (tabLogin && tabRegister) {
@@ -2953,7 +2991,11 @@ function init() {
     });
   }
 
+<<<<<<< HEAD
   // Modal Login Submit
+=======
+  // Login Submit
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
   const loginForm = $('loginForm');
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
@@ -2964,7 +3006,10 @@ function init() {
         const res = await api.login(email, password);
         if (res.status === 'success') {
           currentUser = res.user;
+<<<<<<< HEAD
           isGuestSession = false;
+=======
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
           localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
           localStorage.setItem('bustrack_auth_token', res.token);
           toast(`¡Bienvenido de nuevo, ${currentUser.name}!`, 'ok');
@@ -2979,7 +3024,11 @@ function init() {
     });
   }
 
+<<<<<<< HEAD
   // Modal Register Submit
+=======
+  // Register Submit
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
   const regForm = $('registerForm');
   if (regForm) {
     regForm.addEventListener('submit', async (e) => {
@@ -2993,7 +3042,10 @@ function init() {
         const res = await api.register({ name, email, password, consentTerms });
         if (res.status === 'success') {
           currentUser = res.user;
+<<<<<<< HEAD
           isGuestSession = false;
+=======
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
           localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
           localStorage.setItem('bustrack_auth_token', res.token);
           toast(`¡Cuenta creada con éxito! Bienvenido, ${currentUser.name}`, 'ok');
@@ -3008,7 +3060,11 @@ function init() {
     });
   }
 
+<<<<<<< HEAD
   // Modal Google OAuth button
+=======
+  // Google OAuth button (simulated / token handler)
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
   const googleBtn = $('googleAuthBtn');
   if (googleBtn) {
     googleBtn.addEventListener('click', async () => {
@@ -3022,7 +3078,10 @@ function init() {
         });
         if (res.status === 'success') {
           currentUser = res.user;
+<<<<<<< HEAD
           isGuestSession = false;
+=======
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
           localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
           localStorage.setItem('bustrack_auth_token', res.token);
           toast(`Sesión iniciada con Google (${currentUser.email})`, 'ok');
@@ -3035,7 +3094,11 @@ function init() {
     });
   }
 
+<<<<<<< HEAD
   // Modal Apple OAuth button
+=======
+  // Apple OAuth button (simulated / token handler)
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
   const appleBtn = $('appleAuthBtn');
   if (appleBtn) {
     appleBtn.addEventListener('click', async () => {
@@ -3047,7 +3110,10 @@ function init() {
         });
         if (res.status === 'success') {
           currentUser = res.user;
+<<<<<<< HEAD
           isGuestSession = false;
+=======
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
           localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
           localStorage.setItem('bustrack_auth_token', res.token);
           toast('Sesión iniciada con Apple ID', 'ok');
@@ -3065,6 +3131,7 @@ function init() {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       currentUser = null;
+<<<<<<< HEAD
       isGuestSession = false;
       localStorage.removeItem('bustrack_user');
       localStorage.removeItem('bustrack_auth_token');
@@ -3072,6 +3139,13 @@ function init() {
       toast('Sesión cerrada correctamente', 'info');
       updateAuthUserUI();
       if (authModal) authModal.classList.remove('active');
+=======
+      localStorage.removeItem('bustrack_user');
+      localStorage.removeItem('bustrack_auth_token');
+      toast('Sesión cerrada correctamente', 'info');
+      updateAuthUserUI();
+      authModal.classList.remove('active');
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
     });
   }
 
@@ -3135,6 +3209,7 @@ function init() {
   }
 
   // ------------------------------------------------------------------
+<<<<<<< HEAD
   // NOTIFICATION DROPDOWN PANEL
   // ------------------------------------------------------------------
   const notifBtn = $('notifBtn');
@@ -3379,10 +3454,13 @@ function init() {
   }
 
   // ------------------------------------------------------------------
+=======
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
   // COOKIE CONSENT BANNER LOGIC
   // ------------------------------------------------------------------
   const cookieBanner = $('cookieConsentBanner');
   const cookieConsentSaved = localStorage.getItem('bustrack_cookie_consent');
+<<<<<<< HEAD
 
   function hideCookieBanner() {
     if (!cookieBanner) return;
@@ -3397,19 +3475,37 @@ function init() {
     cookieBanner.style.display = 'flex';
   } else if (cookieBanner) {
     hideCookieBanner();
+=======
+  if (!cookieConsentSaved && cookieBanner) {
+    cookieBanner.hidden = false;
+    cookieBanner.style.display = 'flex';
+  } else if (cookieBanner) {
+    cookieBanner.hidden = true;
+    cookieBanner.style.display = 'none';
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
   }
 
   const cookieAcceptBtn = $('cookieAcceptBtn');
   const cookieRejectBtn = $('cookieRejectBtn');
   if (cookieAcceptBtn) {
+<<<<<<< HEAD
     cookieAcceptBtn.addEventListener('click', (e) => {
       e.preventDefault();
       localStorage.setItem('bustrack_cookie_consent', 'accepted');
       hideCookieBanner();
+=======
+    cookieAcceptBtn.addEventListener('click', () => {
+      localStorage.setItem('bustrack_cookie_consent', 'accepted');
+      if (cookieBanner) {
+        cookieBanner.hidden = true;
+        cookieBanner.style.display = 'none';
+      }
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
       toast('Preferencias de almacenamiento guardadas', 'ok');
     });
   }
   if (cookieRejectBtn) {
+<<<<<<< HEAD
     cookieRejectBtn.addEventListener('click', (e) => {
       e.preventDefault();
       localStorage.setItem('bustrack_cookie_consent', 'essential_only');
@@ -3451,6 +3547,17 @@ function init() {
     setTimeout(() => requestUserLocation(false), 500);
   }
 
+=======
+    cookieRejectBtn.addEventListener('click', () => {
+      localStorage.setItem('bustrack_cookie_consent', 'essential_only');
+      if (cookieBanner) {
+        cookieBanner.hidden = true;
+        cookieBanner.style.display = 'none';
+      }
+      toast('Solo se usará almacenamiento técnico esencial', 'info');
+    });
+  }
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
   // ------------------------------------------------------------------
   // MOBILE FLOATING CTA
   // ------------------------------------------------------------------

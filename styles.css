@@ -1597,6 +1597,7 @@ button, input, select { font-family: inherit; }
   opacity: 1; transform: translateY(0);
 }
 
+<<<<<<< HEAD
 /* Panel desplegable de notificaciones */
 .notif-dropdown-panel {
   position: absolute; right: 0; top: calc(100% + 8px); width: 320px;
@@ -1736,4 +1737,6 @@ button, input, select { font-family: inherit; }
 }
 
 
+=======
+>>>>>>> 92930e0bb115bcdcb1c15df1bc3c0c3f70eb7792
  
