@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Página no encontrada — BusTrack Pro</title>
+  <meta name="description" content="La página que buscas no existe. Vuelve al panel de BusTrack Pro." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0f1c; --surface: #111827; --border: rgba(255,255,255,0.08);
+      --text: #e5e7eb; --text-muted: #9ca3af; --brand: #5b6ef5; --brand-light: #818cf8;
+    }
+    @media (prefers-color-scheme: light) {
+      :root { --bg: #f9fafb; --surface: #fff; --border: rgba(0,0,0,0.08); --text: #111827; --text-muted: #6b7280; }
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Background decoration */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(91,110,245,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .error-code {
+      font-size: clamp(6rem, 20vw, 10rem);
+      font-weight: 800;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 50%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+      animation: fadeSlideIn 0.6s ease-out;
+    }
+    .bus-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      animation: bounce 2s infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      animation: fadeSlideIn 0.6s ease-out 0.1s both;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 400px;
+      margin-bottom: 2.5rem;
+      animation: fadeSlideIn 0.6s ease-out 0.2s both;
+    }
+    .actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeSlideIn 0.6s ease-out 0.3s both;
+    }
+    .btn-primary {
+      background: var(--brand);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { background: #4b5de4; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+    a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+    .countdown {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: 2rem;
+      animation: fadeSlideIn 0.6s ease-out 0.4s both;
+    }
+    #countdownSecs { color: var(--brand-light); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="bus-icon" role="img" aria-label="Ícono de bus">🚍</div>
+  <div class="error-code" aria-hidden="true">404</div>
+  <h1>Ruta no encontrada</h1>
+  <p class="subtitle">
+    Parece que este bus tomó un desvío. La página que buscas no existe o fue movida.
+  </p>
+  <div class="actions">
+    <a href="/" class="btn-primary">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true">
+        <path d="M10.7 2.3a1 1 0 0 0-1.4 0l-7 6.6A1 1 0 0 0 3 10.6V16a2 2 0 0 0 2 2h3v-4.5h4V18h3a2 2 0 0 0 2-2v-5.4a1 1 0 0 0-.3-1.7l-7-6.6Z"/>
+      </svg>
+      Ir al panel principal
+    </a>
+    <button class="btn-ghost" onclick="history.back()">
+      ← Volver atrás
+    </button>
+  </div>
+  <p class="countdown">Redirigiendo al panel en <span id="countdownSecs">10</span> segundos…</p>
+
+  <script>
+    let secs = 10;
+    const el = document.getElementById('countdownSecs');
+    const timer = setInterval(() => {
+      secs--;
+      if (el) el.textContent = secs;
+      if (secs <= 0) {
+        clearInterval(timer);
+        window.location.href = '/';
+      }
+    }, 1000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,455 @@
+openapi: 3.1.0
+info:
+  title: BusTrack Pro Public & Operations API
+  description: Enterprise RESTful API for real-time fleet tracking, routes, drivers, incident management, and transit analytics.
+  version: 1.0.0
+  contact:
+    name: BusTrack Architecture Team
+    email: api-ops@bustrackpro.com
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local Development Server
+  - url: https://api.bustrackpro.com/v1
+    description: Production Cluster
+
+paths:
+  /health:
+    get:
+      summary: System health & diagnostics
+      operationId: getHealth
+      tags: [System]
+      responses:
+        '200':
+          description: System operational
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  /routes:
+    get:
+      summary: Retrieve all transit routes with coverage KPIs
+      operationId: getRoutes
+      tags: [Routes]
+      responses:
+        '200':
+          description: List of routes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Route'
+
+  /drivers:
+    get:
+      summary: Retrieve driver roster and shift statuses
+      operationId: getDrivers
+      tags: [Drivers]
+      responses:
+        '200':
+          description: List of drivers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Driver'
+
+  /buses:
+    get:
+      summary: List fleet buses with optional filtering
+      operationId: getBuses
+      tags: [Fleet]
+      parameters:
+        - name: route
+          in: query
+          description: Filter by route identifier (e.g. A, B, C, D)
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by operational status
+          schema:
+            type: string
+            enum: [active, delayed, stopped, maintenance]
+        - name: search
+          in: query
+          description: Search term matching bus ID or license plate
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Filtered list of fleet units
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bus'
+
+    post:
+      summary: Provision a new bus to the active fleet
+      operationId: createBus
+      tags: [Fleet]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBusInput'
+      responses:
+        '201':
+          description: Unit successfully created and provisioned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bus'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /buses/{id}:
+    get:
+      summary: Fetch specific bus telemetry and details
+      operationId: getBusById
+      tags: [Fleet]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /buses/{id}/status:
+    patch:
+      summary: Update operational status of a bus unit
+      operationId: updateBusStatus
+      tags: [Fleet]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [active, delayed, stopped, maintenance]
+      responses:
+        '200':
+          description: Status successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bus'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /alerts:
+    get:
+      summary: List operational alerts
+      operationId: getAlerts
+      tags: [Alerts]
+      parameters:
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [all, critical, warning, info]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Alert'
+
+    post:
+      summary: Register a new operational incident alert
+      operationId: createAlert
+      tags: [Alerts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAlertInput'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+
+  /alerts/read-all:
+    patch:
+      summary: Mark all unread alerts as read
+      operationId: markAllAlertsRead
+      tags: [Alerts]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  markedCount:
+                    type: integer
+
+  /reports/summary:
+    get:
+      summary: Generate operational KPI summary report
+      operationId: getReportSummary
+      tags: [Analytics]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportSummary'
+
+  /reports/export-csv:
+    get:
+      summary: Export fleet inventory and current state as CSV
+      operationId: exportCsv
+      tags: [Analytics]
+      responses:
+        '200':
+          description: CSV file attachment
+          content:
+            text/csv:
+              schema:
+                type: string
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        uptimeSeconds:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+        activeConnections:
+          type: integer
+        trackedBuses:
+          type: integer
+
+    Route:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "A"
+        name:
+          type: string
+          example: "Centro — Aeropuerto"
+        varName:
+          type: string
+          example: "--route-a"
+        color:
+          type: string
+          example: "#5b6ef5"
+        stops:
+          type: integer
+          example: 8
+        length:
+          type: number
+          example: 22
+
+    Driver:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "D001"
+        name:
+          type: string
+          example: "Carlos Mendoza"
+        initials:
+          type: string
+          example: "CM"
+        license:
+          type: string
+          example: "CR-2-0456-0891"
+        trips:
+          type: integer
+          example: 1248
+        rating:
+          type: number
+          example: 4.9
+        hours:
+          type: number
+          example: 8.5
+
+    Bus:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "BUS-001"
+        num:
+          type: string
+          example: "001"
+        plate:
+          type: string
+          example: "SJB-1001"
+        route:
+          $ref: '#/components/schemas/Route'
+        driver:
+          $ref: '#/components/schemas/Driver'
+        status:
+          type: string
+          enum: [active, delayed, stopped, maintenance]
+        speed:
+          type: number
+          example: 45
+        passengers:
+          type: integer
+          example: 32
+        capacity:
+          type: integer
+          example: 52
+        fuel:
+          type: number
+          example: 78
+        delay:
+          type: integer
+          example: 0
+        nextStop:
+          type: string
+          example: "Hospital San Juan"
+        etaMin:
+          type: integer
+          example: 4
+        updatedAgo:
+          type: integer
+          example: 1
+        pos:
+          type: object
+          properties:
+            x:
+              type: number
+            y:
+              type: number
+
+    CreateBusInput:
+      type: object
+      properties:
+        routeId:
+          type: string
+          example: "A"
+        driverId:
+          type: string
+          example: "D001"
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        type:
+          type: string
+          enum: [critical, warning, info]
+        icon:
+          type: string
+          example: "🚨"
+        title:
+          type: string
+        desc:
+          type: string
+        bus:
+          type: string
+          example: "BUS-011"
+        time:
+          type: string
+          example: "hace 3 min"
+        read:
+          type: boolean
+
+    CreateAlertInput:
+      type: object
+      required: [type, title, desc]
+      properties:
+        type:
+          type: string
+          enum: [critical, warning, info]
+        icon:
+          type: string
+        title:
+          type: string
+        desc:
+          type: string
+        bus:
+          type: string
+
+    ReportSummary:
+      type: object
+      properties:
+        totalBuses:
+          type: integer
+        circulating:
+          type: integer
+        totalPassengers:
+          type: integer
+        occupancyRate:
+          type: number
+        avgDelayMinutes:
+          type: number
+        inMaintenance:
+          type: integer
+        lowFuelCount:
+          type: integer
+        generatedAt:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Invalid payload or parameters
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+    NotFound:
+      description: Requested resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              message:
+                type: string

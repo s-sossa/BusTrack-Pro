@@ -26,6 +26,271 @@ function cssVar(name, fallback) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return v || fallback;
 }
+
+/* ==========================================================
+   BACKEND API & WEBSOCKET CLIENT
+   ========================================================== */
+
+const API_BASE = window.location.protocol.startsWith('http')
+  ? `${window.location.protocol}//${window.location.host}`
+  : 'http://localhost:3000';
+const WS_BASE = window.location.protocol === 'https:'
+  ? `wss://${window.location.host}/ws/telemetry`
+  : `ws://${window.location.host || 'localhost:3000'}/ws/telemetry`;
+
+let backendConnected = false;
+let wsInstance = null;
+
+function updateBackendStatusBadge(status, text) {
+  const pill = $('serverStatusPill');
+  const label = $('serverStatusLabel');
+  if (!pill || !label) return;
+  pill.className = 'server-status-pill ' + status;
+  label.textContent = text;
+}
+
+const api = {
+  async checkHealth() {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/health`, { signal: AbortSignal.timeout(2500) });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+  async getBuses() {
+    const res = await fetch(`${API_BASE}/api/v1/buses`);
+    return res.json();
+  },
+  async getAlerts() {
+    const res = await fetch(`${API_BASE}/api/v1/alerts`);
+    return res.json();
+  },
+  async updateBusStatus(id, status) {
+    const res = await fetch(`${API_BASE}/api/v1/buses/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    return res.json();
+  },
+  async createBus(payload) {
+    const res = await fetch(`${API_BASE}/api/v1/buses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async createAlert(payload) {
+    const res = await fetch(`${API_BASE}/api/v1/alerts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async markAllAlertsRead() {
+    const res = await fetch(`${API_BASE}/api/v1/alerts/read-all`, {
+      method: 'PATCH',
+    });
+    return res.json();
+  },
+  async login(email, password) {
+    const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    return res.json();
+  },
+  async register(payload) {
+    const res = await fetch(`${API_BASE}/api/v1/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async loginGoogle(payload) {
+    const res = await fetch(`${API_BASE}/api/v1/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async loginApple(payload) {
+    const res = await fetch(`${API_BASE}/api/v1/auth/apple`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+  async getMe(token) {
+    const res = await fetch(`${API_BASE}/api/v1/auth/me`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return res.json();
+  }
+};
+
+function handleServerEvent(msg) {
+  if (!msg || !msg.event) return;
+  if (msg.event === 'snapshot') {
+    if (msg.data && msg.data.buses) {
+      buses = msg.data.buses;
+      refreshCounters();
+      renderBusList();
+      if (state.view === 'fleet') renderFleet();
+      if (state.view === 'map') renderMapBusList();
+      drawMapMarkers(true);
+    }
+    if (msg.data && msg.data.alerts) {
+      alerts = msg.data.alerts;
+      renderAlerts();
+    }
+  } else if (msg.event === 'telemetry_tick') {
+    const updates = msg.data;
+    if (Array.isArray(updates)) {
+      updates.forEach(u => {
+        const b = buses.find(x => x.id === u.id);
+        if (b) {
+          b.speed = u.speed;
+          b.passengers = u.passengers;
+          b.fuel = u.fuel;
+          b.delay = u.delay;
+          b.nextStop = u.nextStop;
+          b.etaMin = u.etaMin;
+          b.pos = u.pos;
+          b.updatedAgo = u.updatedAgo;
+        }
+      });
+      refreshCounters();
+      drawMapMarkers();
+      if (state.view === 'dashboard') renderBusList();
+      if (state.view === 'map') renderMapBusList();
+      if (state.view === 'fleet') renderFleet();
+      if (state.view === 'passenger') renderPassengerArrivals();
+    }
+  } else if (msg.event === 'bus_status_changed') {
+    const updated = msg.data;
+    const b = buses.find(x => x.id === updated.id);
+    if (b) {
+      Object.assign(b, updated);
+      refreshAfterStatusChange(b);
+    }
+  } else if (msg.event === 'bus_created') {
+    const exists = buses.find(x => x.id === msg.data.id);
+    if (!exists) {
+      buses.push(msg.data);
+      refreshCounters();
+      renderBusList();
+      if (state.view === 'fleet') renderFleet();
+    }
+  } else if (msg.event === 'alert_created') {
+    const exists = alerts.find(x => x.id === msg.data.id);
+    if (!exists) {
+      alerts.unshift(msg.data);
+      renderAlerts();
+      addNotification(msg.data.icon, `<strong>${msg.data.title}:</strong> ${msg.data.bus}`);
+    }
+  } else if (msg.event === 'alerts_read_all') {
+    alerts.forEach(a => { a.read = true; });
+    renderAlerts();
+  } else if (msg.event === 'passenger_eta_update') {
+    if (state.view === 'passenger') {
+      const updates = msg.data;
+      updates.forEach(u => {
+        if (u.stopId === currentPassengerStop) {
+          const card = $(`.arrival-card[data-bus="${u.busId}"]`);
+          if (card.length) {
+            const countdownEl = card.find('.arrival-countdown-num');
+            if (countdownEl) {
+              countdownEl.textContent = u.etaMinutes + ' ' + (u.etaMinutes === 1 ? 'min' : 'min');
+              if (u.etaMinutes <= 5) countdownEl.classList.add('soon');
+              else countdownEl.classList.remove('soon');
+            }
+            const distEl = card.find('.arrival-distance');
+            if (distEl) distEl.textContent = 'a ' + u.distanceFormatted + ' de distancia';
+          }
+        }
+      });
+      // Check proximity alarms on every update
+      if (proximityAlarm) {
+        const matched = updates.find(u => u.busId === proximityAlarm.busId && u.stopId === currentPassengerStop);
+        if (matched && matched.etaMinutes <= proximityAlarm.targetMinutes) {
+          triggerProximityAlarm(matched);
+        }
+      }
+    }
+  }
+}
+
+// Helper to handle the actual alarm trigger to avoid duplicate calls
+function triggerProximityAlarm(update) {
+  toast(`🚨 ¡ATENCIÓN! El bus ${update.busId} está a ${update.etaMinutes} min de tu parada. ¡Sal ahora!`, 'warn');
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('🚍 BusTrack Fidélitas', {
+      body: `El bus está a solo ${update.etaMinutes} minutos.`,
+    });
+  }
+  // Optional: automatically focus the bus on the map
+  // focusBus(update.busId);
+}
+
+function initBackendConnection() {
+  api.checkHealth().then(online => {
+    if (online) {
+      backendConnected = true;
+      updateBackendStatusBadge('online', 'API Online (WS)');
+      // Fetch initial data
+      Promise.all([api.getBuses(), api.getAlerts()]).then(([busesData, alertsData]) => {
+        if (Array.isArray(busesData) && busesData.length) buses = busesData;
+        if (Array.isArray(alertsData) && alertsData.length) alerts = alertsData;
+        refreshCounters();
+        renderBusList();
+        renderAlerts();
+        drawMapMarkers(true);
+      }).catch(err => console.warn('Error loading initial data from API:', err));
+
+      // Connect WebSocket
+      try {
+        wsInstance = new WebSocket(WS_BASE);
+        wsInstance.onopen = () => {
+          backendConnected = true;
+          updateBackendStatusBadge('online', 'API Online (WS)');
+        };
+        wsInstance.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            handleServerEvent(data);
+          } catch (err) {
+            console.warn('WS JSON parse error:', err);
+          }
+        };
+        wsInstance.onclose = () => {
+          backendConnected = false;
+          updateBackendStatusBadge('offline', 'Modo Local');
+        };
+        wsInstance.onerror = () => {
+          backendConnected = false;
+          updateBackendStatusBadge('offline', 'Modo Local');
+        };
+      } catch (err) {
+        console.warn('WebSocket init failed:', err);
+      }
+    } else {
+      backendConnected = false;
+      updateBackendStatusBadge('offline', 'Modo Local');
+    }
+  }).catch(() => {
+    backendConnected = false;
+    updateBackendStatusBadge('offline', 'Modo Local');
+  });
+}
+
  
 const ROUTES = [
   { id: 'A', name: 'Centro — Aeropuerto',     varName: '--route-a', color: '#5b6ef5', stops: 8,  length: 22 },
@@ -212,6 +477,7 @@ function applyPrefs() {
  
 const VIEW_TITLES = {
   dashboard: 'Panel Principal',
+  passenger: 'Llegadas en Vivo — U Fidélitas',
   map: 'Mapa en Vivo',
   fleet: 'Gestión de Flota',
   routes: 'Rutas',
@@ -233,6 +499,18 @@ function navigate(view) {
   $('breadcrumbCurrent').textContent = VIEW_TITLES[view];
   document.title = VIEW_TITLES[view] + ' — BusTrack Pro';
  
+  const switchBtn = $('passengerSwitchBtn');
+  if (switchBtn) {
+    if (view === 'passenger') {
+      switchBtn.innerHTML = '<span>🏢 Ver Panel de Flota</span>';
+      switchBtn.style.background = 'linear-gradient(135deg, var(--brand-500), var(--brand-700))';
+    } else {
+      switchBtn.innerHTML = '<span>🎓 Modo Pasajero</span>';
+      switchBtn.style.background = 'linear-gradient(135deg, #2bb885, #22a79b)';
+    }
+  }
+
+  if (view === 'passenger') renderPassengerArrivals();
   if (view === 'fleet') renderFleet();
   if (view === 'routes') renderRoutes();
   if (view === 'alerts') renderAlerts();
@@ -499,15 +777,30 @@ $$('.fleet-table th[data-sort]').forEach(th => {
   });
 });
  
-$('addBusBtn').addEventListener('click', () => {
+$('addBusBtn').addEventListener('click', async () => {
   const n = buses.length + 1;
   const route = ROUTES[(n - 1) % ROUTES.length];
+  const driver = DRIVERS[(n - 1) % DRIVERS.length];
+
+  if (backendConnected) {
+    try {
+      const newBus = await api.createBus({ routeId: route.id, driverId: driver.id });
+      buses.push(newBus);
+      renderFleet();
+      refreshCounters();
+      toast('Bus ' + newBus.id + ' registrado en backend', 'ok');
+      return;
+    } catch (err) {
+      console.warn('Failed to add bus to backend, falling back to local:', err);
+    }
+  }
+
   buses.push({
     id: 'BUS-' + String(n).padStart(3, '0'),
     num: String(n).padStart(3, '0'),
     plate: 'SJB-' + String(1000 + n),
     route,
-    driver: DRIVERS[(n - 1) % DRIVERS.length],
+    driver,
     status: 'stopped',
     speed: 0, passengers: 0, capacity: 52, fuel: 100, delay: 0,
     nextStop: STOPS[0].name, etaMin: 0, updatedAgo: 0,
@@ -870,6 +1163,234 @@ function focusBus(busId) {
 }
  
 /* ==========================================================
+   6.5. GEOLOCALIZACIÓN Y ADAPTACIÓN DEL MAPA AL USUARIO
+   ========================================================== */
+const userLocationState = {
+  active: false,
+  lat: null,
+  lng: null,
+  svgPos: null,
+  nearestStop: null,
+  distanceToStop: null,
+  watchId: null,
+};
+
+function gpsToSvgCoords(lat, lng) {
+  const minLat = 9.9200, maxLat = 9.9500;
+  const minLng = -84.0950, maxLng = -84.0200;
+
+  const clampedLat = Math.max(minLat, Math.min(maxLat, lat));
+  const clampedLng = Math.max(minLng, Math.min(maxLng, lng));
+
+  const pctX = (clampedLng - minLng) / (maxLng - minLng);
+  const pctY = 1 - (clampedLat - minLat) / (maxLat - minLat);
+
+  const x = Math.round(50 + pctX * 700);
+  const y = Math.round(50 + pctY * 350);
+  return { x, y };
+}
+
+function calculateDistanceMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371e3;
+  const rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad;
+  const dLon = (lon2 - lon1) * rad;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+}
+
+function findNearestStop(svgPos, lat, lng) {
+  let nearest = null;
+  let minDist = Infinity;
+
+  STOPS.forEach(stop => {
+    let dist;
+    if (lat && lng && stop.lat && stop.lng) {
+      dist = calculateDistanceMeters(lat, lng, stop.lat, stop.lng);
+    } else {
+      const dx = stop.x - svgPos.x;
+      const dy = stop.y - svgPos.y;
+      dist = Math.round(Math.sqrt(dx * dx + dy * dy) * 12);
+    }
+    if (dist < minDist) {
+      minDist = dist;
+      nearest = stop;
+    }
+  });
+
+  return { stop: nearest || STOPS[0], distance: minDist };
+}
+
+function renderUserLocationMarkers() {
+  const miniEl = $('userMarkerMini');
+  const fullEl = $('userMarkerFull');
+  if (!userLocationState.active || !userLocationState.svgPos) {
+    if (miniEl) miniEl.innerHTML = '';
+    if (fullEl) fullEl.innerHTML = '';
+    return;
+  }
+
+  const { x, y } = userLocationState.svgPos;
+  const stopName = userLocationState.nearestStop ? userLocationState.nearestStop.name : 'Ubicación';
+
+  const miniSvg = `
+    <g class="user-location-marker" transform="translate(${x},${y})">
+      <circle r="18" class="user-marker-pulse"/>
+      <circle r="7" fill="#3b82f6" stroke="#ffffff" stroke-width="2.5"/>
+      <circle r="3" fill="#ffffff"/>
+      <title>Tu ubicación (Cerca de ${esc(stopName)})</title>
+    </g>`;
+
+  const fx = (x * SX).toFixed(1);
+  const fy = (y * SY).toFixed(1);
+  const fullSvg = `
+    <g class="user-location-marker" transform="translate(${fx},${fy})">
+      <circle r="26" class="user-marker-pulse"/>
+      <circle r="9" fill="#3b82f6" stroke="#ffffff" stroke-width="3"/>
+      <circle r="3.5" fill="#ffffff"/>
+      <text x="0" y="-16" text-anchor="middle" font-size="11" font-weight="700" fill="#3b82f6"
+            style="paint-order: stroke; stroke: #0f172a; stroke-width: 3px; stroke-linejoin: round;">📍 Tú (Tu ubicación)</text>
+      <title>Tu ubicación actual</title>
+    </g>`;
+
+  if (miniEl) miniEl.innerHTML = miniSvg;
+  if (fullEl) fullEl.innerHTML = fullSvg;
+}
+
+function centerMapOnUser(resetZoom = true) {
+  if (!userLocationState.active || !userLocationState.svgPos) return false;
+  const { x, y } = userLocationState.svgPos;
+  const v = viewports.full;
+  if (resetZoom) {
+    v.box.w = v.base.w * 0.45;
+    v.box.h = v.base.h * 0.45;
+  }
+  v.box.x = x * SX - v.box.w / 2;
+  v.box.y = y * SY - v.box.h / 2;
+  clampBox('full');
+  applyViewBox('full');
+
+  const vm = viewports.mini;
+  vm.box.x = x - vm.box.w / 2;
+  vm.box.y = y - vm.box.h / 2;
+  clampBox('mini');
+  applyViewBox('mini');
+
+  return true;
+}
+
+function updateUserLocationUI() {
+  renderUserLocationMarkers();
+
+  const bar = $('userLocationBar');
+  const textEl = $('userLocationText');
+  const miniBtn = $('locateUserBtnMini');
+  const fullBtn = $('locateUserBtnFull');
+
+  if (userLocationState.active && userLocationState.nearestStop) {
+    if (miniBtn) miniBtn.classList.add('active');
+    if (fullBtn) fullBtn.classList.add('active');
+
+    const distStr = userLocationState.distanceToStop < 1000
+      ? `${userLocationState.distanceToStop} m`
+      : `${(userLocationState.distanceToStop / 1000).toFixed(1)} km`;
+
+    if (textEl) {
+      textEl.innerHTML = `<strong>Mapa adaptado a tu ubicación:</strong> a ${distStr} de <strong>${esc(userLocationState.nearestStop.name)}</strong>`;
+    }
+    if (bar) bar.hidden = false;
+  } else {
+    if (miniBtn) miniBtn.classList.remove('active');
+    if (fullBtn) fullBtn.classList.remove('active');
+    if (bar) bar.hidden = true;
+  }
+}
+
+function stopUserLocationWatch() {
+  if (userLocationState.watchId !== null) {
+    navigator.geolocation.clearWatch(userLocationState.watchId);
+    userLocationState.watchId = null;
+  }
+}
+
+function handlePositionUpdate(position, isInitial = false) {
+  const lat = position.coords.latitude;
+  const lng = position.coords.longitude;
+  const svgPos = gpsToSvgCoords(lat, lng);
+  const nearest = findNearestStop(svgPos, lat, lng);
+
+  userLocationState.active = true;
+  userLocationState.lat = lat;
+  userLocationState.lng = lng;
+  userLocationState.svgPos = svgPos;
+  userLocationState.nearestStop = nearest.stop;
+  userLocationState.distanceToStop = nearest.distance;
+
+  updateUserLocationUI();
+  centerMapOnUser(isInitial);
+
+  const distStr = nearest.distance < 1000 ? `${nearest.distance} m` : `${(nearest.distance / 1000).toFixed(1)} km`;
+  if (isInitial) {
+    toast(`📍 Ubicación GPS activa: a ${distStr} de ${nearest.stop.name}`, 'ok');
+  }
+
+  localStorage.setItem('bustrack_geolocate', 'true');
+  const geoSwitch = $('geoSwitch');
+  if (geoSwitch) geoSwitch.setAttribute('aria-checked', 'true');
+}
+
+function requestUserLocation(userInitiated = true) {
+  if (!('geolocation' in navigator)) {
+    if (userInitiated) toast('Tu navegador no soporta geolocalización', 'warn');
+    return;
+  }
+
+  toast('Solicitando permiso de ubicación al navegador...', 'info');
+
+  const options = {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 3000
+  };
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      handlePositionUpdate(position, true);
+
+      stopUserLocationWatch();
+      userLocationState.watchId = navigator.geolocation.watchPosition(
+        (pos) => handlePositionUpdate(pos, false),
+        (err) => console.warn('Watch position update error:', err),
+        options
+      );
+    },
+    (error) => {
+      console.warn('Geolocation error:', error);
+      stopUserLocationWatch();
+      userLocationState.active = false;
+      updateUserLocationUI();
+
+      const geoSwitch = $('geoSwitch');
+      if (geoSwitch) geoSwitch.setAttribute('aria-checked', 'false');
+
+      if (error.code === error.PERMISSION_DENIED) {
+        toast('⚠️ Permiso de ubicación denegado. Permite el acceso en la barra de direcciones de tu navegador.', 'warn');
+      } else if (error.code === error.POSITION_UNAVAILABLE) {
+        toast('⚠️ Posición GPS no disponible en este dispositivo.', 'warn');
+      } else if (error.code === error.TIMEOUT) {
+        toast('⏱️ Tiempo de espera agotado al obtener el GPS.', 'warn');
+      } else if (userInitiated) {
+        toast('No se pudo acceder a tu ubicación actual.', 'warn');
+      }
+    },
+    options
+  );
+}
+
+/* ==========================================================
    7. RUTAS, ALERTAS, CONDUCTORES, REPORTES
    ========================================================== */
  
@@ -960,15 +1481,22 @@ $$('.filter-tab[data-alert-filter]').forEach(tab => {
     renderAlerts();
   });
 });
- 
-$('clearAlertsBtn').addEventListener('click', () => {
+
+$('clearAlertsBtn').addEventListener('click', async () => {
   const pend = alerts.filter(a => !a.read).length;
   alerts.forEach(a => { a.read = true; });
   renderAlerts();
+  if (backendConnected) {
+    try {
+      await api.markAllAlertsRead();
+    } catch (e) {
+      console.warn('API mark read error:', e);
+    }
+  }
   toast(pend ? pend + ' alertas marcadas como leídas' : 'No había alertas pendientes', 'ok');
 });
- 
-$('newAlertBtn').addEventListener('click', () => {
+
+$('newAlertBtn').addEventListener('click', async () => {
   const bus = pick(buses);
   const plantillas = [
     { type: 'warning', icon: '⛽', title: 'Combustible bajo', desc: `${bus.id} al ${randInt(8, 18)}% de combustible.` },
@@ -977,6 +1505,26 @@ $('newAlertBtn').addEventListener('click', () => {
     { type: 'warning', icon: '👥', title: 'Unidad al límite', desc: `${bus.id} viaja con ${bus.capacity} de ${bus.capacity} asientos ocupados.` },
   ];
   const t = pick(plantillas);
+
+  if (backendConnected) {
+    try {
+      const created = await api.createAlert({
+        type: t.type,
+        icon: t.icon,
+        title: t.title,
+        desc: t.desc,
+        bus: bus.id,
+      });
+      alerts.unshift(created);
+      renderAlerts();
+      addNotification(t.icon, `<strong>${t.title}:</strong> ${bus.id}`);
+      toast('Nueva alerta registrada en backend', 'warn');
+      return;
+    } catch (e) {
+      console.warn('Error creating alert in API:', e);
+    }
+  }
+
   alerts.unshift({ id: Date.now(), ...t, bus: bus.id, time: 'ahora mismo', read: false });
   if (alerts.length > 20) alerts.pop();
   renderAlerts();
@@ -1122,12 +1670,22 @@ $('contactDriverBtn').addEventListener('click', () => {
   if (b) toast('Llamando a ' + b.driver.name + ' (' + b.id + ')…');
 });
  
-$('modalStatusSelect').addEventListener('change', function () {
+$('modalStatusSelect').addEventListener('change', async function () {
   const b = buses.find(x => x.id === busModal.currentBusId);
   if (!b) return;
-  applyBusStatus(b, this.value);
+  const newStatus = this.value;
+  applyBusStatus(b, newStatus);
   fillBusModal(b);
   refreshAfterStatusChange(b);
+
+  if (backendConnected) {
+    try {
+      await api.updateBusStatus(b.id, newStatus);
+    } catch (e) {
+      console.warn('Failed to update status in backend:', e);
+    }
+  }
+
   toast('Estado de ' + b.id + ' actualizado a ' + statusLabel(b.status), 'ok');
 });
  
@@ -1707,6 +2265,7 @@ $('trackingStopBtn').addEventListener('click', () => stopTracking('Dejaste de se
  
 function updateLiveData() {
   if (!prefs.live) return;
+  if (backendConnected) return;
   buses.forEach(b => {
     if (b.status !== 'active' && b.status !== 'delayed') return;
     b.passengers = Math.max(0, Math.min(b.capacity, b.passengers + randInt(-3, 3)));
@@ -1731,18 +2290,222 @@ window.addEventListener('resize', () => {
   }, 160);
 });
  
+/* ==========================================================
+   MODO PASAJERO — PILOTO UNIVERSIDAD FIDÉLITAS
+   ========================================================== */
+
+let passengerStops = [];
+let currentPassengerStop = 'stop-fidelitas';
+let proximityAlarm = null;
+
+async function loadPassengerStops() {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/passenger/stops`);
+    if (res.ok) {
+      passengerStops = await res.json();
+    }
+  } catch (e) {
+    console.warn('Could not fetch passenger stops:', e);
+  }
+
+  if (!passengerStops || !passengerStops.length) {
+    passengerStops = [
+      { id: 'stop-fidelitas', name: 'Entrada Principal U Fidélitas (Santa Marta)' },
+      { id: 'stop-vargas-araya', name: 'Parada Barrio Vargas Araya' },
+      { id: 'stop-lourdes', name: 'Parada Súper Lourdes / Calasanz' },
+      { id: 'stop-san-pedro', name: 'Parada Muñoz & Nanne / Plaza del Sol' },
+      { id: 'stop-mall-sp', name: 'Parada Mall San Pedro' },
+      { id: 'stop-sanjose', name: 'Terminal San José (Cuesta de Moras)' },
+    ];
+  }
+
+  const select = $('passengerStopSelect');
+  if (select) {
+    select.innerHTML = passengerStops.map(s => `
+      <option value="${s.id}" ${s.id === currentPassengerStop ? 'selected' : ''}>
+        ${s.name} ${s.subtext ? '— ' + s.subtext : ''}
+      </option>
+    `).join('');
+  }
+
+  const chipsBar = $('quickStopsBar');
+  if (chipsBar) {
+    chipsBar.innerHTML = `<span class="chips-label">Atajos rápidos:</span>` + passengerStops.map(s => `
+      <button class="quick-chip ${s.id === currentPassengerStop ? 'active' : ''}" data-stop="${s.id}">
+        📍 ${s.name.replace('Parada ', '').replace('Entrada Principal ', '')}
+      </button>
+    `).join('');
+
+    $$('.quick-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        currentPassengerStop = chip.dataset.stop;
+        if (select) select.value = currentPassengerStop;
+        $$('.quick-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        renderPassengerArrivals();
+      });
+    });
+  }
+}
+
+async function renderPassengerArrivals() {
+  const container = $('passengerArrivalsList');
+  if (!container) return;
+
+  let data = null;
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/passenger/stops/${currentPassengerStop}/arrivals`);
+    if (res.ok) data = await res.json();
+  } catch (e) {
+    console.warn('Could not fetch arrivals:', e);
+  }
+
+  if (!data || !data.arrivals || !data.arrivals.length) {
+    container.innerHTML = '<p class="empty-state">No hay unidades en camino para esta parada en este momento.</p>';
+    return;
+  }
+
+  const subtitle = $('arrivalsStopSubtitle');
+  if (subtitle && data.currentStop) {
+    subtitle.textContent = `Llegadas hacia: ${data.currentStop.name}`;
+  }
+  const countTag = $('incomingCountTag');
+  if (countTag) countTag.textContent = `${data.arrivals.length} unidades en camino`;
+
+  // Check proximity alarm
+  if (proximityAlarm) {
+    const matched = data.arrivals.find(a => a.busId === proximityAlarm.busId);
+    if (matched && matched.etaMinutes <= proximityAlarm.targetMinutes) {
+      toast(`🚨 ¡ATENCIÓN! El bus ${matched.routeName} (${matched.busId}) está a ${matched.etaMinutes} min de tu parada. ¡Sal ahora!`, 'warn');
+      try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('🚍 BusTrack Fidélitas', {
+            body: `El bus de ${matched.routeName} está a solo ${matched.etaMinutes} minutos (${matched.distanceFormatted}).`,
+          });
+        }
+      } catch (_) {}
+    }
+  }
+
+  container.innerHTML = data.arrivals.map(a => {
+    const isAlarmActive = proximityAlarm && proximityAlarm.busId === a.busId;
+    const isImminent = a.etaMinutes <= 5;
+    return `
+      <article class="arrival-card" style="--card-color:${a.color};">
+        <div class="arrival-top-row">
+          <div class="arrival-route-header">
+            <span class="arrival-route-badge" style="color:${a.color}">
+              🚍 ${a.routeId} · ${esc(a.operator)}
+            </span>
+            <h4 class="arrival-route-name">${esc(a.routeName)}</h4>
+            <p class="arrival-route-dest">Destino: <strong>${esc(a.destination)}</strong></p>
+          </div>
+          <div class="arrival-countdown-box">
+            <span class="arrival-countdown-num ${isImminent ? 'soon' : ''}">
+              ${a.etaMinutes} <small style="font-size:14px;font-weight:700">min</small>
+            </span>
+            <span class="arrival-distance">a ${a.distanceFormatted} de distancia</span>
+          </div>
+        </div>
+
+        <div class="arrival-details-row">
+          <div class="detail-item">
+            <span class="detail-label">Nivel de ocupación</span>
+            <div class="occupancy-indicator">
+              <div class="occupancy-bar-track">
+                <div class="occupancy-bar-fill ${a.occupancyLevel}" style="width:${a.occupancyPercent}%"></div>
+              </div>
+              <span class="detail-value" style="font-size:11.5px">
+                ${a.occupancyPercent}% · ${a.occupancyLabel}
+              </span>
+            </div>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Unidad / Chofer</span>
+            <span class="detail-value">${a.busId} (${a.plate}) · ${esc(a.driverName)}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Accesibilidad</span>
+            <span class="detail-value" style="color:#2bb885">♿ Rampa activa</span>
+          </div>
+        </div>
+
+        <div class="arrival-actions-row">
+          <span class="next-bus-note">
+            ⏱️ Siguiente unidad estimada en <strong>${a.nextBusInMinutes} min</strong>
+          </span>
+          <div class="arrival-btn-group">
+            <button class="arrival-action-btn ${isAlarmActive ? 'active-alarm' : ''}" 
+                    data-alarm-bus="${a.busId}" 
+                    data-alarm-route="${esc(a.routeName)}"
+                    data-alarm-min="3">
+              ${isAlarmActive ? '🔔 Alarma activa (3 min)' : '🔔 Avísame a los 3 min'}
+            </button>
+            <button class="arrival-action-btn" data-track-passenger-bus="${a.busId}">
+              🗺️ Ver en mapa
+            </button>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  // Wire alarm and track buttons
+  container.querySelectorAll('[data-alarm-bus]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const busId = btn.dataset.alarmBus;
+      const routeName = btn.dataset.alarmRoute;
+      const targetMin = parseInt(btn.dataset.alarmMin || '3', 10);
+      setProximityAlarm(busId, routeName, targetMin);
+    });
+  });
+
+  container.querySelectorAll('[data-track-passenger-bus]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const busId = btn.dataset.trackPassengerBus;
+      focusBus(busId);
+    });
+  });
+}
+
+function setProximityAlarm(busId, routeName, targetMin) {
+  proximityAlarm = { busId, routeName, targetMinutes: targetMin };
+  localStorage.setItem('bustrack:passenger_alarm', JSON.stringify(proximityAlarm));
+  const banner = $('proximityBanner');
+  if (banner) {
+    banner.hidden = false;
+    $('proximityTitle').textContent = `🔔 Alarma programada: ${routeName} (${busId})`;
+    $('proximityDesc').textContent = `Te avisaremos en cuanto la unidad esté a ${targetMin} minutos de tu parada.`;
+  }
+  toast(`Alarma programada para ${routeName} a ${targetMin} min`, 'ok');
+  renderPassengerArrivals();
+
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function cancelProximityAlarm() {
+  proximityAlarm = null;
+  localStorage.removeItem('bustrack:passenger_alarm');
+  const banner = $('proximityBanner');
+  if (banner) banner.hidden = true;
+  toast('Alarma de proximidad cancelada');
+  renderPassengerArrivals();
+}
+
 function init() {
   loadPrefs();
   syncRouteColors();
- 
+
   // Opciones del filtro de rutas
   $('routeFilter').innerHTML = '<option value="">Todas las rutas</option>'
     + ROUTES.map(r => `<option value="${r.id}">Ruta ${r.id} — ${r.name}</option>`).join('');
- 
+
   paintStaticMapLayers();
   setupMap('mini', 'cityMap');
   setupMap('full', 'fullMap');
- 
+
   refreshCounters();
   renderBusList();
   renderActivity();
@@ -1754,10 +2517,970 @@ function init() {
   drawMainChart();
   drawMapMarkers(true);
   startAnim();
- 
+
   updateHomeChips();
   document.body.style.overflow = 'hidden';   // el menú cubre la pantalla al entrar
- 
+
+  initBackendConnection();
+
+  // ------------------------------------------------------------------
+  // MODO PASAJERO — inicialización de controles
+  // ------------------------------------------------------------------
+  loadPassengerStops();
+
+  // Restaurar alarma de proximidad guardada
+  try {
+    const saved = localStorage.getItem('bustrack:passenger_alarm');
+    if (saved) {
+      proximityAlarm = JSON.parse(saved);
+      const banner = $('proximityBanner');
+      if (banner && proximityAlarm) {
+        banner.hidden = false;
+        $('proximityTitle').textContent =
+          `🔔 Alarma programada: ${proximityAlarm.routeName} (${proximityAlarm.busId})`;
+        $('proximityDesc').textContent =
+          `Te avisaremos cuando la unidad esté a ${proximityAlarm.targetMinutes} min de tu parada.`;
+      }
+    }
+  } catch (_) { /* ignorar */ }
+
+  // Selector de parada
+  const psSelect = $('passengerStopSelect');
+  if (psSelect) {
+    psSelect.addEventListener('change', () => {
+      currentPassengerStop = psSelect.value;
+      $$('.quick-chip').forEach(c => {
+        c.classList.toggle('active', c.dataset.stop === currentPassengerStop);
+      });
+      renderPassengerArrivals();
+    });
+  }
+
+  // Botón "Actualizar ahora"
+  const refreshBtn = $('refreshArrivalsBtn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => renderPassengerArrivals());
+  }
+
+  // Botón cancelar alarma
+  const cancelAlarmBtn = $('cancelProximityBtn');
+  if (cancelAlarmBtn) {
+    cancelAlarmBtn.addEventListener('click', cancelProximityAlarm);
+  }
+
+  // Polling automático cada 4 s mientras se esté en la vista pasajero
+  setInterval(() => {
+    if (state.view === 'passenger') renderPassengerArrivals();
+  }, 4000);
+
+  // ------------------------------------------------------------------
+  // HAPTIC FEEDBACK & SHARE HELPERS
+  // ------------------------------------------------------------------
+  function hapticFeedback(pattern = 10) {
+    if ('vibrate' in navigator) {
+      try { navigator.vibrate(pattern); } catch (_) {}
+    }
+  }
+
+  // Bind haptics to all buttons
+  document.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => hapticFeedback(8));
+  });
+
+  // ------------------------------------------------------------------
+  // DYNAMIC PAGE META TITLES & DESCRIPTIONS
+  // ------------------------------------------------------------------
+  const pageMetaMap = {
+    dashboard: { title: 'Panel Principal — BusTrack Pro', desc: 'Resumen en tiempo real del estado de la flota, mapa interactivo y métricas.' },
+    passenger: { title: 'Modo Pasajero (U Fidélitas) — BusTrack Pro', desc: 'Tiempos de llegada en vivo para paradas del corredor San Pedro / Montes de Oca.' },
+    map: { title: 'Mapa en Vivo — BusTrack Pro', desc: 'Seguimiento satelital y mapa esquemático de todas las unidades en circulación.' },
+    fleet: { title: 'Gestión de Flota — BusTrack Pro', desc: 'Tabla completa de unidades, conductores asignados, estados y exportación CSV.' },
+    routes: { title: 'Rutas Operativas — BusTrack Pro', desc: 'Detalle de trazados, paradas e indicadores por recorrido.' },
+    alerts: { title: 'Centro de Alertas — BusTrack Pro', desc: 'Alertas críticas, advertencias y avisos del sistema en tiempo real.' },
+    reports: { title: 'Reportes y Analíticas — BusTrack Pro', desc: 'Gráficos de eficiencia, volumen de pasajeros y tiempos de retraso.' },
+    drivers: { title: 'Directorio de Conductores — BusTrack Pro', desc: 'Turnos, calificaciones y asignación de buses por conductor.' }
+  };
+
+  const originalSwitchView = switchView;
+  switchView = function(viewName) {
+    originalSwitchView(viewName);
+    if (pageMetaMap[viewName]) {
+      document.title = pageMetaMap[viewName].title;
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) metaDesc.content = pageMetaMap[viewName].desc;
+    }
+  };
+
+  // ------------------------------------------------------------------
+  // AUTHENTICATION & LANDING GATE LOGIC (Email, Google, Apple)
+  // ------------------------------------------------------------------
+  const api = {
+    async register({ name, email, password, consentTerms }) {
+      const res = await fetch('/api/v1/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, consentTerms })
+      });
+      return await res.json();
+    },
+    async login(email, password) {
+      const res = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      return await res.json();
+    },
+    async loginGoogle({ googleToken, email, name, picture }) {
+      const res = await fetch('/api/v1/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ googleToken, email, name, picture })
+      });
+      return await res.json();
+    },
+    async loginApple({ appleToken, email, name }) {
+      const res = await fetch('/api/v1/auth/apple', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appleToken, email, name })
+      });
+      return await res.json();
+    }
+  };
+
+  let currentUser = null;
+  let isGuestSession = false;
+  let currentOAuthProvider = 'google';
+  try {
+    const savedUser = localStorage.getItem('bustrack_user');
+    if (savedUser) currentUser = JSON.parse(savedUser);
+    const guestFlag = sessionStorage.getItem('bustrack_guest');
+    if (guestFlag === 'true') isGuestSession = true;
+  } catch (_) {}
+
+  const authLandingScreen = $('authLandingScreen');
+
+  function updateAuthUserUI() {
+    const avatarSlot = $('userAvatarSlot');
+    const nameSlot = $('userNameSlot');
+    const roleSlot = $('userRoleSlot');
+    const activeBox = $('userProfileActiveBox');
+    const loginForm = $('loginForm');
+    const regForm = $('registerForm');
+    const oauthBox = document.querySelector('.oauth-buttons-container');
+    const divider = document.querySelector('.auth-divider');
+
+    // Manage Fullscreen Landing Screen visibility
+    if (authLandingScreen) {
+      if (currentUser || isGuestSession) {
+        authLandingScreen.hidden = true;
+      } else {
+        authLandingScreen.hidden = false;
+      }
+    }
+
+    if (currentUser) {
+      if (avatarSlot) avatarSlot.textContent = currentUser.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+      if (nameSlot) nameSlot.textContent = currentUser.name;
+      if (roleSlot) roleSlot.textContent = currentUser.role === 'admin' ? 'Administrador' : 'Pasajero';
+
+      if (activeBox) {
+        activeBox.hidden = false;
+        $('userActiveAvatar').src = currentUser.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(currentUser.name)}`;
+        $('userActiveName').textContent = currentUser.name;
+        $('userActiveEmail').textContent = currentUser.email;
+        $('userActiveBadge').textContent = `Cuenta ${currentUser.provider.toUpperCase()} (${currentUser.role})`;
+      }
+      if (loginForm) loginForm.hidden = true;
+      if (regForm) regForm.hidden = true;
+      if (oauthBox) oauthBox.style.display = 'none';
+      if (divider) divider.style.display = 'none';
+      const tabs = document.querySelector('.auth-tabs');
+      if (tabs) tabs.style.display = 'none';
+    } else {
+      if (avatarSlot) avatarSlot.textContent = 'GA';
+      if (nameSlot) nameSlot.textContent = isGuestSession ? 'Invitado' : 'Inicia Sesión';
+      if (roleSlot) roleSlot.textContent = isGuestSession ? 'Modo Lectura' : 'Inicia Sesión';
+
+      if (activeBox) activeBox.hidden = true;
+      if (oauthBox) oauthBox.style.display = 'flex';
+      if (divider) divider.style.display = 'flex';
+      const tabs = document.querySelector('.auth-tabs');
+      if (tabs) tabs.style.display = 'grid';
+
+      // Show active tab form
+      const isReg = $('tabRegister')?.classList.contains('active');
+      if (loginForm) loginForm.hidden = isReg;
+      if (regForm) regForm.hidden = !isReg;
+    }
+  }
+  updateAuthUserUI();
+
+  // Auth Button & Modal controls
+  const authBtn = $('authBtn');
+  const authModal = $('authModal');
+  const authClose = $('authClose');
+  const oauthPromptModal = $('oauthPromptModal');
+  const oauthPromptClose = $('oauthPromptClose');
+
+  if (authBtn && authModal) {
+    authBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      authModal.classList.add('active');
+    });
+  }
+  if (authClose && authModal) {
+    authClose.addEventListener('click', () => authModal.classList.remove('active'));
+  }
+  if (oauthPromptClose && oauthPromptModal) {
+    oauthPromptClose.addEventListener('click', () => oauthPromptModal.classList.remove('active'));
+  }
+
+  // --- OAUTH PROMPT MODAL HANDLER ---
+  function openOAuthPrompt(provider) {
+    currentOAuthProvider = provider;
+    const badge = $('oauthProviderBadge');
+    const nameInput = $('oauthNameInput');
+    const emailInput = $('oauthEmailInput');
+    const title = $('oauthPromptTitle');
+    const subtitle = $('oauthPromptSubtitle');
+
+    if (provider === 'google') {
+      if (title) title.textContent = 'Autenticación con Google';
+      if (subtitle) subtitle.textContent = 'Conecta tu cuenta de Google de forma segura';
+      if (badge) badge.innerHTML = `
+        <div style="display:inline-flex; align-items:center; gap:8px; background:#fff; color:#1f1f1f; padding:8px 16px; border-radius:20px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,0.15)">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+          Google Account Single Sign-On
+        </div>
+      `;
+      if (nameInput) nameInput.value = 'Carlos Mendoza (Google)';
+      if (emailInput) emailInput.value = `usuario.google.${Math.floor(Math.random()*1000)}@gmail.com`;
+    } else {
+      if (title) title.textContent = 'Autenticación con Apple ID';
+      if (subtitle) subtitle.textContent = 'Inicia sesión con tu Apple ID privado';
+      if (badge) badge.innerHTML = `
+        <div style="display:inline-flex; align-items:center; gap:8px; background:#000; color:#fff; padding:8px 16px; border-radius:20px; font-weight:700; border:1px solid #333;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.63c.66-.82 1.12-1.96.99-3.11-1 .04-2.23.67-2.94 1.5-.64.74-1.2 1.92-1.05 3.05 1.12.09 2.34-.62 3-1.44z"/></svg>
+          Sign in with Apple ID
+        </div>
+      `;
+      if (nameInput) nameInput.value = 'Usuario Apple ID';
+      if (emailInput) emailInput.value = `apple_user_${Math.floor(Math.random()*1000)}@privaterelay.appleid.com`;
+    }
+
+    if (oauthPromptModal) oauthPromptModal.classList.add('active');
+  }
+
+  // OAuth Modal Confirm Submission
+  const oauthConfirmBtn = $('oauthConfirmSubmitBtn');
+  if (oauthConfirmBtn) {
+    oauthConfirmBtn.addEventListener('click', async () => {
+      const email = $('oauthEmailInput').value;
+      const name = $('oauthNameInput').value;
+
+      if (!email) {
+        toast('Por favor ingresa un correo válido', 'warn');
+        return;
+      }
+
+      try {
+        let res;
+        if (currentOAuthProvider === 'google') {
+          res = await api.loginGoogle({
+            googleToken: 'valid_google_oauth_token_' + Date.now(),
+            email,
+            name,
+            picture: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`
+          });
+        } else {
+          res = await api.loginApple({
+            appleToken: 'valid_apple_oauth_token_' + Date.now(),
+            email,
+            name
+          });
+        }
+
+        if (res && res.status === 'success') {
+          currentUser = res.user;
+          isGuestSession = false;
+          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+          localStorage.setItem('bustrack_auth_token', res.token);
+          toast(`¡Sesión iniciada con ${currentOAuthProvider === 'google' ? 'Google' : 'Apple'}! Bienvenido, ${currentUser.name}`, 'ok');
+          updateAuthUserUI();
+          if (oauthPromptModal) oauthPromptModal.classList.remove('active');
+          if (authModal) authModal.classList.remove('active');
+        } else {
+          toast(res?.detail || 'Error en la autenticación', 'warn');
+        }
+      } catch (err) {
+        toast('No se pudo conectar al servidor OAuth', 'warn');
+      }
+    });
+  }
+
+  // --- LANDING SCREEN FORM HANDLERS ---
+  const landingTabRegister = $('landingTabRegister');
+  const landingTabLogin = $('landingTabLogin');
+  if (landingTabRegister && landingTabLogin) {
+    landingTabRegister.addEventListener('click', () => {
+      landingTabRegister.classList.add('active');
+      landingTabLogin.classList.remove('active');
+      $('landingRegisterForm').hidden = false;
+      $('landingLoginForm').hidden = true;
+    });
+    landingTabLogin.addEventListener('click', () => {
+      landingTabLogin.classList.add('active');
+      landingTabRegister.classList.remove('active');
+      $('landingLoginForm').hidden = false;
+      $('landingRegisterForm').hidden = true;
+    });
+  }
+
+  // Landing Registration Submit
+  const landingRegForm = $('landingRegisterForm');
+  if (landingRegForm) {
+    landingRegForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = $('landingRegName').value;
+      const email = $('landingRegEmail').value;
+      const password = $('landingRegPassword').value;
+      const consentTerms = $('landingRegConsent').checked;
+
+      try {
+        const res = await api.register({ name, email, password, consentTerms });
+        if (res.status === 'success') {
+          currentUser = res.user;
+          isGuestSession = false;
+          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+          localStorage.setItem('bustrack_auth_token', res.token);
+          toast(`¡Cuenta creada con éxito! Bienvenido a BusTrack Pro, ${currentUser.name}`, 'ok');
+          updateAuthUserUI();
+        } else {
+          toast(res.detail || 'Error en el registro', 'warn');
+        }
+      } catch (err) {
+        toast('Error al procesar el registro', 'warn');
+      }
+    });
+  }
+
+  // Landing Login Submit
+  const landingLoginForm = $('landingLoginForm');
+  if (landingLoginForm) {
+    landingLoginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = $('landingLoginEmail').value;
+      const password = $('landingLoginPassword').value;
+      try {
+        const res = await api.login(email, password);
+        if (res.status === 'success') {
+          currentUser = res.user;
+          isGuestSession = false;
+          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+          localStorage.setItem('bustrack_auth_token', res.token);
+          toast(`¡Bienvenido de nuevo, ${currentUser.name}!`, 'ok');
+          updateAuthUserUI();
+        } else {
+          toast(res.detail || 'Credenciales incorrectas', 'warn');
+        }
+      } catch (err) {
+        toast('No se pudo conectar al servidor de autenticación', 'warn');
+      }
+    });
+  }
+
+  // Landing OAuth Buttons (Google & Apple)
+  const landingGoogleBtn = $('landingGoogleAuthBtn');
+  if (landingGoogleBtn) {
+    landingGoogleBtn.addEventListener('click', () => openOAuthPrompt('google'));
+  }
+
+  if ($('landingAppleAuthBtn')) {
+    ($('landingAppleAuthBtn')).addEventListener('click', () => openOAuthPrompt('apple'));
+  }
+
+  const landingAppleBtn = $('landingAppleAuthBtn');
+  if ($('landingAppleAuthBtn')) {
+    ($('landingAppleAuthBtn')).addEventListener('click', async () => {
+      try {
+        const res = await api.loginApple({
+          appleToken: 'mock_apple_oauth_token',
+          email: `apple_user_${Math.floor(Math.random()*1000)}@privaterelay.appleid.com`,
+          name: 'Usuario Apple'
+        });
+        if (res.status === 'success') {
+          currentUser = res.user;
+          isGuestSession = false;
+          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+          localStorage.setItem('bustrack_auth_token', res.token);
+          toast('Sesión iniciada con Apple ID', 'ok');
+          updateAuthUserUI();
+        }
+      } catch (_) {
+        toast('Error en autenticación con Apple', 'warn');
+      }
+    });
+  }
+
+  // Guest Explore Button
+  const guestBtn = $('guestExploreBtn');
+  if (guestBtn) {
+    guestBtn.addEventListener('click', () => {
+      isGuestSession = true;
+      sessionStorage.setItem('bustrack_guest', 'true');
+      toast('Explorando como Invitado (Modo Pasajero)', 'info');
+      updateAuthUserUI();
+    });
+  }
+
+  // --- MODAL FORM HANDLERS ---
+  const tabLogin = $('tabLogin');
+  const tabRegister = $('tabRegister');
+  if (tabLogin && tabRegister) {
+    tabLogin.addEventListener('click', () => {
+      tabLogin.classList.add('active');
+      tabRegister.classList.remove('active');
+      $('loginForm').hidden = false;
+      $('registerForm').hidden = true;
+    });
+    tabRegister.addEventListener('click', () => {
+      tabRegister.classList.add('active');
+      tabLogin.classList.remove('active');
+      $('registerForm').hidden = false;
+      $('loginForm').hidden = true;
+    });
+  }
+
+  // Modal Login Submit
+  const loginForm = $('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = $('loginEmail').value;
+      const password = $('loginPassword').value;
+      try {
+        const res = await api.login(email, password);
+        if (res.status === 'success') {
+          currentUser = res.user;
+          isGuestSession = false;
+          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+          localStorage.setItem('bustrack_auth_token', res.token);
+          toast(`¡Bienvenido de nuevo, ${currentUser.name}!`, 'ok');
+          updateAuthUserUI();
+          authModal.classList.remove('active');
+        } else {
+          toast(res.detail || 'Error al iniciar sesión', 'warn');
+        }
+      } catch (err) {
+        toast('No se pudo conectar al servidor de autenticación', 'warn');
+      }
+    });
+  }
+
+  // Modal Register Submit
+  const regForm = $('registerForm');
+  if (regForm) {
+    regForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = $('regName').value;
+      const email = $('regEmail').value;
+      const password = $('regPassword').value;
+      const consentTerms = $('regConsent').checked;
+
+      try {
+        const res = await api.register({ name, email, password, consentTerms });
+        if (res.status === 'success') {
+          currentUser = res.user;
+          isGuestSession = false;
+          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+          localStorage.setItem('bustrack_auth_token', res.token);
+          toast(`¡Cuenta creada con éxito! Bienvenido, ${currentUser.name}`, 'ok');
+          updateAuthUserUI();
+          authModal.classList.remove('active');
+        } else {
+          toast(res.detail || 'Error en el registro', 'warn');
+        }
+      } catch (err) {
+        toast('Error al procesar el registro', 'warn');
+      }
+    });
+  }
+
+  // Modal Google OAuth button
+  const googleBtn = $('googleAuthBtn');
+  if (googleBtn) {
+    googleBtn.addEventListener('click', async () => {
+      try {
+        const mockGoogleEmail = `usuario.google.${Math.floor(Math.random()*1000)}@gmail.com`;
+        const res = await api.loginGoogle({
+          googleToken: 'mock_google_oauth_token',
+          email: mockGoogleEmail,
+          name: 'Usuario Google',
+          picture: 'https://api.dicebear.com/7.x/initials/svg?seed=GoogleUser'
+        });
+        if (res.status === 'success') {
+          currentUser = res.user;
+          isGuestSession = false;
+          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+          localStorage.setItem('bustrack_auth_token', res.token);
+          toast(`Sesión iniciada con Google (${currentUser.email})`, 'ok');
+          updateAuthUserUI();
+          authModal.classList.remove('active');
+        }
+      } catch (_) {
+        toast('Error en autenticación con Google', 'warn');
+      }
+    });
+  }
+
+  // Modal Apple OAuth button
+  const appleBtn = $('appleAuthBtn');
+  if (appleBtn) {
+    appleBtn.addEventListener('click', async () => {
+      try {
+        const res = await api.loginApple({
+          appleToken: 'mock_apple_oauth_token',
+          email: `apple_user_${Math.floor(Math.random()*1000)}@privaterelay.appleid.com`,
+          name: 'Usuario Apple'
+        });
+        if (res.status === 'success') {
+          currentUser = res.user;
+          isGuestSession = false;
+          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+          localStorage.setItem('bustrack_auth_token', res.token);
+          toast('Sesión iniciada con Apple ID', 'ok');
+          updateAuthUserUI();
+          authModal.classList.remove('active');
+        }
+      } catch (_) {
+        toast('Error en autenticación con Apple', 'warn');
+      }
+    });
+  }
+
+  // Logout Button
+  const logoutBtn = $('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      currentUser = null;
+      isGuestSession = false;
+      localStorage.removeItem('bustrack_user');
+      localStorage.removeItem('bustrack_auth_token');
+      sessionStorage.removeItem('bustrack_guest');
+      toast('Sesión cerrada correctamente', 'info');
+      updateAuthUserUI();
+      if (authModal) authModal.classList.remove('active');
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // COMMAND PALETTE (CTRL + K) LOGIC
+  // ------------------------------------------------------------------
+  const cmdModal = $('commandPaletteModal');
+  const cmdInput = $('cmdInput');
+  const cmdResults = $('cmdResults');
+
+  function openCommandPalette() {
+    if (cmdModal) {
+      cmdModal.classList.add('active');
+      if (cmdInput) {
+        cmdInput.value = '';
+        cmdInput.focus();
+      }
+    }
+  }
+
+  function closeCommandPalette() {
+    if (cmdModal) cmdModal.classList.remove('active');
+  }
+
+  // Shortcut listeners: Ctrl+K or Cmd+K
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      if (cmdModal?.classList.contains('active')) closeCommandPalette();
+      else openCommandPalette();
+    }
+    if (e.key === 'Escape') {
+      closeCommandPalette();
+      if (authModal) authModal.classList.remove('active');
+    }
+  });
+
+  // Global search bar focus triggers command palette
+  const globalSearch = $('globalSearch');
+  if (globalSearch) {
+    globalSearch.addEventListener('click', () => openCommandPalette());
+  }
+
+  // Command palette item clicks
+  if (cmdResults) {
+    cmdResults.addEventListener('click', (e) => {
+      const item = e.target.closest('.cmd-item');
+      if (!item) return;
+      const action = item.dataset.action;
+      closeCommandPalette();
+      if (action === 'go-dashboard') switchView('dashboard');
+      else if (action === 'go-passenger') switchView('passenger');
+      else if (action === 'go-map') switchView('map');
+      else if (action === 'go-fleet') switchView('fleet');
+      else if (action === 'toggle-theme') {
+        const motionBtn = $('motionSwitch');
+        if (motionBtn) motionBtn.click();
+        toast('Preferencia de tema actualizada', 'info');
+      }
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // NOTIFICATION DROPDOWN PANEL
+  // ------------------------------------------------------------------
+  const notifBtn = $('notifBtn');
+  const notifDropdownPanel = $('notifDropdownPanel');
+  const notifMarkAllReadBtn = $('notifMarkAllReadBtn');
+
+  function renderNotifDropdown() {
+    const list = $('notifList');
+    if (!list) return;
+    const items = alerts.slice(0, 6);
+    if (!items.length) {
+      list.innerHTML = '<p class="empty-state" style="padding:1rem;font-size:12px">No hay notificaciones pendientes</p>';
+      return;
+    }
+    list.innerHTML = items.map(a => `
+      <div class="notif-item">
+        <span class="notif-item-icon">${a.type === 'critical' ? '🚨' : a.type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+        <div>
+          <div class="notif-item-text"><strong>${esc(a.title)}</strong>: ${esc(a.desc)}</div>
+          <span class="notif-item-time">${a.time}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  if (notifBtn && notifDropdownPanel) {
+    notifBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = notifDropdownPanel.hidden;
+      notifDropdownPanel.hidden = !isHidden;
+      if (isHidden) renderNotifDropdown();
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#notifBtn') && !e.target.closest('#notifDropdownPanel')) {
+        if (notifDropdownPanel) notifDropdownPanel.hidden = true;
+      }
+    });
+  }
+  if (notifMarkAllReadBtn) {
+    notifMarkAllReadBtn.addEventListener('click', () => {
+      alerts.forEach(a => a.read = true);
+      refreshCounters();
+      if (notifDropdownPanel) notifDropdownPanel.hidden = true;
+      toast('Notificaciones limpiadas', 'ok');
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // FLEET "AGREGAR BUS" MODAL HANDLERS
+  // ------------------------------------------------------------------
+  const addBusBtn = $('addBusBtn');
+  const addBusModal = $('addBusModal');
+  const addBusClose = $('addBusClose');
+  const addBusForm = $('addBusForm');
+
+  if (addBusBtn && addBusModal) {
+    addBusBtn.addEventListener('click', () => addBusModal.classList.add('active'));
+  }
+  if (addBusClose && addBusModal) {
+    addBusClose.addEventListener('click', () => addBusModal.classList.remove('active'));
+  }
+  if (addBusForm) {
+    addBusForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = $('newBusId').value.trim().toUpperCase();
+      const routeId = $('newBusRoute').value;
+      const driverId = $('newBusDriver').value;
+      const plate = $('newBusPlate').value.trim().toUpperCase();
+
+      const route = ROUTES.find(r => r.id === routeId) || ROUTES[0];
+      const driver = DRIVERS.find(d => d.id === driverId) || DRIVERS[0];
+
+      const newBus = {
+        id,
+        num: id.replace('BUS-', ''),
+        route,
+        driver,
+        plate,
+        status: 'active',
+        speed: 42,
+        passengers: 24,
+        capacity: 45,
+        delay: 0,
+        fuel: 95,
+        pos: { x: 200, y: 150 },
+        _t: Math.random(),
+        _dir: 1,
+        _step: 0.002,
+        updatedAgo: 0,
+        nextStop: STOPS[0].name
+      };
+
+      buses.unshift(newBus);
+      refreshCounters();
+      if (state.view === 'fleet') renderFleet();
+      if (state.view === 'dashboard') renderBusList();
+      if (state.view === 'map') renderMapBusList();
+      drawMapMarkers(true);
+
+      addBusModal.classList.remove('active');
+      addBusForm.reset();
+      toast(`Bus ${id} registrado en la flota con éxito`, 'ok');
+    });
+  }
+
+  // Fleet Reset Filters
+  const resetFiltersBtn = $('resetFiltersBtn');
+  if (resetFiltersBtn) {
+    resetFiltersBtn.addEventListener('click', () => {
+      const search = $('fleetSearch');
+      const filter = $('routeFilter');
+      if (search) search.value = '';
+      if (filter) filter.value = '';
+      renderFleet();
+      toast('Filtros de la flota reiniciados', 'info');
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // DRIVER CONTACT MODAL HANDLERS
+  // ------------------------------------------------------------------
+  const contactDriverBtn = $('contactDriverBtn');
+  const contactModal = $('contactDriverModal');
+  const contactClose = $('contactClose');
+
+  if (contactDriverBtn && contactModal) {
+    contactDriverBtn.addEventListener('click', () => {
+      const bus = buses.find(b => b.id === state.highlightBus) || buses[0];
+      $('contactDriverName').textContent = bus.driver.name;
+      $('contactDriverBus').textContent = `Asignado a ${bus.id} (Ruta ${bus.route.id})`;
+      $('contactDriverInitials').textContent = bus.driver.initials;
+      const statusBadge = $('contactDriverStatus');
+      if (statusBadge) {
+        statusBadge.className = `status-badge status-${bus.status}`;
+        statusBadge.textContent = statusLabel(bus.status);
+      }
+      if ($('busModal')) $('busModal').classList.remove('active');
+      contactModal.classList.add('active');
+    });
+  }
+  if (contactClose && contactModal) {
+    contactClose.addEventListener('click', () => contactModal.classList.remove('active'));
+  }
+
+  const callDriverBtn = $('callDriverBtn');
+  const msgDriverBtn = $('msgDriverBtn');
+  const dispatchAlertBtn = $('dispatchAlertBtn');
+
+  if (callDriverBtn) {
+    callDriverBtn.addEventListener('click', () => {
+      toast('📞 Conectando llamada con la cabina del conductor...', 'ok');
+      if (contactModal) contactModal.classList.remove('active');
+    });
+  }
+  if (msgDriverBtn) {
+    msgDriverBtn.addEventListener('click', () => {
+      toast('💬 Canal de mensajería enviado al terminal de abordo', 'ok');
+      if (contactModal) contactModal.classList.remove('active');
+    });
+  }
+  if (dispatchAlertBtn) {
+    dispatchAlertBtn.addEventListener('click', () => {
+      toast('📡 Alerta de despacho enviada a la pantalla de la unidad', 'ok');
+      if (contactModal) contactModal.classList.remove('active');
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // REPORTS VIEW HANDLERS (Print / Generate)
+  // ------------------------------------------------------------------
+  const printReportBtn = $('printReportBtn');
+  if (printReportBtn) {
+    printReportBtn.addEventListener('click', () => {
+      window.print();
+    });
+  }
+  const generateReportBtn = $('generateReportBtn');
+  if (generateReportBtn) {
+    generateReportBtn.addEventListener('click', () => {
+      toast('Generando reporte operativo consolidado...', 'info');
+      setTimeout(() => {
+        drawReportCharts();
+        toast('Reporte de operaciones generado con éxito', 'ok');
+      }, 500);
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // ALERTS VIEW HANDLERS (Clear All / Simulate New Alert)
+  // ------------------------------------------------------------------
+  const clearAlertsBtn = $('clearAlertsBtn');
+  if (clearAlertsBtn) {
+    clearAlertsBtn.addEventListener('click', () => {
+      alerts.forEach(a => a.read = true);
+      refreshCounters();
+      if (state.view === 'alerts') renderAlerts();
+      toast('Todas las alertas fueron marcadas como leídas', 'ok');
+    });
+  }
+  const newAlertBtn = $('newAlertBtn');
+  if (newAlertBtn) {
+    newAlertBtn.addEventListener('click', () => {
+      const bus = pick(buses);
+      const alertTypes = [
+        { type: 'warning', icon: '⚠️', title: 'Exceso de velocidad leve', desc: `${bus.id} registró ${bus.speed + 15} km/h en zona urbana.` },
+        { type: 'critical', icon: '🚨', title: 'Frenado brusco repentino', desc: `${bus.id} desaceleró bruscamente cerca de ${bus.nextStop}.` },
+        { type: 'info', icon: 'ℹ️', title: 'Apertura prolongada de puertas', desc: `${bus.id} mantuvo puertas abiertas durante más de 3 min.` },
+      ];
+      const newAlert = pick(alertTypes);
+      alerts.unshift({
+        id: 'ALT-' + Math.floor(Math.random() * 9000 + 1000),
+        type: newAlert.type,
+        icon: newAlert.icon,
+        title: newAlert.title,
+        desc: newAlert.desc,
+        time: 'ahora mismo',
+        read: false
+      });
+      refreshCounters();
+      if (state.view === 'alerts') renderAlerts();
+      toast(`Nueva alerta simulada: ${newAlert.title}`, 'warn');
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // SETTINGS MODAL DATA RESET
+  // ------------------------------------------------------------------
+  const resetDataBtn = $('resetDataBtn');
+  if (resetDataBtn) {
+    resetDataBtn.addEventListener('click', () => {
+      buses.forEach(b => {
+        b.speed = randInt(25, 55);
+        b.passengers = randInt(10, 40);
+        b.fuel = randInt(60, 98);
+      });
+      refreshCounters();
+      if (state.view === 'dashboard') renderBusList();
+      if (state.view === 'fleet') renderFleet();
+      drawMapMarkers(true);
+      toast('Datos y métricas de la flota regenerados', 'ok');
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // COOKIE CONSENT BANNER LOGIC
+  // ------------------------------------------------------------------
+  const cookieBanner = $('cookieConsentBanner');
+  const cookieConsentSaved = localStorage.getItem('bustrack_cookie_consent');
+
+  function hideCookieBanner() {
+    if (!cookieBanner) return;
+    cookieBanner.setAttribute('hidden', 'true');
+    cookieBanner.hidden = true;
+    cookieBanner.style.setProperty('display', 'none', 'important');
+  }
+
+  if (!cookieConsentSaved && cookieBanner) {
+    cookieBanner.removeAttribute('hidden');
+    cookieBanner.hidden = false;
+    cookieBanner.style.display = 'flex';
+  } else if (cookieBanner) {
+    hideCookieBanner();
+  }
+
+  const cookieAcceptBtn = $('cookieAcceptBtn');
+  const cookieRejectBtn = $('cookieRejectBtn');
+  if (cookieAcceptBtn) {
+    cookieAcceptBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.setItem('bustrack_cookie_consent', 'accepted');
+      hideCookieBanner();
+      toast('Preferencias de almacenamiento guardadas', 'ok');
+    });
+  }
+  if (cookieRejectBtn) {
+    cookieRejectBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.setItem('bustrack_cookie_consent', 'essential_only');
+      hideCookieBanner();
+      toast('Solo se usará almacenamiento técnico esencial', 'info');
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // GEOLOCATION MAP ADAPTATION EVENT LISTENERS
+  // ------------------------------------------------------------------
+  const miniLocBtn = $('locateUserBtnMini');
+  const fullLocBtn = $('locateUserBtnFull');
+  const recenterBtn = $('recenterUserBtn');
+  const geoSwitchBtn = $('geoSwitch');
+
+  if (miniLocBtn) miniLocBtn.addEventListener('click', () => requestUserLocation(true));
+  if (fullLocBtn) fullLocBtn.addEventListener('click', () => requestUserLocation(true));
+  if (recenterBtn) recenterBtn.addEventListener('click', () => centerMapOnUser(true));
+
+  const savedGeoPref = localStorage.getItem('bustrack_geolocate') === 'true';
+  if (geoSwitchBtn) {
+    geoSwitchBtn.setAttribute('aria-checked', String(savedGeoPref));
+    geoSwitchBtn.addEventListener('click', () => {
+      const active = geoSwitchBtn.getAttribute('aria-checked') === 'true';
+      const next = !active;
+      geoSwitchBtn.setAttribute('aria-checked', String(next));
+      localStorage.setItem('bustrack_geolocate', String(next));
+      if (next) requestUserLocation(true);
+      else {
+        userLocationState.active = false;
+        updateUserLocationUI();
+        toast('Geolocalización desactivada', 'info');
+      }
+    });
+  }
+
+  if (savedGeoPref) {
+    setTimeout(() => requestUserLocation(false), 500);
+  }
+
+  // ------------------------------------------------------------------
+  // MOBILE FLOATING CTA
+  // ------------------------------------------------------------------
+  const mobileCta = $('mobileFloatingCta');
+  if (mobileCta) {
+    mobileCta.addEventListener('click', () => {
+      switchView('passenger');
+      hapticFeedback([10, 30, 10]);
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // SCROLL REVEAL OBSERVER
+  // ------------------------------------------------------------------
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.stat-card, .card, .passenger-hero-card').forEach(el => {
+      el.classList.add('scroll-reveal');
+      observer.observe(el);
+    });
+  }
+
+  // ------------------------------------------------------------------
   setInterval(updateLiveData, 3000);
   setInterval(pushActivity, 9000);
 }
@@ -1767,4 +3490,5 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
  

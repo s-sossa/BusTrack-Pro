@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>¡Gracias! — BusTrack Pro</title>
+  <meta name="description" content="Acción completada exitosamente en BusTrack Pro." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0f1c; --surface: #111827; --border: rgba(255,255,255,0.08);
+      --text: #e5e7eb; --text-muted: #9ca3af; --brand: #5b6ef5; --brand-light: #818cf8;
+      --ok: #10b981;
+    }
+    @media (prefers-color-scheme: light) {
+      :root { --bg: #f9fafb; --surface: #fff; --border: rgba(0,0,0,0.08); --text: #111827; --text-muted: #6b7280; }
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .checkmark {
+      width: 80px;
+      height: 80px;
+      background: rgba(16,185,129,0.15);
+      border: 2px solid rgba(16,185,129,0.4);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .checkmark svg { animation: drawCheck 0.5s ease 0.3s both; }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      animation: fadeSlideUp 0.5s ease 0.2s both;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 380px;
+      margin-bottom: 2.5rem;
+      animation: fadeSlideUp 0.5s ease 0.3s both;
+    }
+    .actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeSlideUp 0.5s ease 0.4s both;
+    }
+    .btn-primary {
+      background: var(--brand);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { background: #4b5de4; transform: translateY(-1px); }
+    a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="checkmark" role="img" aria-label="Acción completada exitosamente">
+    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+      <path d="M8 18l7 7 13-14" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <h1>¡Acción completada!</h1>
+  <p class="subtitle" id="thanksMessage">
+    La operación se realizó correctamente.
+  </p>
+  <div class="actions">
+    <a href="/" class="btn-primary" id="thanksCta">Volver al panel</a>
+  </div>
+
+  <script>
+    // Customize message from URL params: /thanks?action=bus_added&name=B-001
+    const params = new URLSearchParams(location.search);
+    const action = params.get('action');
+    const name = params.get('name');
+    const msgEl = document.getElementById('thanksMessage');
+    const ctaEl = document.getElementById('thanksCta');
+
+    const messages = {
+      bus_added: `El bus ${name || ''} fue registrado exitosamente en la flota.`,
+      status_updated: `El estado del bus ${name || ''} fue actualizado.`,
+      report_generated: 'El reporte fue generado y está listo para descargar.',
+      alert_created: 'La alerta fue creada y notificada al equipo.',
+    };
+
+    if (action && messages[action]) {
+      msgEl.textContent = messages[action];
+    }
+  </script>
+</body>
+</html>
