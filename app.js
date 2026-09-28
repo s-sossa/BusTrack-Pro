@@ -485,7 +485,11 @@ const VIEW_TITLES = {
   reports: 'Reportes',
   drivers: 'Conductores',
 };
- 
+
+let switchView = function(view) {
+  return navigate(view);
+};
+
 function navigate(view) {
   if (!VIEW_TITLES[view]) return;
   $$('.view').forEach(v => v.classList.remove('active'));
@@ -535,26 +539,31 @@ const sidebar = $('sidebar');
 const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
  
 function openSidebar() {
-  sidebar.classList.add('mobile-open');
-  $('sidebarOverlay').classList.add('open');
-  $('mobileMenuBtn').setAttribute('aria-expanded', 'true');
+  if (sidebar) sidebar.classList.add('mobile-open');
+  const overlay = $('sidebarOverlay');
+  if (overlay) overlay.classList.add('open');
+  const btn = $('mobileMenuBtn');
+  if (btn) btn.setAttribute('aria-expanded', 'true');
   document.body.style.overflow = 'hidden';
 }
 function closeSidebar() {
-  sidebar.classList.remove('mobile-open');
-  $('sidebarOverlay').classList.remove('open');
-  $('mobileMenuBtn').setAttribute('aria-expanded', 'false');
+  if (sidebar) sidebar.classList.remove('mobile-open');
+  const overlay = $('sidebarOverlay');
+  if (overlay) overlay.classList.remove('open');
+  const btn = $('mobileMenuBtn');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
   document.body.style.overflow = '';
 }
  
-$('sidebarToggle').addEventListener('click', function () {
+$('sidebarToggle')?.addEventListener('click', function () {
+  if (!sidebar) return;
   const collapsed = sidebar.classList.toggle('collapsed');
   this.setAttribute('aria-expanded', String(!collapsed));
   // El ancho del contenido cambió: los canvas necesitan redibujarse.
   setTimeout(redrawAll, 220);
 });
-$('mobileMenuBtn').addEventListener('click', openSidebar);
-$('sidebarOverlay').addEventListener('click', closeSidebar);
+$('mobileMenuBtn')?.addEventListener('click', openSidebar);
+$('sidebarOverlay')?.addEventListener('click', closeSidebar);
  
 /* ==========================================================
    4. PANEL PRINCIPAL
@@ -2601,14 +2610,17 @@ function init() {
     drivers: { title: 'Directorio de Conductores — BusTrack Pro', desc: 'Turnos, calificaciones y asignación de buses por conductor.' }
   };
 
-  const originalSwitchView = switchView;
-  switchView = function(viewName) {
-    originalSwitchView(viewName);
+  const originalNavigate = navigate;
+  navigate = function(viewName) {
+    originalNavigate(viewName);
     if (pageMetaMap[viewName]) {
       document.title = pageMetaMap[viewName].title;
       const metaDesc = document.querySelector('meta[name="description"]');
       if (metaDesc) metaDesc.content = pageMetaMap[viewName].desc;
     }
+  };
+  switchView = function(viewName) {
+    return navigate(viewName);
   };
 
   // ------------------------------------------------------------------
