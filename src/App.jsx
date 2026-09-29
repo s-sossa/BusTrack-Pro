@@ -16,6 +16,8 @@ export function App() {
     probarConexion();
   }, []);
 
+  console.log("El componente App se está renderizando");
+
   return (
     <div className="app-container">
       <h1>BusTrack Pro Dashboard</h1>
