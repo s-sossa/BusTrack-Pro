@@ -2144,4 +2144,158 @@ button, input, select { font-family: inherit; }
     padding: 16px 14px;
   }
 }
+
+/* ============================================================
+   DB STATUS PILL & DIAGNOSTICS MODAL (100% REAL DATABASE)
+   ============================================================ */
+.db-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(91, 110, 245, 0.12);
+  border: 1px solid rgba(91, 110, 245, 0.35);
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #a5b0fb;
+  cursor: pointer;
+  transition: all var(--t);
+  user-select: none;
+}
+.db-status-pill:hover {
+  background: rgba(91, 110, 245, 0.22);
+  border-color: var(--brand-500);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(91, 110, 245, 0.25);
+}
+.db-status-pill.real-db {
+  background: rgba(43, 184, 133, 0.14);
+  border-color: rgba(43, 184, 133, 0.45);
+  color: #34d399;
+}
+.db-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 16, 0.78);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.db-modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.db-modal-card {
+  width: 92%;
+  max-width: 600px;
+  background: var(--bg-card);
+  border: 1px solid var(--line-brand);
+  border-radius: var(--radius);
+  box-shadow: var(--glow);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+.db-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+.db-modal-head h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-strong);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.db-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-soft);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+.db-modal-close:hover {
+  color: var(--text-strong);
+}
+.db-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+.db-metric-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+.db-metric-label {
+  font-size: 11px;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.db-metric-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin-top: 4px;
+}
+.db-table-list {
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.db-table-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+.db-table-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+.db-table-name {
+  font-family: 'JetBrains Mono', monospace;
+  color: #a5b0fb;
+  font-weight: 600;
+}
+.db-table-count {
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.db-features-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.db-feature-badge {
+  font-size: 11px;
+  padding: 4px 8px;
+  background: rgba(43, 184, 133, 0.12);
+  border: 1px solid rgba(43, 184, 133, 0.3);
+  color: #34d399;
+  border-radius: 6px;
+  font-weight: 600;
+}
  

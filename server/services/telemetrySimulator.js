@@ -138,6 +138,10 @@ export class TelemetryEngine {
       });
     }
 
+    if (typeof db.updateAllBusesTelemetry === 'function') {
+      db.updateAllBusesTelemetry(buses);
+    }
+
     this.broadcast('telemetry_tick', updates);
 
     // Broadcast real-time ETA updates for passenger pilot stops

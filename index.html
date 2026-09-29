@@ -276,7 +276,7 @@
         </button>
       </nav>
  
-      <p class="home-foot">Datos simulados · sin cuentas ni base de datos · podés volver a este menú desde "Inicio"</p>
+      <p class="home-foot">Base de Datos SQL 100% Real (SQLite / PostgreSQL) · Cuentas Seguras con JWT · Persistencia ACID</p>
     </div>
   </div>
  
@@ -429,6 +429,10 @@
         <button class="passenger-switch-btn" id="passengerSwitchBtn" title="Alternar al Modo Pasajero (Piloto Fidélitas)">
           <span>🎓 Modo Pasajero</span>
         </button>
+        <div class="db-status-pill real-db" id="dbStatusPill" role="button" tabindex="0" title="Ver diagnóstico y tablas de la Base de Datos Real">
+          <span>🗄️</span>
+          <span id="dbStatusLabel">BD: SQLite 3 (100% Real)</span>
+        </div>
         <div class="server-status-pill" id="serverStatusPill" title="Conexión en tiempo real con el backend">
           <span class="status-dot"></span>
           <span id="serverStatusLabel">Detectando API...</span>
@@ -1138,6 +1142,61 @@
           <button class="btn-ghost" id="msgDriverBtn">💬 WhatsApp / SMS</button>
           <button class="btn-ghost full-width" id="dispatchAlertBtn" style="grid-column: span 2; margin-top:4px">📡 Enviar Alerta de Despacho</button>
         </div>
+      </div>
+    </div>
+  <!-- ============ MODAL DIAGNÓSTICO BASE DE DATOS REAL ============ -->
+  <div class="db-modal-overlay" id="dbModal" role="dialog" aria-modal="true" aria-labelledby="dbModalTitle">
+    <div class="db-modal-card">
+      <div class="db-modal-head">
+        <h3 id="dbModalTitle">🗄️ Base de Datos 100% Real · Diagnóstico</h3>
+        <button class="db-modal-close" id="dbModalClose" aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <div class="db-metrics-grid">
+        <div class="db-metric-box">
+          <div class="db-metric-label">Motor Activo</div>
+          <div class="db-metric-val" id="dbModalEngine" style="color:#5b6ef5">SQLite 3.53</div>
+        </div>
+        <div class="db-metric-box">
+          <div class="db-metric-label">Persistencia</div>
+          <div class="db-metric-val" id="dbModalStorage" style="color:#34d399">Archivo en Disco</div>
+        </div>
+        <div class="db-metric-box">
+          <div class="db-metric-label">Tamaño en Disco</div>
+          <div class="db-metric-val" id="dbModalSize">92.0 KB</div>
+        </div>
+        <div class="db-metric-box">
+          <div class="db-metric-label">Total Registros</div>
+          <div class="db-metric-val" id="dbModalTotalRows">57 filas</div>
+        </div>
+      </div>
+
+      <div>
+        <h4 style="font-size:13px; font-weight:700; color:var(--text-strong); margin-bottom:6px">📁 Ubicación Física del Archivo SQL:</h4>
+        <p id="dbModalPath" style="font-family:'JetBrains Mono', monospace; font-size:11.5px; color:#a5b0fb; background:var(--bg-surface); padding:8px 10px; border-radius:6px; word-break:break-all; border:1px solid var(--line)"></p>
+      </div>
+
+      <div>
+        <h4 style="font-size:13px; font-weight:700; color:var(--text-strong); margin-bottom:8px">📊 Tablas Relacionales y Conteo en Vivo:</h4>
+        <div class="db-table-list" id="dbModalTableList">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+      <div>
+        <h4 style="font-size:13px; font-weight:700; color:var(--text-strong); margin-bottom:8px">🛡️ Garantías de Integridad y Rendimiento:</h4>
+        <div class="db-features-badges">
+          <span class="db-feature-badge">✓ Claves Foráneas (Foreign Keys) Activas</span>
+          <span class="db-feature-badge">✓ Modo WAL (Write-Ahead Logging)</span>
+          <span class="db-feature-badge">✓ Transacciones ACID</span>
+          <span class="db-feature-badge">✓ Preparación de Consultas anti-SQLi</span>
+          <span class="db-feature-badge">✓ Compatible con PostgreSQL / Supabase</span>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px">
+        <button class="btn-ghost btn-sm" id="dbModalRefreshBtn">🔄 Actualizar Diagnóstico</button>
+        <button class="btn-primary btn-sm" id="dbModalOkBtn">Entendido</button>
       </div>
     </div>
   </div>

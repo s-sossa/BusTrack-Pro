@@ -21,16 +21,32 @@ apiRouter.use('/auth', authRouter);
 // Note: Does NOT expose stack traces, environment secrets, or internal paths
 apiRouter.get('/health', (req, res) => {
   const uptime = process.uptime();
+  const dbStatus = typeof db.getDbStatus === 'function' ? db.getDbStatus() : null;
   res.json({
     status: 'healthy',
     uptimeSeconds: Math.floor(uptime),
     timestamp: new Date().toISOString(),
     activeConnections: telemetryEngine.wsClients.size,
     trackedBuses: db.getAllBuses().length,
+    database: dbStatus ? {
+      engine: dbStatus.engine,
+      dialect: dbStatus.dialect,
+      connected: dbStatus.connected,
+      storage: dbStatus.storage,
+      totalRows: dbStatus.totalRows,
+    } : { engine: 'in-memory', connected: true },
     version: '1.0.0',
     // NOTE: 'environment' is intentionally omitted from the public health endpoint
     // to avoid leaking deployment context to potential attackers.
   });
+});
+
+apiRouter.get('/database/status', (req, res) => {
+  if (typeof db.getDbStatus === 'function') {
+    res.json(db.getDbStatus());
+  } else {
+    res.json({ status: 'connected', engine: 'in-memory' });
+  }
 });
 
 // --- 2. ROUTES ---

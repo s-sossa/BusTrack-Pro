@@ -19,7 +19,7 @@ export const generalLimiter = rateLimit({
     status: 429,
     detail: 'You have exceeded the request limit. Please try again later.',
   },
-  skip: (req) => req.path === '/health', // health checks are exempt
+  skip: (req) => req.path === '/health' || req.path === '/database/status', // health and DB status checks are exempt
 });
 
 /** Stricter limit for write operations: 20 requests per 15 minutes per IP */

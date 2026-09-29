@@ -12,7 +12,7 @@ export const config = {
   telemetryIntervalMs: parseInt(process.env.TELEMETRY_INTERVAL_MS || '3000', 10),
   activityIntervalMs: parseInt(process.env.ACTIVITY_INTERVAL_MS || '9000', 10),
   databaseUrl: process.env.DATABASE_URL || process.env.POSTGRES_URL || '',
-  dbStorage: process.env.DB_STORAGE || 'memory',
-  dbFile: process.env.DB_FILE || './data/bustrack.json',
+  dbStorage: process.env.DB_STORAGE || 'sqlite',
+  dbFile: process.env.DB_FILE || './data/bustrack.sqlite',
 };
 

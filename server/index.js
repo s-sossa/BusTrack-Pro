@@ -200,17 +200,21 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 const isMain = process.argv[1] && path.resolve(fileURLToPath(import.meta.url)) === path.resolve(process.argv[1]);
 
 import { initPostgresDatabase } from './database/initDb.js';
+import { db } from './database/db.js';
 
 if (isMain) {
   server.listen(config.port, async () => {
     if (config.databaseUrl) {
       await initPostgresDatabase(config.databaseUrl);
-    } else {
-      console.log('  🗄️ Database:   In-Memory Engine (Set DATABASE_URL to connect PostgreSQL/Supabase)');
     }
+    const dbStatus = typeof db.getDbStatus === 'function' ? db.getDbStatus() : null;
     telemetryEngine.start();
     console.log('============================================================');
     console.log(`  🚍 BusTrack Pro Backend & Telemetry Server Online`);
+    console.log(`  🗄️ Database:   ${dbStatus ? `${dbStatus.engine} (${dbStatus.storage}: ${dbStatus.filePath || 'memory'})` : 'Active'}`);
+    if (dbStatus && dbStatus.totalRows) {
+      console.log(`  📊 DB Records: ${dbStatus.totalRows} filas relacionales cargadas`);
+    }
     console.log(`  🔒 Security:   Helmet + Rate Limiting + Input Sanitization`);
     console.log(`  🔗 REST API:   http://localhost:${config.port}/api/v1/health`);
     console.log(`  ⚡ WebSocket:  ws://localhost:${config.port}/ws/telemetry`);
