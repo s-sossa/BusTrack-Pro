@@ -2741,6 +2741,16 @@ function init() {
     if (savedUser) currentUser = JSON.parse(savedUser);
     const guestFlag = sessionStorage.getItem('bustrack_guest');
     if (guestFlag === 'true') isGuestSession = true;
+    const savedToken = localStorage.getItem('bustrack_auth_token');
+    if (savedToken) {
+      api.getMe(savedToken).then(res => {
+        if (res && res.user) {
+          currentUser = res.user;
+          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+          updateAuthUserUI();
+        }
+      }).catch(() => {});
+    }
   } catch (_) {}
 
   const authLandingScreen = $('authLandingScreen');

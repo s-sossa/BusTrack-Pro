@@ -201,7 +201,7 @@ const isMain = process.argv[1] && path.resolve(fileURLToPath(import.meta.url)) =
 
 import { initPostgresDatabase } from './database/initDb.js';
 import { db } from './database/db.js';
-import { supabase } from './supabase.js';
+import { supabase, isSupabaseConfigured } from './supabase.js';
 
 if (isMain) {
   server.listen(config.port, async () => {
@@ -225,15 +225,24 @@ if (isMain) {
     console.log('============================================================');
 
     // Probando conexión a Supabase en el backend
-    try {
-      const { data, error } = await supabase.from('buses').select('*');
-      if (error) {
-        console.error('Error conectando a Supabase ❌:', error.message);
-      } else {
-        console.log('¡Conexión exitosa a Supabase! ✅ Datos de los buses:', data);
+    if (!isSupabaseConfigured) {
+      console.log('⚠️ Supabase no configurado: SUPABASE_URL y SUPABASE_ANON_KEY en el archivo .env están vacíos.');
+      console.log('👉 Agrega tus credenciales en el archivo .env para conectar con tu proyecto Supabase real.');
+    } else {
+      try {
+        const { data, error } = await supabase.from('buses').select('*');
+        if (error) {
+          console.error('Error conectando a Supabase ❌:', error.message);
+        } else {
+          console.log('¡Conexión exitosa a Supabase! ✅ Datos de los buses:', data);
+        }
+      } catch (err) {
+        if (err.message && err.message.includes('fetch failed')) {
+          console.error('Error conectando a Supabase ❌: No se pudo resolver la URL del proyecto. Verifica la URL en tu .env.');
+        } else {
+          console.error('Error conectando a Supabase ❌:', err.message);
+        }
       }
-    } catch (err) {
-      console.error('Error conectando a Supabase ❌:', err.message);
     }
   });
 }

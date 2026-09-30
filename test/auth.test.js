@@ -113,3 +113,60 @@ test('Auth — POST /auth/apple authenticates Apple OAuth', async () => {
   assert.strictEqual(data.user.provider, 'apple');
   assert.ok(data.token);
 });
+
+test('Auth — POST /auth/register fails on duplicate email', async () => {
+  const dupEmail = `dup_${Date.now()}@bustrack.com`;
+  await fetch(`${baseUrl}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'User 1', email: dupEmail, password: 'Password123!', consentTerms: true }),
+  });
+
+  const res = await fetch(`${baseUrl}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'User 2', email: dupEmail, password: 'Password123!', consentTerms: true }),
+  });
+
+  assert.strictEqual(res.status, 400);
+  const data = await res.json();
+  assert.ok(data.detail.includes('Ya existe una cuenta'));
+});
+
+test('Auth — POST /auth/login fails with wrong password', async () => {
+  const testEmail = `wrongpass_${Date.now()}@bustrack.com`;
+  await fetch(`${baseUrl}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'Wrong Pass User', email: testEmail, password: 'CorrectPassword123', consentTerms: true }),
+  });
+
+  const res = await fetch(`${baseUrl}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: testEmail, password: 'WrongPassword123' }),
+  });
+
+  assert.strictEqual(res.status, 401);
+  const data = await res.json();
+  assert.ok(data.detail.includes('incorrectos'));
+});
+
+test('Auth — GET /auth/me returns profile for valid JWT token', async () => {
+  const meEmail = `me_${Date.now()}@bustrack.com`;
+  const regRes = await fetch(`${baseUrl}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'User Profile Me', email: meEmail, password: 'MyPassword123!', consentTerms: true }),
+  });
+  const regData = await regRes.json();
+
+  const meRes = await fetch(`${baseUrl}/auth/me`, {
+    headers: { 'Authorization': `Bearer ${regData.token}` },
+  });
+
+  assert.strictEqual(meRes.status, 200);
+  const meData = await meRes.json();
+  assert.strictEqual(meData.user.email, meEmail);
+});
+
