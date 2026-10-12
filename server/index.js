@@ -31,15 +31,54 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"], // needed for inline app.js scripts
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-      imgSrc: ["'self'", 'data:'],
-      connectSrc: ["'self'", 'ws:', 'wss:'], // WebSocket connections
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        'https://unpkg.com',
+        'https://cdn.jsdelivr.net',
+        'https://cdnjs.cloudflare.com',
+      ],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        'https://fonts.googleapis.com',
+        'https://unpkg.com',
+        'https://cdn.jsdelivr.net',
+        'https://cdnjs.cloudflare.com',
+      ],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
+      imgSrc: [
+        "'self'",
+        'data:',
+        'blob:',
+        'https://*.tile.openstreetmap.org',
+        'https://tile.openstreetmap.org',
+        'https://server.arcgisonline.com',
+        'https://services.arcgisonline.com',
+        'https://*.arcgisonline.com',
+        'https://*.basemaps.cartocdn.com',
+        'https://basemaps.cartocdn.com',
+        'https://api.dicebear.com',
+        'https://unpkg.com',
+        'https://cdnjs.cloudflare.com',
+      ],
+      connectSrc: [
+        "'self'",
+        'ws:',
+        'wss:',
+        'https://*.supabase.co',
+        'https://*.tile.openstreetmap.org',
+        'https://tile.openstreetmap.org',
+        'https://server.arcgisonline.com',
+        'https://services.arcgisonline.com',
+        'https://*.arcgisonline.com',
+        'https://*.basemaps.cartocdn.com',
+        'https://basemaps.cartocdn.com',
+      ],
       frameAncestors: ["'none'"],
     },
   },
-  crossOriginEmbedderPolicy: false, // allow external fonts
+  crossOriginEmbedderPolicy: false, // allow external fonts and tiles
   hsts: isProd
     ? { maxAge: 31536000, includeSubDomains: true, preload: true }
     : false,
@@ -105,6 +144,8 @@ app.get('/thanks', (_req, res) => {
 });
 
 // ─── 9. Static Client Serving ─────────────────────────────────────────────────
+app.use('/vendor/leaflet', express.static(path.join(rootDir, 'node_modules', 'leaflet', 'dist')));
+
 app.use(express.static(rootDir, {
   index: 'index.html',
   // Cache static assets aggressively

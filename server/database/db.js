@@ -32,23 +32,67 @@ export const SEED_DRIVERS = [
 ];
 
 export const SEED_STOPS = [
-  { id: 'stop-central', name: 'Terminal Central',  subtext: 'Andén Principal', isPrimary: 0, lat: 9.9325, lon: -84.0815, pos_x: 200, pos_y: 150 },
-  { id: 'stop-parque', name: 'Parque Central',    subtext: 'Parada Sur', isPrimary: 0, lat: 9.9333, lon: -84.0792, pos_x: 400, pos_y: 150 },
-  { id: 'stop-hospital', name: 'Hospital San Juan', subtext: 'Pabellón Urgencias', isPrimary: 0, lat: 9.9348, lon: -84.0864, pos_x: 600, pos_y: 150 },
-  { id: 'stop-mercado', name: 'Mercado Norte',     subtext: 'Avenida 3', isPrimary: 0, lat: 9.9372, lon: -84.0789, pos_x: 200, pos_y: 300 },
-  { id: 'stop-universidad', name: 'Universidad',       subtext: 'Circunvalación', isPrimary: 0, lat: 9.9365, lon: -84.0512, pos_x: 400, pos_y: 300 },
-  { id: 'stop-industrial', name: 'Zona Industrial',   subtext: 'Complejo Logístico', isPrimary: 0, lat: 9.9412, lon: -84.0389, pos_x: 600, pos_y: 300 },
-  { id: 'stop-estadio', name: 'Estadio',           subtext: 'Acceso Este', isPrimary: 0, lat: 9.9355, lon: -84.1042, pos_x: 200, pos_y: 225 },
-  { id: 'stop-aeropuerto', name: 'Aeropuerto',        subtext: 'Terminal Internacional', isPrimary: 0, lat: 10.0004, lon: -84.2141, pos_x: 600, pos_y: 225 },
-  { id: 'stop-escalante', name: 'Barrio Escalante',  subtext: 'Calle 33', isPrimary: 0, lat: 9.9358, lon: -84.0625, pos_x: 100, pos_y: 225 },
-  { id: 'stop-civico', name: 'Centro Cívico',     subtext: 'Plaza de las Artes', isPrimary: 0, lat: 9.9315, lon: -84.0735, pos_x: 700, pos_y: 225 },
-  // Fidélitas Pilot Stops
-  { id: 'stop-fidelitas', name: 'Entrada Principal U Fidélitas', subtext: 'Santa Marta de Montes de Oca — Frente al Campus', isPrimary: 1, lat: 9.9392, lon: -84.0321, pos_x: 400, pos_y: 225 },
-  { id: 'stop-vargas-araya', name: 'Parada Barrio Vargas Araya', subtext: 'Paso universitario y residencial contiguo a Lourdes', isPrimary: 0, lat: 9.9374, lon: -84.0382, pos_x: 350, pos_y: 225 },
-  { id: 'stop-lourdes', name: 'Parada Súper Lourdes / Colegio Calasanz', subtext: 'Salida de Lourdes hacia San Pedro centro', isPrimary: 0, lat: 9.9362, lon: -84.0441, pos_x: 300, pos_y: 225 },
-  { id: 'stop-san-pedro', name: 'Parada Muñoz & Nanne / Plaza del Sol', subtext: 'San Pedro Centro — Comercio y transbordos', isPrimary: 0, lat: 9.9338, lon: -84.0535, pos_x: 250, pos_y: 225 },
-  { id: 'stop-mall-sp', name: 'Parada Mall San Pedro / Hispanidad', subtext: 'Rotonda de la Bandera / Los Yoses', isPrimary: 0, lat: 9.9341, lon: -84.0620, pos_x: 200, pos_y: 225 },
-  { id: 'stop-sanjose', name: 'Terminal San José — Cuesta de Moras', subtext: 'Avenida Central / Cuesta de Moras', isPrimary: 0, lat: 9.9332, lon: -84.0768, pos_x: 150, pos_y: 225 },
+  // --- SAN JOSÉ (GAM) ---
+  { id: 'stop-central', name: 'Terminal Central San José', subtext: 'San José Centro — Av. Central y Calle 4', province: 'San José', isPrimary: 0, lat: 9.9325, lon: -84.0815, pos_x: 200, pos_y: 150 },
+  { id: 'stop-coca-cola', name: 'Terminal Coca Cola', subtext: 'Paso de la Vaca — Conexiones interurbanas', province: 'San José', isPrimary: 0, lat: 9.9366, lon: -84.0845, pos_x: 220, pos_y: 155 },
+  { id: 'stop-7-10', name: 'Terminal 7-10 Interurbana', subtext: 'Paso Ancho / San José — Conexión Guanacaste y Pacífico', province: 'San José', isPrimary: 0, lat: 9.9398, lon: -84.0827, pos_x: 240, pos_y: 160 },
+  { id: 'stop-parque', name: 'Parque Central San José', subtext: 'Catedral Metropolitana', province: 'San José', isPrimary: 0, lat: 9.9333, lon: -84.0792, pos_x: 400, pos_y: 150 },
+  { id: 'stop-hospital', name: 'Hospital San Juan de Dios', subtext: 'Paseo Colón — Urgencias', province: 'San José', isPrimary: 0, lat: 9.9348, lon: -84.0864, pos_x: 600, pos_y: 150 },
+  { id: 'stop-sabana', name: 'La Sabana — Estadio Nacional', subtext: 'Paseo Colón / Mata Redonda', province: 'San José', isPrimary: 0, lat: 9.9355, lon: -84.1042, pos_x: 200, pos_y: 225 },
+  { id: 'stop-escalante', name: 'Barrio Escalante', subtext: 'Calle 33 — Circunvalación Este', province: 'San José', isPrimary: 0, lat: 9.9358, lon: -84.0625, pos_x: 100, pos_y: 225 },
+  { id: 'stop-ucr', name: 'Universidad de Costa Rica (UCR)', subtext: 'San Pedro de Montes de Oca', province: 'San José', isPrimary: 0, lat: 9.9365, lon: -84.0512, pos_x: 400, pos_y: 300 },
+  { id: 'stop-fidelitas', name: 'Entrada Principal U Fidélitas', subtext: 'Santa Marta de Montes de Oca — Frente al Campus', province: 'San José', isPrimary: 1, lat: 9.9392, lon: -84.0321, pos_x: 400, pos_y: 225 },
+  { id: 'stop-vargas-araya', name: 'Barrio Vargas Araya', subtext: 'Montes de Oca', province: 'San José', isPrimary: 0, lat: 9.9374, lon: -84.0382, pos_x: 350, pos_y: 225 },
+  { id: 'stop-lourdes', name: 'Parada Súper Lourdes / Calasanz', subtext: 'Lourdes hacia San Pedro', province: 'San José', isPrimary: 0, lat: 9.9362, lon: -84.0441, pos_x: 300, pos_y: 225 },
+  { id: 'stop-san-pedro', name: 'Muñoz & Nanne / San Pedro', subtext: 'San Pedro Centro — Comercio y transbordos', province: 'San José', isPrimary: 0, lat: 9.9338, lon: -84.0535, pos_x: 250, pos_y: 225 },
+  { id: 'stop-mall-sp', name: 'Mall San Pedro / Fuente de la Hispanidad', subtext: 'Rotonda de la Bandera / Los Yoses', province: 'San José', isPrimary: 0, lat: 9.9341, lon: -84.0620, pos_x: 200, pos_y: 225 },
+  { id: 'stop-sanjose', name: 'Terminal San José — Cuesta de Moras', subtext: 'Avenida Central / Cuesta de Moras', province: 'San José', isPrimary: 0, lat: 9.9332, lon: -84.0768, pos_x: 150, pos_y: 225 },
+  { id: 'stop-escazu', name: 'Escazú Centro / Multiplaza', subtext: 'Autopista Próspero Fernández', province: 'San José', isPrimary: 0, lat: 9.9458, lon: -84.1492, pos_x: 120, pos_y: 200 },
+  { id: 'stop-santa-ana', name: 'Santa Ana Centro', subtext: 'Parque de Santa Ana / Cruz Roja', province: 'San José', isPrimary: 0, lat: 9.9328, lon: -84.1824, pos_x: 100, pos_y: 210 },
+  { id: 'stop-desamparados', name: 'Desamparados Parque Central', subtext: 'Parque Central de Desamparados', province: 'San José', isPrimary: 0, lat: 9.8974, lon: -84.0664, pos_x: 300, pos_y: 350 },
+
+  // --- ALAJUELA (GAM & OCCIDENTE) ---
+  { id: 'stop-alajuela-fecosa', name: 'Terminal Fecosa Alajuela', subtext: 'Terminal Central de Buses de Alajuela', province: 'Alajuela', isPrimary: 0, lat: 10.0152, lon: -84.2145, pos_x: 550, pos_y: 180 },
+  { id: 'stop-aeropuerto-sjo', name: 'Aeropuerto Juan Santamaría (SJO)', subtext: 'Terminal Internacional de Pasajeros', province: 'Alajuela', isPrimary: 0, lat: 10.0004, lon: -84.2141, pos_x: 600, pos_y: 225 },
+  { id: 'stop-city-mall', name: 'City Mall Alajuela', subtext: 'Frente a Radial Alajuela', province: 'Alajuela', isPrimary: 0, lat: 10.0094, lon: -84.2102, pos_x: 570, pos_y: 200 },
+  { id: 'stop-coyol', name: 'Zona Franca El Coyol', subtext: 'Parque Logístico y Médico Coyol', province: 'Alajuela', isPrimary: 0, lat: 9.9965, lon: -84.2698, pos_x: 620, pos_y: 250 },
+  { id: 'stop-san-ramon', name: 'Terminal San Ramón', subtext: 'Parque Central de San Ramón', province: 'Alajuela', isPrimary: 0, lat: 10.0872, lon: -84.4705, pos_x: 680, pos_y: 280 },
+  { id: 'stop-ciudad-quesada', name: 'Terminal Ciudad Quesada (San Carlos)', subtext: 'Mercado Municipal de San Carlos', province: 'Alajuela', isPrimary: 0, lat: 10.3245, lon: -84.4298, pos_x: 700, pos_y: 320 },
+  { id: 'stop-la-fortuna', name: 'La Fortuna / Volcán Arenal', subtext: 'Parque Central de La Fortuna', province: 'Alajuela', isPrimary: 0, lat: 10.4716, lon: -84.6452, pos_x: 720, pos_y: 340 },
+
+  // --- HEREDIA (GAM) ---
+  { id: 'stop-heredia-central', name: 'Terminal Central Heredia', subtext: 'Parada de Buses 400 — Calle Central', province: 'Heredia', isPrimary: 0, lat: 9.9984, lon: -84.1165, pos_x: 350, pos_y: 120 },
+  { id: 'stop-una', name: 'Universidad Nacional (UNA)', subtext: 'Campus Omar Dengo — Heredia', province: 'Heredia', isPrimary: 0, lat: 9.9998, lon: -84.1112, pos_x: 370, pos_y: 115 },
+  { id: 'stop-oxigeno', name: 'Mall Oxígeno Human Playground', subtext: 'San Francisco de Heredia', province: 'Heredia', isPrimary: 0, lat: 9.9882, lon: -84.1332, pos_x: 340, pos_y: 130 },
+  { id: 'stop-belen', name: 'San Antonio de Belén', subtext: 'Estación Ferrocarril / Centro Belén', province: 'Heredia', isPrimary: 0, lat: 9.9812, lon: -84.1878, pos_x: 320, pos_y: 140 },
+
+  // --- CARTAGO (GAM & ORIENTE) ---
+  { id: 'stop-cartago-central', name: 'Terminal Lumaca Cartago', subtext: 'Costado Norte de las Ruinas de Cartago', province: 'Cartago', isPrimary: 0, lat: 9.8645, lon: -83.9212, pos_x: 450, pos_y: 350 },
+  { id: 'stop-basilica', name: 'Basílica Nuestra Señora de Los Ángeles', subtext: 'Plaza Santuario Nacional', province: 'Cartago', isPrimary: 0, lat: 9.8638, lon: -83.9131, pos_x: 470, pos_y: 360 },
+  { id: 'stop-tec', name: 'Tecnológico de Costa Rica (TEC)', subtext: 'Campus Central Cartago', province: 'Cartago', isPrimary: 0, lat: 9.8552, lon: -83.9095, pos_x: 480, pos_y: 370 },
+  { id: 'stop-tres-rios', name: 'Tres Ríos Parque Central (La Unión)', subtext: 'Conexión Florencio del Castillo', province: 'Cartago', isPrimary: 0, lat: 9.9075, lon: -83.9878, pos_x: 420, pos_y: 320 },
+  { id: 'stop-turrialba', name: 'Terminal Transtusa Turrialba', subtext: 'Parque Central de Turrialba', province: 'Cartago', isPrimary: 0, lat: 9.9048, lon: -83.6835, pos_x: 520, pos_y: 380 },
+
+  // --- PUNTARENAS (PACÍFICO CENTRAL Y SUR) ---
+  { id: 'stop-puntarenas-ferry', name: 'Terminal Ferry Puntarenas (Paquera)', subtext: 'Punta de Puntarenas — Embarcadero', province: 'Puntarenas', isPrimary: 0, lat: 9.9774, lon: -84.8488, pos_x: 150, pos_y: 400 },
+  { id: 'stop-puntarenas-centro', name: 'Terminal Central Puntarenas', subtext: 'Paseo de los Turistas / Estación Empresarios Unidos', province: 'Puntarenas', isPrimary: 0, lat: 9.9765, lon: -84.8295, pos_x: 160, pos_y: 395 },
+  { id: 'stop-caldera', name: 'Puerto Caldera', subtext: 'Ruta 27 / Entrada Portuaria', province: 'Puntarenas', isPrimary: 0, lat: 9.9185, lon: -84.7175, pos_x: 180, pos_y: 380 },
+  { id: 'stop-jaco', name: 'Terminal Jacó Centro', subtext: 'Avenida Pastor Díaz — Playa Jacó', province: 'Puntarenas', isPrimary: 0, lat: 9.6152, lon: -84.6295, pos_x: 200, pos_y: 420 },
+  { id: 'stop-quepos', name: 'Terminal Quepos / Manuel Antonio', subtext: 'Parque Nacional Manuel Antonio', province: 'Puntarenas', isPrimary: 0, lat: 9.4312, lon: -84.1615, pos_x: 230, pos_y: 450 },
+  { id: 'stop-perez-zeledon', name: 'Terminal San Isidro de El General', subtext: 'Pérez Zeledón — Valle de El General', province: 'Puntarenas', isPrimary: 0, lat: 9.3735, lon: -83.7042, pos_x: 350, pos_y: 480 },
+
+  // --- GUANACASTE (PACÍFICO NORTE) ---
+  { id: 'stop-liberia-central', name: 'Terminal Municipal de Liberia', subtext: 'Terminal Pulmitan de Liberia', province: 'Guanacaste', isPrimary: 0, lat: 10.6315, lon: -85.4382, pos_x: 100, pos_y: 80 },
+  { id: 'stop-aeropuerto-lir', name: 'Aeropuerto Guanacaste (LIR)', subtext: 'Daniel Oduber Quirós', province: 'Guanacaste', isPrimary: 0, lat: 10.5935, lon: -85.5442, pos_x: 90, pos_y: 75 },
+  { id: 'stop-santa-cruz', name: 'Terminal Santa Cruz', subtext: 'Ciudad Folclórica — Plaza Los Mangos', province: 'Guanacaste', isPrimary: 0, lat: 10.2625, lon: -85.5862, pos_x: 110, pos_y: 110 },
+  { id: 'stop-nicoya', name: 'Terminal Nicoya Colonial', subtext: 'Parque Recaredo Briceño', province: 'Guanacaste', isPrimary: 0, lat: 10.1448, lon: -85.4525, pos_x: 120, pos_y: 130 },
+  { id: 'stop-tamarindo', name: 'Parada Playa Tamarindo', subtext: 'Rotonda de Tamarindo', province: 'Guanacaste', isPrimary: 0, lat: 10.2995, lon: -85.8412, pos_x: 70, pos_y: 100 },
+
+  // --- LIMÓN (CARIBE) ---
+  { id: 'stop-limon-centro', name: 'Terminal Caribeños Limón Centro', subtext: 'Parque Vargas / Puerto Limón', province: 'Limón', isPrimary: 0, lat: 9.9935, lon: -83.0332, pos_x: 750, pos_y: 220 },
+  { id: 'stop-moin', name: 'Terminal Puerto Moín (APM Terminals)', subtext: 'Entrada Complejo Portuario', province: 'Limón', isPrimary: 0, lat: 10.0012, lon: -83.0785, pos_x: 740, pos_y: 210 },
+  { id: 'stop-guapiles', name: 'Terminal Pococí / Guápiles', subtext: 'Ruta 32 / Centro de Guápiles', province: 'Limón', isPrimary: 0, lat: 10.2152, lon: -83.7845, pos_x: 650, pos_y: 160 },
+  { id: 'stop-puerto-viejo', name: 'Parada Puerto Viejo de Talamanca', subtext: 'Caribe Sur / Playa Salsa Brava', province: 'Limón', isPrimary: 0, lat: 9.6565, lon: -82.7545, pos_x: 790, pos_y: 280 },
 ];
 
 export const SEED_ALERTS = [
@@ -831,6 +875,25 @@ export class Database {
       avatarUrl
     );
 
+    return this.findUserById(id);
+  }
+
+  updateUser(id, fields) {
+    if (!id) return null;
+    const allowed = ['name', 'avatarUrl', 'provider', 'role'];
+    const updates = [];
+    const values = [];
+    for (const key of allowed) {
+      if (fields[key] !== undefined) {
+        // SQLite columna: avatar_url, todo lo demás igual
+        const col = key === 'avatarUrl' ? 'avatar_url' : key;
+        updates.push(`${col} = ?`);
+        values.push(fields[key]);
+      }
+    }
+    if (updates.length === 0) return this.findUserById(id);
+    values.push(id);
+    this.db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
     return this.findUserById(id);
   }
 

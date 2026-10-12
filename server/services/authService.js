@@ -36,65 +36,131 @@ export class AuthService {
     }
 
     const cleanEmail = email.toLowerCase().trim();
+    const cleanName = name.trim();
 
-    // 1. Verificar si ya existe en la base de datos local primero
-    const existingUser = db.findUserByEmail(cleanEmail);
-    if (existingUser) {
-      throw new Error('Ya existe una cuenta registrada con este correo electrónico.');
-    }
-
-    // 2. Si Supabase está configurado, registrar en Supabase Auth y tabla users de Supabase (si existe)
+    // 1. Si Supabase está configurado, intentar registrar allí primero (es la fuente de verdad)
+    let supabaseUserId = null;
     if (isSupabaseConfigured) {
       try {
         const { data: supaData, error: supaError } = await supabase.auth.signUp({
           email: cleanEmail,
           password: password,
           options: {
-            data: { name: name.trim() },
+            data: { name: cleanName },
           },
         });
 
-        if (supaError && !supaError.message.includes('User already registered')) {
-          console.warn('[Supabase Auth] Registro aviso:', supaError.message);
+        if (supaError) {
+          // Si ya existe el usuario en Supabase Auth, tratamos de hacer login para verificar
+          if (supaError.message.includes('User already registered') || supaError.message.includes('already registered')) {
+            throw new Error('Ya existe una cuenta registrada con este correo electrónico.');
+          }
+          console.warn('[Supabase Auth] Aviso al registrar:', supaError.message);
+        } else if (supaData?.user) {
+          supabaseUserId = supaData.user.id;
+
+          // Guardar en la tabla 'users' de Supabase con el id del Auth
+          try {
+            const { error: upsertError } = await supabase.from('users').upsert({
+              id: supabaseUserId,
+              email: cleanEmail,
+              full_name: cleanName,
+              role: 'admin',
+              auth_provider: 'email',
+              avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`,
+              created_at: new Date().toISOString(),
+            }, { onConflict: 'email' });
+
+            if (upsertError) {
+              console.warn('[Supabase DB] Error al guardar usuario en tabla users:', upsertError.message);
+            } else {
+              console.log('[Supabase DB] Usuario guardado exitosamente en tabla users:', cleanEmail);
+            }
+          } catch (dbErr) {
+            console.warn('[Supabase DB] Tabla users no encontrada, continuando con BD local:', dbErr.message);
+          }
         }
       } catch (err) {
-        console.warn('[Supabase Auth] Error de conexión:', err.message);
-      }
-
-      try {
-        await supabase.from('users').upsert({
-          email: cleanEmail,
-          full_name: name.trim(),
-          role: 'admin',
-          auth_provider: 'email',
-          avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name.trim())}`,
-        });
-      } catch (_) {
-        // Ignorar de forma segura si la tabla no existe en Supabase REST API
+        // Re-lanzar errores de "ya registrado"
+        if (err.message.includes('ya existe') || err.message.includes('registered')) {
+          throw err;
+        }
+        console.warn('[Supabase Auth] Error de conexión, usando BD local:', err.message);
       }
     }
 
-    // 3. Guardar en la base de datos local para persistencia rápida y segura
+    // 2. Verificar si ya existe en la base de datos local
+    const existingUser = db.findUserByEmail(cleanEmail);
+    if (existingUser) {
+      throw new Error('Ya existe una cuenta registrada con este correo electrónico.');
+    }
+
+    // 3. Guardar en la base de datos local para persistencia rápida
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
     const newUser = db.createUser({
+      ...(supabaseUserId ? { id: supabaseUserId } : {}),
       email: cleanEmail,
       passwordHash,
-      name: name.trim(),
+      name: cleanName,
       role: 'admin',
       provider: 'email',
-      avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name.trim())}`,
+      avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`,
     });
 
     try {
-      db.pushActivity(`Nuevo usuario registrado: ${name.trim()} (${cleanEmail})`, 'info');
+      db.pushActivity(`Nuevo usuario registrado: ${cleanName} (${cleanEmail})`, 'info');
     } catch (_) {}
 
     const token = this.generateToken(newUser);
     const { passwordHash: _, ...safeUser } = newUser;
     return { user: safeUser, token };
   }
+
+
+  /** OAuth Callback — Registra/actualiza usuario de Supabase OAuth (Google, Apple) */
+  static async loginWithOAuthCallback({ supabaseId, email, name, provider, avatarUrl }) {
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanName = (name || cleanEmail.split('@')[0]).trim();
+    const cleanProvider = provider || 'oauth';
+    const cleanAvatar = avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`;
+
+    // Buscar si ya existe en la BD local (por email o por id de Supabase)
+    let existingUser = db.findUserByEmail(cleanEmail) || db.findUserById(supabaseId);
+
+    if (existingUser) {
+      // Actualizar datos del perfil (nombre/avatar pueden cambiar en el proveedor)
+      const updated = db.updateUser(existingUser.id, {
+        name: cleanName,
+        avatarUrl: cleanAvatar,
+        provider: cleanProvider,
+      });
+      const token = this.generateToken(updated || existingUser);
+      const { passwordHash: _, ...safeUser } = updated || existingUser;
+      return { user: safeUser, token };
+    }
+
+    // Crear usuario nuevo en la BD local con el UUID de Supabase
+    const newUser = db.createUser({
+      id: supabaseId,
+      email: cleanEmail,
+      name: cleanName,
+      role: 'admin',
+      provider: cleanProvider,
+      avatarUrl: cleanAvatar,
+      passwordHash: null, // Los usuarios OAuth no tienen contraseña local
+    });
+
+    try {
+      db.pushActivity(`Nuevo usuario OAuth (${cleanProvider}): ${cleanName} (${cleanEmail})`, 'info');
+    } catch (_) {}
+
+    const token = this.generateToken(newUser);
+    const { passwordHash: _, ...safeUser } = newUser;
+    return { user: safeUser, token };
+  }
+
 
   /** Login user with Email & Password */
   static async loginWithEmail({ email, password }) {

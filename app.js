@@ -229,7 +229,6 @@ function handleServerEvent(msg) {
       if (state.view === 'dashboard') renderBusList();
       if (state.view === 'map') renderMapBusList();
       if (state.view === 'fleet') renderFleet();
-      if (state.view === 'passenger') renderPassengerArrivals();
     }
   } else if (msg.event === 'bus_status_changed') {
     const updated = msg.data;
@@ -256,63 +255,14 @@ function handleServerEvent(msg) {
   } else if (msg.event === 'alerts_read_all') {
     alerts.forEach(a => { a.read = true; });
     renderAlerts();
-  } else if (msg.event === 'passenger_eta_update') {
-    if (state.view === 'passenger') {
-      const updates = msg.data;
-      updates.forEach(u => {
-        if (u.stopId === currentPassengerStop) {
-          const card = $(`.arrival-card[data-bus="${u.busId}"]`);
-          if (card.length) {
-            const countdownEl = card.find('.arrival-countdown-num');
-            if (countdownEl) {
-              countdownEl.textContent = u.etaMinutes + ' ' + (u.etaMinutes === 1 ? 'min' : 'min');
-              if (u.etaMinutes <= 5) countdownEl.classList.add('soon');
-              else countdownEl.classList.remove('soon');
-            }
-            const distEl = card.find('.arrival-distance');
-            if (distEl) distEl.textContent = 'a ' + u.distanceFormatted + ' de distancia';
-          }
-        }
-      });
-      // Check proximity alarms on every update
-      if (proximityAlarm) {
-        const matched = updates.find(u => u.busId === proximityAlarm.busId && u.stopId === currentPassengerStop);
-        if (matched && matched.etaMinutes <= proximityAlarm.targetMinutes) {
-          triggerProximityAlarm(matched);
-        }
-      }
-    }
   }
-}
-
-// Helper to handle the actual alarm trigger to avoid duplicate calls
-function triggerProximityAlarm(update) {
-  toast(`🚨 ¡ATENCIÓN! El bus ${update.busId} está a ${update.etaMinutes} min de tu parada. ¡Sal ahora!`, 'warn');
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('🚍 BusTrack Fidélitas', {
-      body: `El bus está a solo ${update.etaMinutes} minutos.`,
-    });
-  }
-  // Optional: automatically focus the bus on the map
-  // focusBus(update.busId);
 }
 
 function initBackendConnection() {
-  api.checkHealth().then(online => {
-    if (online) {
+  api.checkHealth().then(ok => {
+    if (ok) {
       backendConnected = true;
-      updateBackendStatusBadge('online', 'API Online (WS)');
-      // Fetch initial data
-      Promise.all([api.getBuses(), api.getAlerts()]).then(([busesData, alertsData]) => {
-        if (Array.isArray(busesData) && busesData.length) buses = busesData;
-        if (Array.isArray(alertsData) && alertsData.length) alerts = alertsData;
-        refreshCounters();
-        renderBusList();
-        renderAlerts();
-        drawMapMarkers(true);
-      }).catch(err => console.warn('Error loading initial data from API:', err));
-
-      // Connect WebSocket
+      updateBackendStatusBadge('online', 'API Online');
       try {
         wsInstance = new WebSocket(WS_BASE);
         wsInstance.onopen = () => {
@@ -366,16 +316,67 @@ const DRIVERS = [
 ];
  
 const STOPS = [
-  { name: 'Terminal Central',  x: 200, y: 150 },
-  { name: 'Parque Central',    x: 400, y: 150 },
-  { name: 'Hospital San Juan', x: 600, y: 150 },
-  { name: 'Mercado Norte',     x: 200, y: 300 },
-  { name: 'Universidad',       x: 400, y: 300 },
-  { name: 'Zona Industrial',   x: 600, y: 300 },
-  { name: 'Estadio',           x: 200, y: 225 },
-  { name: 'Aeropuerto',        x: 600, y: 225 },
-  { name: 'Barrio Escalante',  x: 100, y: 225 },
-  { name: 'Centro Cívico',     x: 700, y: 225 },
+  // --- SAN JOSÉ (GAM) ---
+  { id: 'stop-central', name: 'Terminal Central San José', province: 'San José', lat: 9.9325, lon: -84.0815, x: 200, y: 150 },
+  { id: 'stop-coca-cola', name: 'Terminal Coca Cola', province: 'San José', lat: 9.9366, lon: -84.0845, x: 220, y: 155 },
+  { id: 'stop-7-10', name: 'Terminal 7-10 Interurbana', province: 'San José', lat: 9.9398, lon: -84.0827, x: 240, y: 160 },
+  { id: 'stop-parque', name: 'Parque Central San José', province: 'San José', lat: 9.9333, lon: -84.0792, x: 400, y: 150 },
+  { id: 'stop-hospital', name: 'Hospital San Juan de Dios', province: 'San José', lat: 9.9348, lon: -84.0864, x: 600, y: 150 },
+  { id: 'stop-sabana', name: 'La Sabana — Estadio Nacional', province: 'San José', lat: 9.9355, lon: -84.1042, x: 200, y: 225 },
+  { id: 'stop-escalante', name: 'Barrio Escalante', province: 'San José', lat: 9.9358, lon: -84.0625, x: 100, y: 225 },
+  { id: 'stop-ucr', name: 'Universidad de Costa Rica (UCR)', province: 'San José', lat: 9.9365, lon: -84.0512, x: 400, y: 300 },
+  { id: 'stop-zapote', name: 'Barrio Zapote / Avenida 10', province: 'San José', lat: 9.9392, lon: -84.0321, x: 400, y: 225 },
+  { id: 'stop-vargas-araya', name: 'Barrio Vargas Araya', province: 'San José', lat: 9.9374, lon: -84.0382, x: 350, y: 225 },
+  { id: 'stop-lourdes', name: 'Parada Súper Lourdes / Calasanz', province: 'San José', lat: 9.9362, lon: -84.0441, x: 300, y: 225 },
+  { id: 'stop-san-pedro', name: 'Muñoz & Nanne / San Pedro', province: 'San José', lat: 9.9338, lon: -84.0535, x: 250, y: 225 },
+  { id: 'stop-mall-sp', name: 'Mall San Pedro / Fuente Hispanidad', province: 'San José', lat: 9.9341, lon: -84.0620, x: 200, y: 225 },
+  { id: 'stop-sanjose', name: 'Terminal San José — Cuesta de Moras', province: 'San José', lat: 9.9332, lon: -84.0768, x: 150, y: 225 },
+  { id: 'stop-escazu', name: 'Escazú Centro / Multiplaza', province: 'San José', lat: 9.9458, lon: -84.1492, x: 120, y: 200 },
+  { id: 'stop-santa-ana', name: 'Santa Ana Centro', province: 'San José', lat: 9.9328, lon: -84.1824, x: 100, y: 210 },
+  { id: 'stop-desamparados', name: 'Desamparados Parque Central', province: 'San José', lat: 9.8974, lon: -84.0664, x: 300, y: 350 },
+
+  // --- ALAJUELA (GAM & OCCIDENTE) ---
+  { id: 'stop-alajuela-fecosa', name: 'Terminal Fecosa Alajuela', province: 'Alajuela', lat: 10.0152, lon: -84.2145, x: 550, y: 180 },
+  { id: 'stop-aeropuerto-sjo', name: 'Aeropuerto Juan Santamaría (SJO)', province: 'Alajuela', lat: 10.0004, lon: -84.2141, x: 600, y: 225 },
+  { id: 'stop-city-mall', name: 'City Mall Alajuela', province: 'Alajuela', lat: 10.0094, lon: -84.2102, x: 570, y: 200 },
+  { id: 'stop-coyol', name: 'Zona Franca El Coyol', province: 'Alajuela', lat: 9.9965, lon: -84.2698, x: 620, y: 250 },
+  { id: 'stop-san-ramon', name: 'Terminal San Ramón', province: 'Alajuela', lat: 10.0872, lon: -84.4705, x: 680, y: 280 },
+  { id: 'stop-ciudad-quesada', name: 'Terminal Ciudad Quesada (San Carlos)', province: 'Alajuela', lat: 10.3245, lon: -84.4298, x: 700, y: 320 },
+  { id: 'stop-la-fortuna', name: 'La Fortuna / Volcán Arenal', province: 'Alajuela', lat: 10.4716, lon: -84.6452, x: 720, y: 340 },
+
+  // --- HEREDIA (GAM) ---
+  { id: 'stop-heredia-central', name: 'Terminal Central Heredia', province: 'Heredia', lat: 9.9984, lon: -84.1165, x: 350, y: 120 },
+  { id: 'stop-una', name: 'Universidad Nacional (UNA)', province: 'Heredia', lat: 9.9998, lon: -84.1112, x: 370, y: 115 },
+  { id: 'stop-oxigeno', name: 'Mall Oxígeno Human Playground', province: 'Heredia', lat: 9.9882, lon: -84.1332, x: 340, y: 130 },
+  { id: 'stop-belen', name: 'San Antonio de Belén', province: 'Heredia', lat: 9.9812, lon: -84.1878, x: 320, y: 140 },
+
+  // --- CARTAGO (GAM & ORIENTE) ---
+  { id: 'stop-cartago-central', name: 'Terminal Lumaca Cartago', province: 'Cartago', lat: 9.8645, lon: -83.9212, x: 450, y: 350 },
+  { id: 'stop-basilica', name: 'Basílica Nuestra Señora de Los Ángeles', province: 'Cartago', lat: 9.8638, lon: -83.9131, x: 470, y: 360 },
+  { id: 'stop-tec', name: 'Tecnológico de Costa Rica (TEC)', province: 'Cartago', lat: 9.8552, lon: -83.9095, x: 480, y: 370 },
+  { id: 'stop-tres-rios', name: 'Tres Ríos Parque Central (La Unión)', province: 'Cartago', lat: 9.9075, lon: -83.9878, x: 420, y: 320 },
+  { id: 'stop-turrialba', name: 'Terminal Transtusa Turrialba', province: 'Cartago', lat: 9.9048, lon: -83.6835, x: 520, y: 380 },
+
+  // --- PUNTARENAS (PACÍFICO CENTRAL Y SUR) ---
+  { id: 'stop-puntarenas-ferry', name: 'Terminal Ferry Puntarenas (Paquera)', province: 'Puntarenas', lat: 9.9774, lon: -84.8488, x: 150, y: 400 },
+  { id: 'stop-puntarenas-centro', name: 'Terminal Central Puntarenas', province: 'Puntarenas', lat: 9.9765, lon: -84.8295, x: 160, y: 395 },
+  { id: 'stop-caldera', name: 'Puerto Caldera', province: 'Puntarenas', lat: 9.9185, lon: -84.7175, x: 180, y: 380 },
+  { id: 'stop-jaco', name: 'Terminal Jacó Centro', province: 'Puntarenas', lat: 9.6152, lon: -84.6295, x: 200, y: 420 },
+  { id: 'stop-quepos', name: 'Terminal Quepos / Manuel Antonio', province: 'Puntarenas', lat: 9.4312, lon: -84.1615, x: 230, y: 450 },
+  { id: 'stop-perez-zeledon', name: 'Terminal San Isidro de El General', province: 'Puntarenas', lat: 9.3735, lon: -83.7042, x: 350, y: 480 },
+
+  // --- GUANACASTE (PACÍFICO NORTE) ---
+  { id: 'stop-liberia-central', name: 'Terminal Municipal de Liberia', province: 'Guanacaste', lat: 10.6315, lon: -85.4382, x: 100, y: 80 },
+  { id: 'stop-aeropuerto-lir', name: 'Aeropuerto Guanacaste (LIR)', province: 'Guanacaste', lat: 10.5935, lon: -85.5442, x: 90, y: 75 },
+  { id: 'stop-santa-cruz', name: 'Terminal Santa Cruz', province: 'Guanacaste', lat: 10.2625, lon: -85.5862, x: 110, y: 110 },
+  { id: 'stop-nicoya', name: 'Terminal Nicoya Colonial', province: 'Guanacaste', lat: 10.1448, lon: -85.4525, x: 120, y: 130 },
+  { id: 'stop-tamarindo', name: 'Parada Playa Tamarindo', province: 'Guanacaste', lat: 10.2995, lon: -85.8412, x: 70, y: 100 },
+
+  // --- LIMÓN (CARIBE) ---
+  { id: 'stop-limon-centro', name: 'Terminal Caribeños Limón Centro', province: 'Limón', lat: 9.9935, lon: -83.0332, x: 750, y: 220 },
+  { id: 'stop-moin', name: 'Terminal Puerto Moín (APM Terminals)', province: 'Limón', lat: 10.0012, lon: -83.0785, x: 740, y: 210 },
+  { id: 'stop-guapiles', name: 'Terminal Pococí / Guápiles', province: 'Limón', lat: 10.2152, lon: -83.7845, x: 650, y: 160 },
+  { id: 'stop-puerto-viejo', name: 'Parada Puerto Viejo de Talamanca', province: 'Limón', lat: 9.6565, lon: -82.7545, x: 790, y: 280 },
 ];
  
 const STATUS_LABELS = {
@@ -534,7 +535,7 @@ function applyPrefs() {
  
 const VIEW_TITLES = {
   dashboard: 'Panel Principal',
-  passenger: 'Llegadas en Vivo — U Fidélitas',
+
   map: 'Mapa en Vivo',
   fleet: 'Gestión de Flota',
   routes: 'Rutas',
@@ -560,24 +561,43 @@ function navigate(view) {
   $('breadcrumbCurrent').textContent = VIEW_TITLES[view];
   document.title = VIEW_TITLES[view] + ' — BusTrack Pro';
  
-  const switchBtn = $('passengerSwitchBtn');
-  if (switchBtn) {
-    if (view === 'passenger') {
-      switchBtn.innerHTML = '<span>🏢 Ver Panel de Flota</span>';
-      switchBtn.style.background = 'linear-gradient(135deg, var(--brand-500), var(--brand-700))';
-    } else {
-      switchBtn.innerHTML = '<span>🎓 Modo Pasajero</span>';
-      switchBtn.style.background = 'linear-gradient(135deg, #2bb885, #22a79b)';
-    }
-  }
+  
 
-  if (view === 'passenger') renderPassengerArrivals();
   if (view === 'fleet') renderFleet();
   if (view === 'routes') renderRoutes();
   if (view === 'alerts') renderAlerts();
   if (view === 'drivers') renderDrivers();
-  if (view === 'map') { renderMapBusList(); drawMapMarkers(true); }
-  if (view === 'dashboard') requestAnimationFrame(() => { drawMainChart(); drawSparklines(); });
+  if (view === 'map') {
+    if (!realLeafletMap) {
+      requestAnimationFrame(() => {
+        initRealLeafletMap();
+        if (localStorage.getItem('bustrack_geolocate') === 'true') {
+          requestUserLocation(false);
+        }
+      });
+    } else {
+      setTimeout(() => {
+        if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false });
+      }, 80);
+      setTimeout(() => {
+        if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false });
+      }, 250);
+    }
+    renderMapBusList();
+    drawMapMarkers(true);
+  }
+  if (view === 'dashboard') {
+    requestAnimationFrame(() => { 
+      drawMainChart(); 
+      drawSparklines(); 
+      if (!dashboardLeafletMap) {
+        initDashboardLeafletMap();
+      } else {
+        setTimeout(() => { if (dashboardLeafletMap) dashboardLeafletMap.invalidateSize({ animate: false }); }, 80);
+        setTimeout(() => { if (dashboardLeafletMap) dashboardLeafletMap.invalidateSize({ animate: false }); }, 250);
+      }
+    });
+  }
   if (view === 'reports') requestAnimationFrame(drawReportCharts);
  
   closeSidebar();
@@ -612,13 +632,33 @@ function closeSidebar() {
   document.body.style.overflow = '';
 }
  
-$('sidebarToggle')?.addEventListener('click', function () {
-  if (!sidebar) return;
-  const collapsed = sidebar.classList.toggle('collapsed');
-  this.setAttribute('aria-expanded', String(!collapsed));
-  // El ancho del contenido cambió: los canvas necesitan redibujarse.
-  setTimeout(redrawAll, 220);
-});
+  function applySidebarCollapsed(collapsed) {
+    if (!sidebar) return;
+    sidebar.classList.toggle('collapsed', collapsed);
+    const toggleBtn = $('sidebarToggle');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', String(!collapsed));
+      toggleBtn.setAttribute('title', collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral');
+    }
+    setTimeout(redrawAll, 220);
+  }
+
+  // Restaurar estado de la barra lateral desde localStorage
+  try {
+    const savedCollapsed = localStorage.getItem('bustrack_sidebar_collapsed');
+    if (savedCollapsed === 'true' && !isMobile()) {
+      applySidebarCollapsed(true);
+    }
+  } catch (_) {}
+
+  $('sidebarToggle')?.addEventListener('click', function () {
+    if (!sidebar) return;
+    const isNowCollapsed = !sidebar.classList.contains('collapsed');
+    applySidebarCollapsed(isNowCollapsed);
+    try {
+      localStorage.setItem('bustrack_sidebar_collapsed', String(isNowCollapsed));
+    } catch (_) {}
+  });
 $('mobileMenuBtn')?.addEventListener('click', openSidebar);
 $('sidebarOverlay')?.addEventListener('click', closeSidebar);
  
@@ -906,315 +946,433 @@ $('exportCsvBtn').addEventListener('click', () => {
 });
  
 /* ==========================================================
-   6. MAPAS
+   6. MAPAS — LEAFLET REAL INTERACTIVE MAP (COBERTURA NACIONAL)
    ========================================================== */
- 
-// Trayectorias en el sistema de coordenadas del mapa chico (800x450).
-const ROUTE_PATHS = {
-  A: t => ({ x: 50 + t * 700, y: 150 + Math.sin(t * Math.PI) * 30 }),
-  B: t => ({ x: 50 + t * 700, y: 300 + Math.sin(t * Math.PI + 1) * 25 }),
-  C: t => ({ x: 200 + Math.sin(t * Math.PI) * 18, y: 40 + t * 380 }),
-  D: t => ({ x: 600 + Math.sin(t * Math.PI) * 18, y: 40 + t * 380 }),
+
+const CR_PROVINCES = {
+  all: { center: [9.7489, -83.7534], zoom: 8, name: 'Costa Rica' },
+  'San José': { center: [9.9333, -84.0833], zoom: 13, name: 'San José (GAM)' },
+  Alajuela: { center: [10.0163, -84.2116], zoom: 12, name: 'Alajuela' },
+  Heredia: { center: [9.9984, -84.1165], zoom: 13, name: 'Heredia' },
+  Cartago: { center: [9.8645, -83.9212], zoom: 13, name: 'Cartago' },
+  Puntarenas: { center: [9.9765, -84.8295], zoom: 12, name: 'Puntarenas' },
+  Guanacaste: { center: [10.6315, -85.4382], zoom: 11, name: 'Guanacaste' },
+  Limón: { center: [9.9935, -83.0332], zoom: 12, name: 'Limón' },
 };
-const ROUTE_D_ATTR = {
-  A: 'M50,150 Q200,110 400,150 Q600,190 750,150',
-  B: 'M50,300 Q200,270 400,300 Q600,330 750,300',
-  C: 'M200,30 Q220,150 200,225 Q180,300 200,420',
-  D: 'M600,30 Q620,150 600,225 Q580,300 600,420',
+
+// Rutas GPS reales trazadas sobre carreteras y paradas reales
+const ROUTE_GPS_PATHS = {
+  A: [
+    [9.9325, -84.0815], [9.9348, -84.0864], [9.9355, -84.1042],
+    [9.9458, -84.1492], [9.9812, -84.1878], [10.0004, -84.2141], [10.0152, -84.2145]
+  ],
+  B: [
+    [9.9984, -84.1165], [9.9882, -84.1332], [9.9366, -84.0845],
+    [9.9333, -84.0792], [9.8974, -84.0664]
+  ],
+  C: [
+    [9.8645, -83.9212], [9.8638, -83.9131], [9.9075, -83.9878],
+    [9.9338, -84.0535], [9.9365, -84.0512], [9.9392, -84.0321], [9.9332, -84.0768]
+  ],
+  D: [
+    [9.9333, -84.0792], [9.9412, -84.0389], [9.9048, -83.6835], [10.2152, -83.7845], [9.9935, -83.0332]
+  ]
 };
- 
-const MINI_BOX = { w: 800, h: 450 };
-const FULL_BOX = { w: 1200, h: 650 };
-const SX = FULL_BOX.w / MINI_BOX.w;   // escala mini → completo
-const SY = FULL_BOX.h / MINI_BOX.h;
- 
-function paintStaticMapLayers() {
-  // Trazados de ruta
-  $('miniRoutePaths').innerHTML = ROUTES
-    .map(r => `<path d="${ROUTE_D_ATTR[r.id]}" stroke="${r.color}"/>`).join('');
-  $('fullRoutePaths').innerHTML = ROUTES.map(r => {
-    const scaled = ROUTE_D_ATTR[r.id].replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g,
-      (_, x, y) => `${(+x * SX).toFixed(1)},${(+y * SY).toFixed(1)}`);
-    return `<path d="${scaled}" stroke="${r.color}"/>`;
-  }).join('');
- 
-  // Paradas
-  const stopColor = cssVar('--stop', '#e0972c');
-  $('miniStops').innerHTML = STOPS.map(s =>
-    `<circle cx="${s.x}" cy="${s.y}" r="5" fill="${stopColor}"><title>${esc(s.name)}</title></circle>`).join('');
-  $('fullStops').innerHTML = STOPS.map(s => `
-    <g><circle cx="${(s.x * SX).toFixed(1)}" cy="${(s.y * SY).toFixed(1)}" r="7" fill="${stopColor}"><title>${esc(s.name)}</title></circle>
-    <text x="${(s.x * SX).toFixed(1)}" y="${(s.y * SY - 14).toFixed(1)}" text-anchor="middle" font-size="11" fill="#8a99b5">${esc(s.name)}</text></g>`).join('');
- 
-  // Leyendas
-  const legend = ROUTES.map(r =>
-    `<span class="legend-item"><span class="legend-dot" style="background:${r.color}"></span>Ruta ${r.id}</span>`).join('')
-    + `<span class="legend-item"><span class="legend-dot" style="background:${stopColor}"></span>Paradas</span>`;
-  $('miniLegend').innerHTML = legend;
-  $('fullLegend').innerHTML = legend;
+
+let realLeafletMap = null;
+let leafletMarkers = {
+  buses: {},
+  stops: {},
+  user: null,
+  routes: {},
+};
+
+let dashboardLeafletMap = null;
+let dashboardMarkers = {
+  buses: {},
+  stops: {},
+  user: null,
+  routes: {},
+};
+
+// Generador de capas base de mapas 100% gratuitas, sin marcas de agua y sin bloqueos 403
+function createArcGisLayers() {
+  const esriDarkBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    maxNativeZoom: 16,
+    maxZoom: 19,
+    attribution: '&copy; Esri &copy; OpenStreetMap'
+  });
+  const esriDarkRef = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    maxNativeZoom: 16,
+    maxZoom: 19
+  });
+  const darkGroup = L.layerGroup([esriDarkBase, esriDarkRef]);
+
+  // Capa oficial de calles completas de ArcGIS (sustituye a OSM sin errores 403)
+  const streetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19,
+    attribution: '&copy; Esri World Street Map'
+  });
+
+  // Capa satelital real de alta resolución
+  const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxNativeZoom: 19,
+    maxZoom: 19,
+    attribution: '&copy; Esri Satellite'
+  });
+
+  return [
+    { id: 'dark', icon: '🌙', name: 'Oscuro Pro (ArcGIS)', layer: darkGroup },
+    { id: 'streets', icon: '🗺️', name: 'Calles y Vías (ArcGIS)', layer: streetLayer },
+    { id: 'sat', icon: '🛰️', name: 'Satelital Real (ArcGIS)', layer: satLayer },
+  ];
 }
- 
-function markerSVG(bus, scale) {
-  const x = bus.pos.x * (scale ? SX : 1);
-  const y = bus.pos.y * (scale ? SY : 1);
-  const s = scale ? 20 : 14;
-  const c = bus.route.color;
-  const highlighted = state.highlightBus === bus.id;
- 
-  if (bus.status === 'stopped' || bus.status === 'maintenance') {
-    const dim = bus.status === 'maintenance' ? cssVar('--risk') : '#5a6a85';
-    return `<g class="bus-marker" data-bus="${bus.id}" transform="translate(${x},${y})">
-      <title>${bus.id} · ${statusLabel(bus.status)}</title>
-      <circle r="${s / 2}" fill="#16203a" stroke="${dim}" stroke-width="1.5"/>
-      <text text-anchor="middle" dominant-baseline="central" font-size="${s * 0.45}" fill="${dim}" font-weight="700">!</text>
-    </g>`;
+
+function initRealLeafletMap() {
+  const container = document.getElementById('realFullMap');
+  if (!container || realLeafletMap) return;
+
+  if (typeof L === 'undefined') {
+    console.warn('Leaflet aún no está cargado en window. Reintentando en 150ms...');
+    setTimeout(initRealLeafletMap, 150);
+    return;
   }
- 
-  const halo = (bus.status === 'delayed' || highlighted)
-    ? `<circle r="${s}" fill="${highlighted ? cssVar('--brand-300') : c}" opacity="0.22">
-         <animate attributeName="r" values="${s};${s * 1.5};${s}" dur="1.6s" repeatCount="indefinite"/>
-         <animate attributeName="opacity" values="0.25;0;0.25" dur="1.6s" repeatCount="indefinite"/>
-       </circle>` : '';
- 
-  return `<g class="bus-marker" data-bus="${bus.id}" transform="translate(${x},${y})">
-    <title>${bus.id} · Ruta ${bus.route.id} · ${bus.speed} km/h</title>
-    ${halo}
-    <rect x="${-s / 2}" y="${-s / 2 + 2}" width="${s}" height="${s - 2}" rx="3" fill="${c}"/>
-    <rect x="${-s / 2 + 2}" y="${-s / 2 - 1}" width="${s - 4}" height="${s * 0.36}" rx="1.5" fill="${c}" opacity="0.75"/>
-    <rect x="${-s / 2 + 2}" y="${-s / 2 + 4}" width="${s - 4}" height="${s * 0.2}" rx="1" fill="rgba(255,255,255,0.35)"/>
-    <circle cx="${-s / 2 + 3}" cy="${s / 2 + 1}" r="${s * 0.16}" fill="#0a1120"/>
-    <circle cx="${s / 2 - 3}" cy="${s / 2 + 1}" r="${s * 0.16}" fill="#0a1120"/>
-    <text x="0" y="${-s * 0.85}" text-anchor="middle" font-size="${scale ? 10 : 7.5}" font-weight="800"
-          font-family="JetBrains Mono, monospace" fill="${c}">${bus.num}</text>
-  </g>`;
-}
- 
-function drawMapMarkers(force) {
-  if (state.view === 'dashboard' || force) {
-    const g = $('busMarkers');
-    if (g) g.innerHTML = buses.map(b => markerSVG(b, false)).join('');
-  }
-  if (state.view === 'map' || force) {
-    const g = $('fullMapBusMarkers');
-    if (g) g.innerHTML = buses.map(b => markerSVG(b, true)).join('');
-  }
-}
- 
-let animId = null;
-let lastTick = 0;
- 
-function tick(ts) {
-  animId = requestAnimationFrame(tick);
-  if (ts - lastTick < 55) return;   // ~18 fps: suficiente y amable con la batería
-  lastTick = ts;
- 
-  if (prefs.motion) {
-    buses.forEach(b => {
-      if (b.status === 'stopped' || b.status === 'maintenance') return;
-      b._t += b._step * b._dir;
-      if (b._t >= 1) { b._t = 1; b._dir = -1; }
-      if (b._t <= 0) { b._t = 0; b._dir = 1; }
-      const fn = ROUTE_PATHS[b.route.id];
-      if (fn) b.pos = fn(b._t);
+
+  // Centro inicial: San José / GAM (Costa Rica)
+  realLeafletMap = L.map('realFullMap', {
+    center: [9.9333, -84.0833],
+    zoom: 12,
+    zoomControl: false,
+    attributionControl: false
+  });
+
+  const styles = createArcGisLayers();
+  realLeafletMap._mapStyles = styles;
+  realLeafletMap._currentStyleIdx = 0;
+  realLeafletMap._activeLayer = styles[0].layer;
+  styles[0].layer.addTo(realLeafletMap);
+
+  paintRealStopsAndRoutes();
+  setupMapControls();
+
+  // Selector de provincias de Costa Rica
+  const provSelect = document.getElementById('provinceSelect');
+  if (provSelect) {
+    provSelect.addEventListener('change', (e) => {
+      const p = CR_PROVINCES[e.target.value] || CR_PROVINCES.all;
+      realLeafletMap.flyTo(p.center, p.zoom, { duration: 1.5 });
+      toast('🇨🇷 Enfocando región: ' + p.name, 'info');
     });
   }
- 
-  if (state.trackingBus && state.view === 'map') {
-    const stillThere = centerMapOnBus(state.trackingBus, false);
-    if (!stillThere) stopTracking();
-  }
- 
-  drawMapMarkers(false);
-}
- 
-function startAnim() { if (!animId) { lastTick = 0; animId = requestAnimationFrame(tick); } }
-function stopAnim() { if (animId) { cancelAnimationFrame(animId); animId = null; } }
- 
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) stopAnim(); else startAnim();
-});
- 
-/* ---------- Zoom y arrastre ---------- */
- 
-const viewports = {
-  mini: { el: null, base: { x: 0, y: 0, w: MINI_BOX.w, h: MINI_BOX.h }, box: null },
-  full: { el: null, base: { x: 0, y: 0, w: FULL_BOX.w, h: FULL_BOX.h }, box: null },
-};
- 
-function applyViewBox(key) {
-  const v = viewports[key];
-  const b = v.box;
-  v.el.setAttribute('viewBox', `${b.x.toFixed(1)} ${b.y.toFixed(1)} ${b.w.toFixed(1)} ${b.h.toFixed(1)}`);
-}
- 
-function zoomMap(key, factor, cx, cy) {
-  const v = viewports[key];
-  const b = v.box, base = v.base;
-  const minW = base.w * 0.25;    // hasta 4x de acercamiento
-  const maxW = base.w;           // no se aleja más allá del encuadre original
-  let newW = Math.min(maxW, Math.max(minW, b.w * factor));
-  const ratio = newW / b.w;
-  const newH = b.h * ratio;
- 
-  // Mantiene fijo el punto (cx, cy) bajo el cursor o el centro
-  const px = cx === undefined ? b.x + b.w / 2 : cx;
-  const py = cy === undefined ? b.y + b.h / 2 : cy;
-  b.x = px - (px - b.x) * ratio;
-  b.y = py - (py - b.y) * ratio;
-  b.w = newW; b.h = newH;
-  clampBox(key);
-  applyViewBox(key);
-}
- 
-function clampBox(key) {
-  const v = viewports[key], b = v.box, base = v.base;
-  const margin = base.w * 0.1;
-  b.x = Math.min(Math.max(b.x, base.x - margin), base.x + base.w - b.w + margin);
-  b.y = Math.min(Math.max(b.y, base.y - margin), base.y + base.h - b.h + margin);
-}
- 
-function resetMap(key) {
-  viewports[key].box = Object.assign({}, viewports[key].base);
-  applyViewBox(key);
-}
- 
-function setupMap(key, svgId) {
-  const svg = $(svgId);
-  if (!svg) return;
-  const v = viewports[key];
-  v.el = svg;
-  v.box = Object.assign({}, v.base);
-  applyViewBox(key);
- 
-  // Convierte coordenadas de pantalla a coordenadas del viewBox
-  const toLocal = (clientX, clientY) => {
-    const r = svg.getBoundingClientRect();
-    const b = v.box;
-    return {
-      x: b.x + ((clientX - r.left) / r.width) * b.w,
-      y: b.y + ((clientY - r.top) / r.height) * b.h,
-    };
-  };
- 
-  svg.addEventListener('wheel', e => {
-    e.preventDefault();
-    const p = toLocal(e.clientX, e.clientY);
-    zoomMap(key, e.deltaY > 0 ? 1.15 : 0.87, p.x, p.y);
-  }, { passive: false });
- 
-  let dragging = false, last = null, moved = 0;
- 
-  svg.addEventListener('pointerdown', e => {
-    if (e.button !== undefined && e.button !== 0) return;
-    dragging = true; moved = 0;
-    last = toLocal(e.clientX, e.clientY);
-    svg.setPointerCapture(e.pointerId);
-    svg.classList.add('dragging');
-  });
- 
-  svg.addEventListener('pointermove', e => {
-    if (!dragging) return;
-    const p = toLocal(e.clientX, e.clientY);
-    const dx = p.x - last.x, dy = p.y - last.y;
-    moved += Math.abs(dx) + Math.abs(dy);
-    // Un arrastre real en el mapa completo significa que el usuario quiere
-    // mover la cámara a mano: se corta el seguimiento automático.
-    if (key === 'full' && moved > 4) stopTracking('Dejaste de seguir el bus al mover el mapa');
-    v.box.x -= dx; v.box.y -= dy;
-    clampBox(key);
-    applyViewBox(key);
-    // last se recalcula con el viewBox nuevo, por eso no se guarda p directo
-    last = toLocal(e.clientX, e.clientY);
-  });
- 
-  const endDrag = e => {
-    if (!dragging) return;
-    dragging = false;
-    svg.classList.remove('dragging');
-    try { svg.releasePointerCapture(e.pointerId); } catch (err) { /* el puntero ya se había soltado */ }
-  };
-  svg.addEventListener('pointerup', endDrag);
-  svg.addEventListener('pointercancel', endDrag);
- 
-  // Si el usuario arrastró, el clic que sigue no debe abrir el detalle del bus.
-  // La delegación global se encarga del clic limpio sobre un marcador.
-  svg.addEventListener('click', e => {
-    if (moved >= 6) { e.stopPropagation(); e.preventDefault(); moved = 0; }
-  }, true);
- 
-  svg.addEventListener('dblclick', e => {
-    const p = toLocal(e.clientX, e.clientY);
-    zoomMap(key, 0.7, p.x, p.y);
-  });
-}
- 
-$$('.map-btn[data-zoom]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const key = btn.dataset.map;
-    const action = btn.dataset.zoom;
-    if (action === 'in') zoomMap(key, 0.75);
-    if (action === 'out') zoomMap(key, 1.33);
-    if (action === 'reset') {
-      if (key === 'full') stopTracking('Dejaste de seguir el bus');
-      resetMap(key);
+
+  realLeafletMap.on('dragstart', () => {
+    if (state.trackingBus) {
+      stopTracking('Dejaste de seguir el bus al mover el mapa');
     }
   });
-});
- 
-function renderMapBusList() {
-  $('mapBusList').innerHTML = buses.map(b => `
-    <div class="map-bus-item ${state.highlightBus === b.id ? 'highlight' : ''}" data-bus="${b.id}" role="button" tabindex="0">
-      <span class="map-bus-dot" style="background:${b.route.color}"></span>
-      <span class="map-bus-info">
-        <span class="map-bus-id">${b.id}</span>
-        <span class="map-bus-route">Ruta ${b.route.id} · ${b.speed} km/h</span>
-      </span>
-      <span class="status-badge status-${b.status}">${statusLabel(b.status)}</span>
-    </div>`).join('');
+
+  // Observador de cambio de tamaño (al contraer/expandir sidebar o cambiar ventana)
+  if (window.ResizeObserver) {
+    try {
+      const ro = new ResizeObserver(() => {
+        if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false });
+      });
+      ro.observe(container);
+    } catch (_) {}
+  }
+
+  setTimeout(() => { if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false }); }, 80);
+  setTimeout(() => { if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false }); }, 250);
+  setTimeout(() => { if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false }); }, 500);
+
+  drawMapMarkers(true);
 }
- 
-// Centra el viewport del mapa completo sobre un bus. Con resetZoom en true
-// además fija el nivel de acercamiento inicial; en false solo recalcula el
-// centro y respeta el zoom que el usuario tenga puesto (así el seguimiento
-// continuo no le pisa el zoom mientras el bus se mueve).
+
+function initDashboardLeafletMap() {
+  const container = document.getElementById('dashboardRealMap');
+  if (!container || dashboardLeafletMap) return;
+
+  if (typeof L === 'undefined') {
+    setTimeout(initDashboardLeafletMap, 150);
+    return;
+  }
+
+  dashboardLeafletMap = L.map('dashboardRealMap', {
+    center: [9.9333, -84.0833],
+    zoom: 12,
+    zoomControl: false,
+    attributionControl: false
+  });
+
+  const styles = createArcGisLayers();
+  dashboardLeafletMap._mapStyles = styles;
+  dashboardLeafletMap._currentStyleIdx = 0;
+  dashboardLeafletMap._activeLayer = styles[0].layer;
+  styles[0].layer.addTo(dashboardLeafletMap);
+
+  paintDashboardStopsAndRoutes();
+  setupDashboardMapControls();
+
+  if (window.ResizeObserver) {
+    try {
+      const ro = new ResizeObserver(() => {
+        if (dashboardLeafletMap) dashboardLeafletMap.invalidateSize({ animate: false });
+      });
+      ro.observe(container);
+    } catch (_) {}
+  }
+
+  setTimeout(() => { if (dashboardLeafletMap) dashboardLeafletMap.invalidateSize({ animate: false }); }, 100);
+  setTimeout(() => { if (dashboardLeafletMap) dashboardLeafletMap.invalidateSize({ animate: false }); }, 300);
+
+  drawMapMarkers(true);
+}
+
+function paintLayerRoutesAndStops(mapInstance, markersStore, isMini) {
+  if (!mapInstance) return;
+
+  // 1. Trazar líneas de ruta GPS
+  ROUTES.forEach(r => {
+    const coords = ROUTE_GPS_PATHS[r.id];
+    if (coords && coords.length) {
+      const poly = L.polyline(coords, {
+        color: r.color,
+        weight: isMini ? 3 : 4,
+        opacity: 0.85,
+        dashArray: '8, 8'
+      }).addTo(mapInstance);
+      poly.bindTooltip('Ruta ' + r.id + ': ' + r.name, { sticky: true });
+      markersStore.routes[r.id] = poly;
+    }
+  });
+
+  // 2. Colocar marcadores de paradas nacionales
+  STOPS.forEach(s => {
+    const icon = L.divIcon({
+      className: 'real-stop-div-icon',
+      html: '<div class="real-stop-icon-inner" style="' + (isMini ? 'width:12px;height:12px;' : '') + '" title="' + esc(s.name) + '"></div>',
+      iconSize: isMini ? [16, 16] : [20, 20],
+      iconAnchor: isMini ? [8, 8] : [10, 10]
+    });
+
+    const marker = L.marker([s.lat, s.lon], { icon }).addTo(mapInstance);
+    marker.bindPopup(
+      '<div style="font-family:Inter, sans-serif;">' +
+        '<strong style="color:var(--text-strong); font-size:12.5px;">🚏 ' + esc(s.name) + '</strong>' +
+        '<p style="margin:4px 0 0; color:var(--text-soft); font-size:11px;">' + esc(s.subtext || s.province || 'Parada oficial') + '</p>' +
+        (isMini ? '' : '<span class="badge" style="margin-top:6px; display:inline-block; font-size:10px;">' + (s.province || 'Costa Rica') + '</span>') +
+      '</div>'
+    );
+    markersStore.stops[s.id || s.name] = marker;
+  });
+
+  // 3. Leyendas
+  const stopColor = '#f59e0b';
+  const legend = ROUTES.map(r =>
+    '<span class="legend-item"><span class="legend-dot" style="background:' + r.color + '"></span>Ruta ' + r.id + '</span>').join('')
+    + '<span class="legend-item"><span class="legend-dot" style="background:' + stopColor + '"></span>Paradas</span>';
+  const legEl = document.getElementById(isMini ? 'miniLegend' : 'fullLegend');
+  if (legEl) legEl.innerHTML = legend;
+}
+
+function paintRealStopsAndRoutes() {
+  paintLayerRoutesAndStops(realLeafletMap, leafletMarkers, false);
+}
+
+function paintDashboardStopsAndRoutes() {
+  paintLayerRoutesAndStops(dashboardLeafletMap, dashboardMarkers, true);
+}
+
+function setupDashboardMapControls() {
+  const miniZoomBtns = document.querySelectorAll('.map-btn[data-map="mini"][data-zoom]');
+  miniZoomBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.zoom;
+      if (!dashboardLeafletMap) return;
+      if (action === 'in') dashboardLeafletMap.zoomIn();
+      if (action === 'out') dashboardLeafletMap.zoomOut();
+      if (action === 'reset') {
+        dashboardLeafletMap.flyTo(CR_PROVINCES.all.center, CR_PROVINCES.all.zoom, { duration: 1.2 });
+      }
+    });
+  });
+
+  const dashStyleBtn = document.getElementById('dashboardStyleToggleBtn');
+  if (dashStyleBtn && !dashStyleBtn._bound) {
+    dashStyleBtn._bound = true;
+    dashStyleBtn.addEventListener('click', () => {
+      if (!dashboardLeafletMap || !dashboardLeafletMap._mapStyles) return;
+      if (dashboardLeafletMap._activeLayer) {
+        dashboardLeafletMap.removeLayer(dashboardLeafletMap._activeLayer);
+      }
+      dashboardLeafletMap._currentStyleIdx = (dashboardLeafletMap._currentStyleIdx + 1) % dashboardLeafletMap._mapStyles.length;
+      const nextStyle = dashboardLeafletMap._mapStyles[dashboardLeafletMap._currentStyleIdx];
+      dashboardLeafletMap._activeLayer = nextStyle.layer;
+      nextStyle.layer.addTo(dashboardLeafletMap);
+      dashStyleBtn.textContent = nextStyle.icon;
+      dashStyleBtn.setAttribute('title', 'Capa actual: ' + nextStyle.name + ' (Clic para alternar)');
+      toast('🗺️ ' + nextStyle.name, 'info');
+    });
+  }
+
+  const miniLocBtn = document.getElementById('locateUserBtnMini');
+  if (miniLocBtn && !miniLocBtn._bound) {
+    miniLocBtn._bound = true;
+    miniLocBtn.addEventListener('click', () => {
+      if (userLocationState.lat && userLocationState.lng && dashboardLeafletMap) {
+        dashboardLeafletMap.flyTo([userLocationState.lat, userLocationState.lng], 15, { duration: 1.2 });
+        toast('📍 Centrando en tu ubicación', 'info');
+      } else {
+        requestUserLocation(true);
+      }
+    });
+  }
+}
+
+// Interpola posición GPS para un bus según su progreso _t [0..1]
+function getBusGpsPosition(bus) {
+  const coords = ROUTE_GPS_PATHS[bus.route.id] || ROUTE_GPS_PATHS.A;
+  if (!coords || !coords.length) return [9.9333, -84.0833];
+  
+  const totalSegments = coords.length - 1;
+  const t = Math.max(0, Math.min(1, bus._t !== undefined ? bus._t : 0.5));
+  const exactSegment = t * totalSegments;
+  const index = Math.min(Math.floor(exactSegment), totalSegments - 1);
+  const segFraction = exactSegment - index;
+
+  const p1 = coords[index];
+  const p2 = coords[index + 1] || p1;
+
+  const lat = p1[0] + (p2[0] - p1[0]) * segFraction;
+  const lon = p1[1] + (p2[1] - p1[1]) * segFraction;
+  return [lat, lon];
+}
+
+function drawMapMarkers(force) {
+  if (!realLeafletMap && !dashboardLeafletMap) return;
+
+  buses.forEach(b => {
+    const [lat, lon] = getBusGpsPosition(b);
+    b.gps = { lat, lon };
+
+    const color = b.route.color;
+    const isDelayed = b.status === 'delayed';
+    const isTracked = state.trackingBus === b.id;
+
+    // 1. Marcadores en Mapa Completo (view-map)
+    if (realLeafletMap) {
+      if (!leafletMarkers.buses[b.id]) {
+        const busIcon = L.divIcon({
+          className: 'real-bus-div-icon',
+          html:
+            '<div class="real-bus-icon-inner" style="background:' + color + ';' + (isTracked ? 'border-color:#38bdf8;' : '') + '">' +
+              (isTracked || isDelayed ? '<div class="real-bus-pulse" style="background:' + color + ';"></div>' : '') +
+              '<span>' + (b.num || b.id.replace('BUS-', '')) + '</span>' +
+            '</div>',
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        });
+
+        const marker = L.marker([lat, lon], { icon: busIcon }).addTo(realLeafletMap);
+        marker.on('click', () => focusBus(b.id));
+        marker.bindTooltip(
+          '<strong>' + b.id + '</strong> · Ruta ' + b.route.id + '<br/>' +
+          b.speed + ' km/h · ' + b.passengers + ' pas.',
+          { direction: 'top', offset: [0, -14] }
+        );
+
+        leafletMarkers.buses[b.id] = marker;
+      } else {
+        const marker = leafletMarkers.buses[b.id];
+        marker.setLatLng([lat, lon]);
+
+        if (isTracked) {
+          realLeafletMap.panTo([lat, lon], { animate: true, duration: 0.3 });
+        }
+      }
+    }
+
+    // 2. Marcadores en Panel Principal (view-dashboard)
+    if (dashboardLeafletMap) {
+      if (!dashboardMarkers.buses[b.id]) {
+        const miniBusIcon = L.divIcon({
+          className: 'real-bus-div-icon',
+          html:
+            '<div class="real-bus-icon-inner" style="background:' + color + '; width:26px; height:26px; font-size:10px;' + (isTracked ? 'border-color:#38bdf8;' : '') + '">' +
+              (isTracked || isDelayed ? '<div class="real-bus-pulse" style="background:' + color + '; width:34px; height:34px; left:-4px; top:-4px;"></div>' : '') +
+              '<span>' + (b.num || b.id.replace('BUS-', '')) + '</span>' +
+            '</div>',
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        });
+
+        const miniMarker = L.marker([lat, lon], { icon: miniBusIcon }).addTo(dashboardLeafletMap);
+        miniMarker.on('click', () => {
+          navigate('map');
+          setTimeout(() => focusBus(b.id), 200);
+        });
+        miniMarker.bindTooltip(
+          '<strong>' + b.id + '</strong> · Ruta ' + b.route.id + '<br/>' +
+          b.speed + ' km/h',
+          { direction: 'top', offset: [0, -10] }
+        );
+
+        dashboardMarkers.buses[b.id] = miniMarker;
+      } else {
+        dashboardMarkers.buses[b.id].setLatLng([lat, lon]);
+      }
+    }
+  });
+
+  const countBadge = document.getElementById('mapBusCount');
+  if (countBadge) countBadge.textContent = buses.filter(b => b.status === 'active').length + ' activos';
+}
+
+function renderMapBusList() {
+  const container = document.getElementById('mapBusList');
+  if (!container) return;
+  container.innerHTML = buses.map(b =>
+    '<div class="map-bus-item ' + (state.highlightBus === b.id ? 'highlight' : '') + '" data-bus="' + b.id + '" role="button" tabindex="0">' +
+      '<span class="map-bus-dot" style="background:' + b.route.color + '"></span>' +
+      '<span class="map-bus-info">' +
+        '<span class="map-bus-id">' + b.id + '</span>' +
+        '<span class="map-bus-route">Ruta ' + b.route.id + ' · ' + b.speed + ' km/h</span>' +
+      '</span>' +
+      '<span class="status-badge status-' + b.status + '">' + statusLabel(b.status) + '</span>' +
+    '</div>'
+  ).join('');
+}
+
 function centerMapOnBus(busId, resetZoom) {
   const bus = buses.find(b => b.id === busId);
-  if (!bus) return false;
-  const v = viewports.full;
+  if (!bus || !realLeafletMap) return false;
+  const [lat, lon] = getBusGpsPosition(bus);
   if (resetZoom) {
-    v.box.w = v.base.w * 0.45;
-    v.box.h = v.base.h * 0.45;
+    realLeafletMap.setView([lat, lon], 15, { animate: true });
+  } else {
+    realLeafletMap.panTo([lat, lon], { animate: true });
   }
-  v.box.x = bus.pos.x * SX - v.box.w / 2;
-  v.box.y = bus.pos.y * SY - v.box.h / 2;
-  clampBox('full');
-  applyViewBox('full');
   return true;
 }
- 
-// Muestra u oculta el aviso "Siguiendo BUS-XXX" sobre el mapa completo.
+
 function updateTrackingBanner() {
-  const banner = $('trackingBanner');
+  const banner = document.getElementById('trackingBanner');
   if (!banner) return;
   if (state.trackingBus) {
     banner.hidden = false;
-    $('trackingBannerText').textContent = 'Siguiendo ' + state.trackingBus;
+    document.getElementById('trackingBannerText').textContent = 'Siguiendo ' + state.trackingBus;
   } else {
     banner.hidden = true;
   }
 }
- 
-// Corta el seguimiento continuo sin tocar el resaltado del bus en el mapa.
+
 function stopTracking(msg) {
   if (!state.trackingBus) return;
   state.trackingBus = null;
   updateTrackingBanner();
   if (msg) toast(msg);
 }
- 
-// Centra el mapa completo sobre un bus y deja la cámara siguiéndolo mientras
-// se mueve. El seguimiento se corta si el usuario arrastra el mapa o pide
-// centrar de nuevo, o con el botón del aviso.
+
 function focusBus(busId) {
   const bus = buses.find(b => b.id === busId);
   if (!bus) return;
@@ -1225,36 +1383,45 @@ function focusBus(busId) {
   renderMapBusList();
   drawMapMarkers(true);
   updateTrackingBanner();
-  toast('Siguiendo ' + busId);
+  toast('Siguiendo ' + busId, 'info');
 }
- 
-/* ==========================================================
-   6.5. GEOLOCALIZACIÓN Y ADAPTACIÓN DEL MAPA AL USUARIO
-   ========================================================== */
+
+let animId = null;
+let lastTick = 0;
+
+function tick(ts) {
+  animId = requestAnimationFrame(tick);
+  if (ts - lastTick < 65) return;
+  lastTick = ts;
+
+  if (prefs.motion && !backendConnected) {
+    buses.forEach(b => {
+      const moving = b.status === 'active' || b.status === 'delayed';
+      if (moving) {
+        b._t = (b._t || 0) + (b._dir || 1) * (b._step || 0.005) * (b.speed / 40);
+        if (b._t >= 1) { b._t = 1; b._dir = -1; }
+        else if (b._t <= 0) { b._t = 0; b._dir = 1; }
+      }
+    });
+  }
+  drawMapMarkers(false);
+}
+
+function startAnim() { if (!animId) { lastTick = 0; animId = requestAnimationFrame(tick); } }
+function stopAnim() { if (animId) { cancelAnimationFrame(animId); animId = null; } }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopAnim(); else startAnim();
+});
+
 const userLocationState = {
   active: false,
   lat: null,
   lng: null,
-  svgPos: null,
   nearestStop: null,
   distanceToStop: null,
   watchId: null,
 };
-
-function gpsToSvgCoords(lat, lng) {
-  const minLat = 9.9200, maxLat = 9.9500;
-  const minLng = -84.0950, maxLng = -84.0200;
-
-  const clampedLat = Math.max(minLat, Math.min(maxLat, lat));
-  const clampedLng = Math.max(minLng, Math.min(maxLng, lng));
-
-  const pctX = (clampedLng - minLng) / (maxLng - minLng);
-  const pctY = 1 - (clampedLat - minLat) / (maxLat - minLat);
-
-  const x = Math.round(50 + pctX * 700);
-  const y = Math.round(50 + pctY * 350);
-  return { x, y };
-}
 
 function calculateDistanceMeters(lat1, lon1, lat2, lon2) {
   const R = 6371e3;
@@ -1268,108 +1435,70 @@ function calculateDistanceMeters(lat1, lon1, lat2, lon2) {
   return Math.round(R * c);
 }
 
-function findNearestStop(svgPos, lat, lng) {
+function findNearestStop(lat, lng) {
   let nearest = null;
   let minDist = Infinity;
-
   STOPS.forEach(stop => {
-    let dist;
-    if (lat && lng && stop.lat && stop.lng) {
-      dist = calculateDistanceMeters(lat, lng, stop.lat, stop.lng);
-    } else {
-      const dx = stop.x - svgPos.x;
-      const dy = stop.y - svgPos.y;
-      dist = Math.round(Math.sqrt(dx * dx + dy * dy) * 12);
-    }
-    if (dist < minDist) {
-      minDist = dist;
-      nearest = stop;
+    if (stop.lat && stop.lon) {
+      const dist = calculateDistanceMeters(lat, lng, stop.lat, stop.lon);
+      if (dist < minDist) {
+        minDist = dist;
+        nearest = stop;
+      }
     }
   });
-
   return { stop: nearest || STOPS[0], distance: minDist };
 }
 
 function renderUserLocationMarkers() {
-  const miniEl = $('userMarkerMini');
-  const fullEl = $('userMarkerFull');
-  if (!userLocationState.active || !userLocationState.svgPos) {
-    if (miniEl) miniEl.innerHTML = '';
-    if (fullEl) fullEl.innerHTML = '';
+  if (!realLeafletMap) return;
+  if (!userLocationState.active || !userLocationState.lat) {
+    if (leafletMarkers.user) {
+      realLeafletMap.removeLayer(leafletMarkers.user);
+      leafletMarkers.user = null;
+    }
     return;
   }
-
-  const { x, y } = userLocationState.svgPos;
+  const { lat, lng } = userLocationState;
   const stopName = userLocationState.nearestStop ? userLocationState.nearestStop.name : 'Ubicación';
-
-  const miniSvg = `
-    <g class="user-location-marker" transform="translate(${x},${y})">
-      <circle r="18" class="user-marker-pulse"/>
-      <circle r="7" fill="#3b82f6" stroke="#ffffff" stroke-width="2.5"/>
-      <circle r="3" fill="#ffffff"/>
-      <title>Tu ubicación (Cerca de ${esc(stopName)})</title>
-    </g>`;
-
-  const fx = (x * SX).toFixed(1);
-  const fy = (y * SY).toFixed(1);
-  const fullSvg = `
-    <g class="user-location-marker" transform="translate(${fx},${fy})">
-      <circle r="26" class="user-marker-pulse"/>
-      <circle r="9" fill="#3b82f6" stroke="#ffffff" stroke-width="3"/>
-      <circle r="3.5" fill="#ffffff"/>
-      <text x="0" y="-16" text-anchor="middle" font-size="11" font-weight="700" fill="#3b82f6"
-            style="paint-order: stroke; stroke: #0f172a; stroke-width: 3px; stroke-linejoin: round;">📍 Tú (Tu ubicación)</text>
-      <title>Tu ubicación actual</title>
-    </g>`;
-
-  if (miniEl) miniEl.innerHTML = miniSvg;
-  if (fullEl) fullEl.innerHTML = fullSvg;
+  if (!leafletMarkers.user) {
+    const userIcon = L.divIcon({
+      className: 'real-user-div-icon',
+      html: '<div class="real-user-gps-marker"><div class="real-user-gps-pulse"></div></div>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9]
+    });
+    leafletMarkers.user = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(realLeafletMap);
+    leafletMarkers.user.bindPopup(
+      '<strong style="color:#38bdf8; font-size:13px;">📍 Tu ubicación GPS</strong><br/>' +
+      '<span style="font-size:12px; color:var(--text-soft);">Cerca de: ' + esc(stopName) + '</span>'
+    );
+  } else {
+    leafletMarkers.user.setLatLng([lat, lng]);
+  }
 }
 
 function centerMapOnUser(resetZoom = true) {
-  if (!userLocationState.active || !userLocationState.svgPos) return false;
-  const { x, y } = userLocationState.svgPos;
-  const v = viewports.full;
-  if (resetZoom) {
-    v.box.w = v.base.w * 0.45;
-    v.box.h = v.base.h * 0.45;
-  }
-  v.box.x = x * SX - v.box.w / 2;
-  v.box.y = y * SY - v.box.h / 2;
-  clampBox('full');
-  applyViewBox('full');
-
-  const vm = viewports.mini;
-  vm.box.x = x - vm.box.w / 2;
-  vm.box.y = y - vm.box.h / 2;
-  clampBox('mini');
-  applyViewBox('mini');
-
+  if (!userLocationState.active || !userLocationState.lat || !realLeafletMap) return false;
+  realLeafletMap.flyTo([userLocationState.lat, userLocationState.lng], resetZoom ? 15 : realLeafletMap.getZoom(), { duration: 1.2 });
   return true;
 }
 
 function updateUserLocationUI() {
   renderUserLocationMarkers();
-
-  const bar = $('userLocationBar');
-  const textEl = $('userLocationText');
-  const miniBtn = $('locateUserBtnMini');
-  const fullBtn = $('locateUserBtnFull');
-
+  const bar = document.getElementById('userLocationBar');
+  const textEl = document.getElementById('userLocationText');
+  const fullBtn = document.getElementById('locateUserBtnFull');
   if (userLocationState.active && userLocationState.nearestStop) {
-    if (miniBtn) miniBtn.classList.add('active');
     if (fullBtn) fullBtn.classList.add('active');
-
     const distStr = userLocationState.distanceToStop < 1000
-      ? `${userLocationState.distanceToStop} m`
-      : `${(userLocationState.distanceToStop / 1000).toFixed(1)} km`;
-
+      ? userLocationState.distanceToStop + ' m'
+      : (userLocationState.distanceToStop / 1000).toFixed(1) + ' km';
     if (textEl) {
-      textEl.innerHTML = `<strong>Mapa adaptado a tu ubicación:</strong> a ${distStr} de <strong>${esc(userLocationState.nearestStop.name)}</strong>`;
+      textEl.innerHTML = '<strong>Ubicación detectada:</strong> a ' + distStr + ' de <strong>' + esc(userLocationState.nearestStop.name) + '</strong> (' + (userLocationState.nearestStop.province || 'Costa Rica') + ')';
     }
     if (bar) bar.hidden = false;
   } else {
-    if (miniBtn) miniBtn.classList.remove('active');
     if (fullBtn) fullBtn.classList.remove('active');
     if (bar) bar.hidden = true;
   }
@@ -1385,26 +1514,20 @@ function stopUserLocationWatch() {
 function handlePositionUpdate(position, isInitial = false) {
   const lat = position.coords.latitude;
   const lng = position.coords.longitude;
-  const svgPos = gpsToSvgCoords(lat, lng);
-  const nearest = findNearestStop(svgPos, lat, lng);
-
+  const nearest = findNearestStop(lat, lng);
   userLocationState.active = true;
   userLocationState.lat = lat;
   userLocationState.lng = lng;
-  userLocationState.svgPos = svgPos;
   userLocationState.nearestStop = nearest.stop;
   userLocationState.distanceToStop = nearest.distance;
-
   updateUserLocationUI();
   centerMapOnUser(isInitial);
-
-  const distStr = nearest.distance < 1000 ? `${nearest.distance} m` : `${(nearest.distance / 1000).toFixed(1)} km`;
+  const distStr = nearest.distance < 1000 ? nearest.distance + ' m' : (nearest.distance / 1000).toFixed(1) + ' km';
   if (isInitial) {
-    toast(`📍 Ubicación GPS activa: a ${distStr} de ${nearest.stop.name}`, 'ok');
+    toast('📍 GPS en vivo: a ' + distStr + ' de ' + nearest.stop.name, 'ok');
   }
-
   localStorage.setItem('bustrack_geolocate', 'true');
-  const geoSwitch = $('geoSwitch');
+  const geoSwitch = document.getElementById('geoSwitch');
   if (geoSwitch) geoSwitch.setAttribute('aria-checked', 'true');
 }
 
@@ -1413,19 +1536,11 @@ function requestUserLocation(userInitiated = true) {
     if (userInitiated) toast('Tu navegador no soporta geolocalización', 'warn');
     return;
   }
-
   toast('Solicitando permiso de ubicación al navegador...', 'info');
-
-  const options = {
-    enableHighAccuracy: true,
-    timeout: 10000,
-    maximumAge: 3000
-  };
-
+  const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 };
   navigator.geolocation.getCurrentPosition(
     (position) => {
       handlePositionUpdate(position, true);
-
       stopUserLocationWatch();
       userLocationState.watchId = navigator.geolocation.watchPosition(
         (pos) => handlePositionUpdate(pos, false),
@@ -1438,10 +1553,8 @@ function requestUserLocation(userInitiated = true) {
       stopUserLocationWatch();
       userLocationState.active = false;
       updateUserLocationUI();
-
-      const geoSwitch = $('geoSwitch');
+      const geoSwitch = document.getElementById('geoSwitch');
       if (geoSwitch) geoSwitch.setAttribute('aria-checked', 'false');
-
       if (error.code === error.PERMISSION_DENIED) {
         toast('⚠️ Permiso de ubicación denegado. Permite el acceso en la barra de direcciones de tu navegador.', 'warn');
       } else if (error.code === error.POSITION_UNAVAILABLE) {
@@ -1454,6 +1567,43 @@ function requestUserLocation(userInitiated = true) {
     },
     options
   );
+}
+
+// Conexión de controles de mapa de Leaflet
+function setupMapControls() {
+  const zoomBtns = document.querySelectorAll('.map-btn[data-zoom]');
+  zoomBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.zoom;
+      if (!realLeafletMap) return;
+      if (action === 'in') realLeafletMap.zoomIn();
+      if (action === 'out') realLeafletMap.zoomOut();
+      if (action === 'reset') {
+        stopTracking('Vista nacional restablecida');
+        realLeafletMap.flyTo(CR_PROVINCES.all.center, CR_PROVINCES.all.zoom, { duration: 1.2 });
+        const provSelect = document.getElementById('provinceSelect');
+        if (provSelect) provSelect.value = 'all';
+      }
+    });
+  });
+
+  const styleBtn = document.getElementById('mapStyleToggleBtn');
+  if (styleBtn && !styleBtn._bound) {
+    styleBtn._bound = true;
+    styleBtn.addEventListener('click', () => {
+      if (!realLeafletMap || !realLeafletMap._mapStyles) return;
+      if (realLeafletMap._activeLayer) {
+        realLeafletMap.removeLayer(realLeafletMap._activeLayer);
+      }
+      realLeafletMap._currentStyleIdx = (realLeafletMap._currentStyleIdx + 1) % realLeafletMap._mapStyles.length;
+      const nextStyle = realLeafletMap._mapStyles[realLeafletMap._currentStyleIdx];
+      realLeafletMap._activeLayer = nextStyle.layer;
+      nextStyle.layer.addTo(realLeafletMap);
+      styleBtn.textContent = nextStyle.icon;
+      styleBtn.setAttribute('title', 'Capa actual: ' + nextStyle.name + ' (Clic para cambiar)');
+      toast('🗺️ ' + nextStyle.name, 'info');
+    });
+  }
 }
 
 /* ==========================================================
@@ -2215,6 +2365,9 @@ function redrawAll() {
   drawSparklines();
   drawMainChart();
   if (state.view === 'reports') drawReportCharts();
+  if (realLeafletMap) {
+    try { realLeafletMap.invalidateSize({ animate: false }); } catch (_) {}
+  }
 }
  
 /* ==========================================================
@@ -2355,339 +2508,8 @@ window.addEventListener('resize', () => {
     if (!isMobile()) closeSidebar();
   }, 160);
 });
- 
-/* ==========================================================
-   MODO PASAJERO — PILOTO UNIVERSIDAD FIDÉLITAS
-   ========================================================== */
-
-let passengerStops = [];
-let currentPassengerStop = 'stop-fidelitas';
-let proximityAlarm = null;
-
-async function loadPassengerStops() {
-  try {
-    const res = await fetch(`${API_BASE}/api/v1/passenger/stops`);
-    if (res.ok) {
-      passengerStops = await res.json();
-    }
-  } catch (e) {
-    console.warn('Could not fetch passenger stops:', e);
-  }
-
-  if (!passengerStops || !passengerStops.length) {
-    passengerStops = [
-      { id: 'stop-fidelitas', name: 'Entrada Principal U Fidélitas (Santa Marta)' },
-      { id: 'stop-vargas-araya', name: 'Parada Barrio Vargas Araya' },
-      { id: 'stop-lourdes', name: 'Parada Súper Lourdes / Calasanz' },
-      { id: 'stop-san-pedro', name: 'Parada Muñoz & Nanne / Plaza del Sol' },
-      { id: 'stop-mall-sp', name: 'Parada Mall San Pedro' },
-      { id: 'stop-sanjose', name: 'Terminal San José (Cuesta de Moras)' },
-    ];
-  }
-
-  const select = $('passengerStopSelect');
-  if (select) {
-    select.innerHTML = passengerStops.map(s => `
-      <option value="${s.id}" ${s.id === currentPassengerStop ? 'selected' : ''}>
-        ${s.name} ${s.subtext ? '— ' + s.subtext : ''}
-      </option>
-    `).join('');
-  }
-
-  const chipsBar = $('quickStopsBar');
-  if (chipsBar) {
-    chipsBar.innerHTML = `<span class="chips-label">Atajos rápidos:</span>` + passengerStops.map(s => `
-      <button class="quick-chip ${s.id === currentPassengerStop ? 'active' : ''}" data-stop="${s.id}">
-        📍 ${s.name.replace('Parada ', '').replace('Entrada Principal ', '')}
-      </button>
-    `).join('');
-
-    $$('.quick-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        currentPassengerStop = chip.dataset.stop;
-        if (select) select.value = currentPassengerStop;
-        $$('.quick-chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        renderPassengerArrivals();
-      });
-    });
-  }
-}
-
-async function renderPassengerArrivals() {
-  const container = $('passengerArrivalsList');
-  if (!container) return;
-
-  let data = null;
-  try {
-    const res = await fetch(`${API_BASE}/api/v1/passenger/stops/${currentPassengerStop}/arrivals`);
-    if (res.ok) data = await res.json();
-  } catch (e) {
-    console.warn('Could not fetch arrivals:', e);
-  }
-
-  if (!data || !data.arrivals || !data.arrivals.length) {
-    container.innerHTML = '<p class="empty-state">No hay unidades en camino para esta parada en este momento.</p>';
-    return;
-  }
-
-  const subtitle = $('arrivalsStopSubtitle');
-  if (subtitle && data.currentStop) {
-    subtitle.textContent = `Llegadas hacia: ${data.currentStop.name}`;
-  }
-  const countTag = $('incomingCountTag');
-  if (countTag) countTag.textContent = `${data.arrivals.length} unidades en camino`;
-
-  // Check proximity alarm
-  if (proximityAlarm) {
-    const matched = data.arrivals.find(a => a.busId === proximityAlarm.busId);
-    if (matched && matched.etaMinutes <= proximityAlarm.targetMinutes) {
-      toast(`🚨 ¡ATENCIÓN! El bus ${matched.routeName} (${matched.busId}) está a ${matched.etaMinutes} min de tu parada. ¡Sal ahora!`, 'warn');
-      try {
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('🚍 BusTrack Fidélitas', {
-            body: `El bus de ${matched.routeName} está a solo ${matched.etaMinutes} minutos (${matched.distanceFormatted}).`,
-          });
-        }
-      } catch (_) {}
-    }
-  }
-
-  container.innerHTML = data.arrivals.map(a => {
-    const isAlarmActive = proximityAlarm && proximityAlarm.busId === a.busId;
-    const isImminent = a.etaMinutes <= 5;
-    return `
-      <article class="arrival-card" style="--card-color:${a.color};">
-        <div class="arrival-top-row">
-          <div class="arrival-route-header">
-            <span class="arrival-route-badge" style="color:${a.color}">
-              🚍 ${a.routeId} · ${esc(a.operator)}
-            </span>
-            <h4 class="arrival-route-name">${esc(a.routeName)}</h4>
-            <p class="arrival-route-dest">Destino: <strong>${esc(a.destination)}</strong></p>
-          </div>
-          <div class="arrival-countdown-box">
-            <span class="arrival-countdown-num ${isImminent ? 'soon' : ''}">
-              ${a.etaMinutes} <small style="font-size:14px;font-weight:700">min</small>
-            </span>
-            <span class="arrival-distance">a ${a.distanceFormatted} de distancia</span>
-          </div>
-        </div>
-
-        <div class="arrival-details-row">
-          <div class="detail-item">
-            <span class="detail-label">Nivel de ocupación</span>
-            <div class="occupancy-indicator">
-              <div class="occupancy-bar-track">
-                <div class="occupancy-bar-fill ${a.occupancyLevel}" style="width:${a.occupancyPercent}%"></div>
-              </div>
-              <span class="detail-value" style="font-size:11.5px">
-                ${a.occupancyPercent}% · ${a.occupancyLabel}
-              </span>
-            </div>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Unidad / Chofer</span>
-            <span class="detail-value">${a.busId} (${a.plate}) · ${esc(a.driverName)}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Accesibilidad</span>
-            <span class="detail-value" style="color:#2bb885">♿ Rampa activa</span>
-          </div>
-        </div>
-
-        <div class="arrival-actions-row">
-          <span class="next-bus-note">
-            ⏱️ Siguiente unidad estimada en <strong>${a.nextBusInMinutes} min</strong>
-          </span>
-          <div class="arrival-btn-group">
-            <button class="arrival-action-btn ${isAlarmActive ? 'active-alarm' : ''}" 
-                    data-alarm-bus="${a.busId}" 
-                    data-alarm-route="${esc(a.routeName)}"
-                    data-alarm-min="3">
-              ${isAlarmActive ? '🔔 Alarma activa (3 min)' : '🔔 Avísame a los 3 min'}
-            </button>
-            <button class="arrival-action-btn" data-track-passenger-bus="${a.busId}">
-              🗺️ Ver en mapa
-            </button>
-          </div>
-        </div>
-      </article>
-    `;
-  }).join('');
-
-  // Wire alarm and track buttons
-  container.querySelectorAll('[data-alarm-bus]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const busId = btn.dataset.alarmBus;
-      const routeName = btn.dataset.alarmRoute;
-      const targetMin = parseInt(btn.dataset.alarmMin || '3', 10);
-      setProximityAlarm(busId, routeName, targetMin);
-    });
-  });
-
-  container.querySelectorAll('[data-track-passenger-bus]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const busId = btn.dataset.trackPassengerBus;
-      focusBus(busId);
-    });
-  });
-}
-
-function setProximityAlarm(busId, routeName, targetMin) {
-  proximityAlarm = { busId, routeName, targetMinutes: targetMin };
-  localStorage.setItem('bustrack:passenger_alarm', JSON.stringify(proximityAlarm));
-  const banner = $('proximityBanner');
-  if (banner) {
-    banner.hidden = false;
-    $('proximityTitle').textContent = `🔔 Alarma programada: ${routeName} (${busId})`;
-    $('proximityDesc').textContent = `Te avisaremos en cuanto la unidad esté a ${targetMin} minutos de tu parada.`;
-  }
-  toast(`Alarma programada para ${routeName} a ${targetMin} min`, 'ok');
-  renderPassengerArrivals();
-
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
-}
-
-function cancelProximityAlarm() {
-  proximityAlarm = null;
-  localStorage.removeItem('bustrack:passenger_alarm');
-  const banner = $('proximityBanner');
-  if (banner) banner.hidden = true;
-  toast('Alarma de proximidad cancelada');
-  renderPassengerArrivals();
-}
 
 function init() {
-  loadPrefs();
-  syncRouteColors();
-
-  // Opciones del filtro de rutas
-  $('routeFilter').innerHTML = '<option value="">Todas las rutas</option>'
-    + ROUTES.map(r => `<option value="${r.id}">Ruta ${r.id} — ${r.name}</option>`).join('');
-
-  paintStaticMapLayers();
-  setupMap('mini', 'cityMap');
-  setupMap('full', 'fullMap');
-
-  refreshCounters();
-  renderBusList();
-  renderActivity();
-  renderNotifs();
-  updateTrackingBanner();
-  buildAccentPicker();
-  syncLiveIndicator();
-  drawSparklines();
-  drawMainChart();
-  drawMapMarkers(true);
-  startAnim();
-
-  updateHomeChips();
-  document.body.style.overflow = 'hidden';   // el menú cubre la pantalla al entrar
-
-  initBackendConnection();
-
-  // ------------------------------------------------------------------
-  // REAL DATABASE STATUS DIAGNOSTICS & MODAL CONTROLS
-  // ------------------------------------------------------------------
-  const dbPill = $('dbStatusPill');
-  const dbModal = $('dbModal');
-  const dbModalClose = $('dbModalClose');
-  const dbModalOkBtn = $('dbModalOkBtn');
-  const dbModalRefreshBtn = $('dbModalRefreshBtn');
-
-  if (dbPill && dbModal) {
-    dbPill.addEventListener('click', () => {
-      fetchAndUpdateDbStatus();
-      dbModal.classList.add('open');
-    });
-    dbPill.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        fetchAndUpdateDbStatus();
-        dbModal.classList.add('open');
-      }
-    });
-  }
-
-  if (dbModalClose && dbModal) {
-    dbModalClose.addEventListener('click', () => dbModal.classList.remove('open'));
-  }
-  if (dbModalOkBtn && dbModal) {
-    dbModalOkBtn.addEventListener('click', () => dbModal.classList.remove('open'));
-  }
-  if (dbModal) {
-    dbModal.addEventListener('click', (e) => {
-      if (e.target === dbModal) dbModal.classList.remove('open');
-    });
-  }
-
-  if (dbModalRefreshBtn) {
-    dbModalRefreshBtn.addEventListener('click', async () => {
-      dbModalRefreshBtn.disabled = true;
-      dbModalRefreshBtn.textContent = '🔄 Cargando...';
-      await fetchAndUpdateDbStatus();
-      dbModalRefreshBtn.disabled = false;
-      dbModalRefreshBtn.textContent = '🔄 Actualizar Diagnóstico';
-      toast('Diagnóstico de Base de Datos actualizado', 'ok');
-    });
-  }
-
-  // Initial fetch on page load
-  fetchAndUpdateDbStatus();
-
-  // ------------------------------------------------------------------
-  // MODO PASAJERO — inicialización de controles
-  // ------------------------------------------------------------------
-  loadPassengerStops();
-
-  // Restaurar alarma de proximidad guardada
-  try {
-    const saved = localStorage.getItem('bustrack:passenger_alarm');
-    if (saved) {
-      proximityAlarm = JSON.parse(saved);
-      const banner = $('proximityBanner');
-      if (banner && proximityAlarm) {
-        banner.hidden = false;
-        $('proximityTitle').textContent =
-          `🔔 Alarma programada: ${proximityAlarm.routeName} (${proximityAlarm.busId})`;
-        $('proximityDesc').textContent =
-          `Te avisaremos cuando la unidad esté a ${proximityAlarm.targetMinutes} min de tu parada.`;
-      }
-    }
-  } catch (_) { /* ignorar */ }
-
-  // Selector de parada
-  const psSelect = $('passengerStopSelect');
-  if (psSelect) {
-    psSelect.addEventListener('change', () => {
-      currentPassengerStop = psSelect.value;
-      $$('.quick-chip').forEach(c => {
-        c.classList.toggle('active', c.dataset.stop === currentPassengerStop);
-      });
-      renderPassengerArrivals();
-    });
-  }
-
-  // Botón "Actualizar ahora"
-  const refreshBtn = $('refreshArrivalsBtn');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => renderPassengerArrivals());
-  }
-
-  // Botón cancelar alarma
-  const cancelAlarmBtn = $('cancelProximityBtn');
-  if (cancelAlarmBtn) {
-    cancelAlarmBtn.addEventListener('click', cancelProximityAlarm);
-  }
-
-  // Polling automático cada 4 s mientras se esté en la vista pasajero
-  setInterval(() => {
-    if (state.view === 'passenger') renderPassengerArrivals();
-  }, 4000);
-
   // ------------------------------------------------------------------
   // HAPTIC FEEDBACK & SHARE HELPERS
   // ------------------------------------------------------------------
@@ -2706,9 +2528,7 @@ function init() {
   // DYNAMIC PAGE META TITLES & DESCRIPTIONS
   // ------------------------------------------------------------------
   const pageMetaMap = {
-    dashboard: { title: 'Panel Principal — BusTrack Pro', desc: 'Resumen en tiempo real del estado de la flota, mapa interactivo y métricas.' },
-    passenger: { title: 'Modo Pasajero (U Fidélitas) — BusTrack Pro', desc: 'Tiempos de llegada en vivo para paradas del corredor San Pedro / Montes de Oca.' },
-    map: { title: 'Mapa en Vivo — BusTrack Pro', desc: 'Seguimiento satelital y mapa esquemático de todas las unidades en circulación.' },
+    dashboard: { title: 'Panel Principal — BusTrack Pro', desc: 'Resumen en tiempo real del estado de la flota, mapa interactivo y métricas.' },    map: { title: 'Mapa en Vivo — BusTrack Pro', desc: 'Seguimiento satelital y mapa esquemático de todas las unidades en circulación.' },
     fleet: { title: 'Gestión de Flota — BusTrack Pro', desc: 'Tabla completa de unidades, conductores asignados, estados y exportación CSV.' },
     routes: { title: 'Rutas Operativas — BusTrack Pro', desc: 'Detalle de trazados, paradas e indicadores por recorrido.' },
     alerts: { title: 'Centro de Alertas — BusTrack Pro', desc: 'Alertas críticas, advertencias y avisos del sistema en tiempo real.' },
@@ -2753,8 +2573,6 @@ function init() {
     }
   } catch (_) {}
 
-  const authLandingScreen = $('authLandingScreen');
-
   function updateAuthUserUI() {
     const avatarSlot = $('userAvatarSlot');
     const nameSlot = $('userNameSlot');
@@ -2764,17 +2582,19 @@ function init() {
     const regForm = $('registerForm');
     const oauthBox = document.querySelector('.oauth-buttons-container');
     const divider = document.querySelector('.auth-divider');
-
-    // Manage Fullscreen Landing Screen visibility
-    if (authLandingScreen) {
-      if (currentUser || isGuestSession) {
-        authLandingScreen.hidden = true;
-      } else {
-        authLandingScreen.hidden = false;
-      }
-    }
+    const sidebarAuthBox = $('sidebarAuthBox');
+    const sidebarUserBox = $('sidebarUserBox');
 
     if (currentUser) {
+      if (sidebarAuthBox) {
+        sidebarAuthBox.hidden = true;
+        sidebarAuthBox.style.display = 'none';
+      }
+      if (sidebarUserBox) {
+        sidebarUserBox.hidden = false;
+        sidebarUserBox.style.display = 'flex';
+      }
+
       if (avatarSlot) avatarSlot.textContent = currentUser.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
       if (nameSlot) nameSlot.textContent = currentUser.name;
       if (roleSlot) roleSlot.textContent = currentUser.role === 'admin' ? 'Administrador' : 'Pasajero';
@@ -2793,9 +2613,14 @@ function init() {
       const tabs = document.querySelector('.auth-tabs');
       if (tabs) tabs.style.display = 'none';
     } else {
-      if (avatarSlot) avatarSlot.textContent = 'GA';
-      if (nameSlot) nameSlot.textContent = isGuestSession ? 'Invitado' : 'Inicia Sesión';
-      if (roleSlot) roleSlot.textContent = isGuestSession ? 'Modo Lectura' : 'Inicia Sesión';
+      if (sidebarAuthBox) {
+        sidebarAuthBox.hidden = false;
+        sidebarAuthBox.style.display = 'flex';
+      }
+      if (sidebarUserBox) {
+        sidebarUserBox.hidden = true;
+        sidebarUserBox.style.display = 'none';
+      }
 
       if (activeBox) activeBox.hidden = true;
       if (oauthBox) oauthBox.style.display = 'flex';
@@ -2817,11 +2642,41 @@ function init() {
   const authClose = $('authClose');
   const oauthPromptModal = $('oauthPromptModal');
   const oauthPromptClose = $('oauthPromptClose');
+  const sidebarLoginBtn = $('sidebarLoginBtn');
+  const sidebarRegisterBtn = $('sidebarRegisterBtn');
+
+  function openAuthModal(initialTab = 'login') {
+    if (!authModal) return;
+    authModal.classList.add('active');
+    if (initialTab === 'register') {
+      const tabReg = $('tabRegister');
+      if (tabReg) tabReg.click();
+      setTimeout(() => $('regName')?.focus(), 120);
+    } else {
+      const tabLog = $('tabLogin');
+      if (tabLog) tabLog.click();
+      setTimeout(() => $('loginEmail')?.focus(), 120);
+    }
+  }
+
+  if (sidebarLoginBtn) {
+    sidebarLoginBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openAuthModal('login');
+    });
+  }
+
+  if (sidebarRegisterBtn) {
+    sidebarRegisterBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openAuthModal('register');
+    });
+  }
 
   if (authBtn && authModal) {
     authBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      authModal.classList.add('active');
+      openAuthModal('login');
     });
   }
   if (authClose && authModal) {
@@ -2831,184 +2686,120 @@ function init() {
     oauthPromptClose.addEventListener('click', () => oauthPromptModal.classList.remove('active'));
   }
 
-  // --- OAUTH PROMPT MODAL HANDLER ---
-  function openOAuthPrompt(provider) {
-    currentOAuthProvider = provider;
-    const badge = $('oauthProviderBadge');
-    const nameInput = $('oauthNameInput');
-    const emailInput = $('oauthEmailInput');
-    const title = $('oauthPromptTitle');
-    const subtitle = $('oauthPromptSubtitle');
+  // --- SUPABASE CLIENTE (OAuth real para Google & Apple) ---
+  const SUPABASE_URL = 'https://tbkgtblucdzkazpwlwda.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRia2d0Ymx1Y2R6a2F6cHdsd2RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2MjEzMDIsImV4cCI6MjEwNjE5NzMwMn0.-l_2o1G4eb3bhDgknHLH7SSx1IobaC-9jbVTTwBmkfM';
+  const supabaseClient = (typeof supabase !== 'undefined' && supabase.createClient)
+    ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
 
-    if (provider === 'google') {
-      if (title) title.textContent = 'Autenticación con Google';
-      if (subtitle) subtitle.textContent = 'Conecta tu cuenta de Google de forma segura';
-      if (badge) badge.innerHTML = `
-        <div style="display:inline-flex; align-items:center; gap:8px; background:#fff; color:#1f1f1f; padding:8px 16px; border-radius:20px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,0.15)">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-          Google Account Single Sign-On
-        </div>
-      `;
-      if (nameInput) nameInput.value = 'Carlos Mendoza (Google)';
-      if (emailInput) emailInput.value = `usuario.google.${Math.floor(Math.random()*1000)}@gmail.com`;
-    } else {
-      if (title) title.textContent = 'Autenticación con Apple ID';
-      if (subtitle) subtitle.textContent = 'Inicia sesión con tu Apple ID privado';
-      if (badge) badge.innerHTML = `
-        <div style="display:inline-flex; align-items:center; gap:8px; background:#000; color:#fff; padding:8px 16px; border-radius:20px; font-weight:700; border:1px solid #333;">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.63c.66-.82 1.12-1.96.99-3.11-1 .04-2.23.67-2.94 1.5-.64.74-1.2 1.92-1.05 3.05 1.12.09 2.34-.62 3-1.44z"/></svg>
-          Sign in with Apple ID
-        </div>
-      `;
-      if (nameInput) nameInput.value = 'Usuario Apple ID';
-      if (emailInput) emailInput.value = `apple_user_${Math.floor(Math.random()*1000)}@privaterelay.appleid.com`;
+  // Helper: crear sesión local a partir de un usuario de Supabase Auth
+  async function handleSupabaseSession(supaUser) {
+    if (!supaUser) return;
+    const provider = supaUser.app_metadata?.provider || 'oauth';
+    const name = supaUser.user_metadata?.full_name
+      || supaUser.user_metadata?.name
+      || supaUser.email?.split('@')[0]
+      || 'Usuario';
+
+    // Registrar/actualizar en el backend local para obtener JWT propio
+    try {
+      const res = await fetch('/api/v1/auth/oauth-callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          supabaseId: supaUser.id,
+          email: supaUser.email,
+          name,
+          provider,
+          avatarUrl: supaUser.user_metadata?.avatar_url || supaUser.user_metadata?.picture || ''
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === 'success') {
+          currentUser = data.user;
+          isGuestSession = false;
+          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+          localStorage.setItem('bustrack_auth_token', data.token);
+          toast(`¡Bienvenido, ${currentUser.name}! 🎉`, 'ok');
+          updateAuthUserUI();
+          showHome();
+          if (authModal) authModal.classList.remove('active');
+          return;
+        }
+      }
+    } catch (_) {}
+
+    // Fallback: crear sesión local sin backend
+    currentUser = {
+      id: supaUser.id,
+      email: supaUser.email,
+      name,
+      role: 'admin',
+      provider,
+      avatarUrl: supaUser.user_metadata?.avatar_url || supaUser.user_metadata?.picture || ''
+    };
+    isGuestSession = false;
+    localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+    toast(`¡Bienvenido, ${name}! 🎉`, 'ok');
+    updateAuthUserUI();
+    showHome();
+    if (authModal) authModal.classList.remove('active');
+  }
+
+  // Detectar sesión OAuth al cargar la página (redirect/popup callback)
+  if (supabaseClient) {
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user && !currentUser) {
+        await handleSupabaseSession(session.user);
+      }
+    });
+
+    // Recuperar sesión activa de Supabase si existe
+    supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user && !currentUser) {
+        await handleSupabaseSession(session.user);
+      }
+    });
+  }
+
+  // Función principal de OAuth — abre el proveedor real
+  async function openOAuthPrompt(provider) {
+    if (!supabaseClient) {
+      toast('El SDK de Supabase no está cargado. Recarga la página.', 'warn');
+      return;
     }
 
-    if (oauthPromptModal) oauthPromptModal.classList.add('active');
-  }
+    const providerName = provider === 'google' ? 'Google' : 'Apple';
 
-  // OAuth Modal Confirm Submission
-  const oauthConfirmBtn = $('oauthConfirmSubmitBtn');
-  if (oauthConfirmBtn) {
-    oauthConfirmBtn.addEventListener('click', async () => {
-      const email = $('oauthEmailInput').value;
-      const name = $('oauthNameInput').value;
+    // Mostrar loader visual en el botón
+    const btn = provider === 'google' ? $('landingGoogleAuthBtn') : $('landingAppleAuthBtn');
+    const originalHTML = btn?.innerHTML;
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<svg style="animation:spin 0.8s linear infinite;width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg> Conectando...`;
+    }
 
-      if (!email) {
-        toast('Por favor ingresa un correo válido', 'warn');
-        return;
-      }
-
-      try {
-        let res;
-        if (currentOAuthProvider === 'google') {
-          res = await api.loginGoogle({
-            googleToken: 'valid_google_oauth_token_' + Date.now(),
-            email,
-            name,
-            picture: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`
-          });
-        } else {
-          res = await api.loginApple({
-            appleToken: 'valid_apple_oauth_token_' + Date.now(),
-            email,
-            name
-          });
+    try {
+      const redirectTo = window.location.origin + window.location.pathname;
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo,
+          queryParams: provider === 'google' ? { access_type: 'offline', prompt: 'select_account' } : {}
         }
+      });
 
-        if (res && res.status === 'success') {
-          currentUser = res.user;
-          isGuestSession = false;
-          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-          localStorage.setItem('bustrack_auth_token', res.token);
-          toast(`¡Sesión iniciada con ${currentOAuthProvider === 'google' ? 'Google' : 'Apple'}! Bienvenido, ${currentUser.name}`, 'ok');
-          updateAuthUserUI();
-          showHome();
-          if (oauthPromptModal) oauthPromptModal.classList.remove('active');
-          if (authModal) authModal.classList.remove('active');
-        } else {
-          toast(res?.detail || 'Error en la autenticación', 'warn');
-        }
-      } catch (err) {
-        toast('No se pudo conectar al servidor OAuth', 'warn');
+      if (error) {
+        toast(`Error al iniciar ${providerName}: ${error.message}`, 'warn');
+        if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
       }
-    });
-  }
-
-  // --- LANDING SCREEN FORM HANDLERS ---
-  const landingTabRegister = $('landingTabRegister');
-  const landingTabLogin = $('landingTabLogin');
-  if (landingTabRegister && landingTabLogin) {
-    landingTabRegister.addEventListener('click', () => {
-      landingTabRegister.classList.add('active');
-      landingTabLogin.classList.remove('active');
-      $('landingRegisterForm').hidden = false;
-      $('landingLoginForm').hidden = true;
-    });
-    landingTabLogin.addEventListener('click', () => {
-      landingTabLogin.classList.add('active');
-      landingTabRegister.classList.remove('active');
-      $('landingLoginForm').hidden = false;
-      $('landingRegisterForm').hidden = true;
-    });
-  }
-
-  // Landing Registration Submit
-  const landingRegForm = $('landingRegisterForm');
-  if (landingRegForm) {
-    landingRegForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = $('landingRegName').value;
-      const email = $('landingRegEmail').value;
-      const password = $('landingRegPassword').value;
-      const consentTerms = $('landingRegConsent').checked;
-
-      try {
-        const res = await api.register({ name, email, password, consentTerms });
-        if (res.status === 'success') {
-          currentUser = res.user;
-          isGuestSession = false;
-          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-          localStorage.setItem('bustrack_auth_token', res.token);
-          toast(`¡Cuenta creada con éxito! Bienvenido a BusTrack Pro, ${currentUser.name}`, 'ok');
-          updateAuthUserUI();
-          showHome();
-        } else {
-          toast(res.detail || 'Error en el registro', 'warn');
-        }
-      } catch (err) {
-        toast('Error al procesar el registro', 'warn');
-      }
-    });
-  }
-
-  // Landing Login Submit
-  const landingLoginForm = $('landingLoginForm');
-  if (landingLoginForm) {
-    landingLoginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = $('landingLoginEmail').value;
-      const password = $('landingLoginPassword').value;
-      try {
-        const res = await api.login(email, password);
-        if (res.status === 'success') {
-          currentUser = res.user;
-          isGuestSession = false;
-          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-          localStorage.setItem('bustrack_auth_token', res.token);
-          toast(`¡Bienvenido de nuevo, ${currentUser.name}!`, 'ok');
-          updateAuthUserUI();
-          showHome();
-        } else {
-          toast(res.detail || 'Credenciales incorrectas', 'warn');
-        }
-      } catch (err) {
-        toast('No se pudo conectar al servidor de autenticación', 'warn');
-      }
-    });
-  }
-
-  // Landing OAuth Buttons (Google & Apple)
-  const landingGoogleBtn = $('landingGoogleAuthBtn');
-  if (landingGoogleBtn) {
-    landingGoogleBtn.addEventListener('click', () => openOAuthPrompt('google'));
-  }
-
-  const landingAppleBtn = $('landingAppleAuthBtn');
-  if (landingAppleBtn) {
-    landingAppleBtn.addEventListener('click', () => openOAuthPrompt('apple'));
-  }
-
-  // Guest Explore Button: lleva directamente al menú principal de selección
-  const guestBtn = $('guestExploreBtn');
-  if (guestBtn) {
-    guestBtn.addEventListener('click', () => {
-      isGuestSession = true;
-      sessionStorage.setItem('bustrack_guest', 'true');
-      toast('Explorando como Invitado — Menú Principal', 'info');
-      updateAuthUserUI();
-      showHome();
-    });
+      // Si no hay error, el navegador redirige automáticamente al proveedor
+    } catch (err) {
+      toast(`No se pudo conectar con ${providerName}`, 'warn');
+      if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
+    }
   }
 
   // --- MODAL FORM HANDLERS ---
@@ -3029,61 +2820,178 @@ function init() {
     });
   }
 
-  // Modal Login Submit
+  // Modal Login Submit (Conectado a Supabase y Backend)
   const loginForm = $('loginForm');
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = $('loginEmail').value;
+      const email = $('loginEmail').value.trim();
       const password = $('loginPassword').value;
+      const submitBtn = $('loginSubmitBtn');
+      const originalText = submitBtn ? submitBtn.textContent : 'Iniciar Sesión';
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Conectando con Supabase...';
+      }
+
       try {
-        const res = await api.login(email, password);
-        if (res.status === 'success') {
-          currentUser = res.user;
-          isGuestSession = false;
-          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-          localStorage.setItem('bustrack_auth_token', res.token);
-          toast(`¡Bienvenido de nuevo, ${currentUser.name}!`, 'ok');
+        let authenticated = false;
+
+        // 1. Intentar autenticar con Supabase Auth directamente
+        if (supabaseClient) {
+          try {
+            const { data: supaAuth, error: supaErr } = await supabaseClient.auth.signInWithPassword({
+              email,
+              password
+            });
+
+            if (!supaErr && supaAuth?.user) {
+              const supaUser = supaAuth.user;
+              let displayName = supaUser.user_metadata?.name || supaUser.user_metadata?.full_name || email.split('@')[0];
+
+              // Consultar perfil guardado en la tabla users de Supabase
+              try {
+                const { data: profile } = await supabaseClient
+                  .from('users')
+                  .select('full_name, role, avatar_url')
+                  .eq('email', email)
+                  .maybeSingle();
+                if (profile?.full_name) displayName = profile.full_name;
+              } catch (_) {}
+
+              currentUser = {
+                id: supaUser.id,
+                email: supaUser.email,
+                name: displayName,
+                role: 'admin',
+                provider: 'supabase',
+                avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`
+              };
+
+              isGuestSession = false;
+              localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+              if (supaAuth.session?.access_token) {
+                localStorage.setItem('bustrack_auth_token', supaAuth.session.access_token);
+              }
+              authenticated = true;
+              toast(`¡Bienvenido de nuevo, ${currentUser.name}! (Supabase Auth)`, 'ok');
+            }
+          } catch (supaEx) {
+            console.warn('[Supabase Client Login]', supaEx);
+          }
+        }
+
+        // 2. Si no se autenticó por cliente o Supabase no respondió, intentar con el backend API
+        if (!authenticated) {
+          const res = await api.login(email, password);
+          if (res.status === 'success') {
+            currentUser = res.user;
+            isGuestSession = false;
+            localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+            localStorage.setItem('bustrack_auth_token', res.token);
+            toast(`¡Bienvenido de nuevo, ${currentUser.name}!`, 'ok');
+            authenticated = true;
+          } else {
+            toast(res.detail || 'Credenciales incorrectas en Supabase o cuenta no encontrada', 'warn');
+          }
+        }
+
+        if (authenticated) {
           updateAuthUserUI();
           hideHome();
           navigate('dashboard');
-          authModal.classList.remove('active');
-        } else {
-          toast(res.detail || 'Error al iniciar sesión', 'warn');
+          if (authModal) authModal.classList.remove('active');
         }
       } catch (err) {
         toast('No se pudo conectar al servidor de autenticación', 'warn');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+        }
       }
     });
   }
 
-  // Modal Register Submit
+  // Modal Register Submit (Conectado a Supabase y Backend)
   const regForm = $('registerForm');
   if (regForm) {
     regForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const name = $('regName').value;
-      const email = $('regEmail').value;
+      const name = $('regName').value.trim();
+      const email = $('regEmail').value.trim();
       const password = $('regPassword').value;
       const consentTerms = $('regConsent').checked;
+      const submitBtn = $('registerSubmitBtn');
+      const originalText = submitBtn ? submitBtn.textContent : 'Crear Cuenta';
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Registrando en Supabase...';
+      }
 
       try {
+        let supabaseSuccess = false;
+
+        // 1. Intentar registrar en Supabase Auth directamente desde el cliente
+        if (supabaseClient) {
+          try {
+            const { data: supaReg, error: supaErr } = await supabaseClient.auth.signUp({
+              email,
+              password,
+              options: {
+                data: { name }
+              }
+            });
+
+            if (supaErr) {
+              if (supaErr.message.includes('already registered') || supaErr.message.includes('User already registered')) {
+                toast('Ya existe una cuenta con este correo en Supabase', 'warn');
+                return;
+              }
+              console.warn('[Supabase Client SignUp]', supaErr.message);
+            } else if (supaReg?.user) {
+              supabaseSuccess = true;
+              // Guardar en tabla users de Supabase
+              try {
+                await supabaseClient.from('users').upsert({
+                  id: supaReg.user.id,
+                  email,
+                  full_name: name,
+                  role: 'admin',
+                  auth_provider: 'email',
+                  avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`
+                }, { onConflict: 'email' });
+              } catch (_) {}
+            }
+          } catch (supaEx) {
+            console.warn('[Supabase Client SignUp Ex]', supaEx);
+          }
+        }
+
+        // 2. Sincronizar y completar registro en el backend API
         const res = await api.register({ name, email, password, consentTerms });
         if (res.status === 'success') {
           currentUser = res.user;
           isGuestSession = false;
           localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
           localStorage.setItem('bustrack_auth_token', res.token);
-          toast(`¡Cuenta creada con éxito! Bienvenido, ${currentUser.name}`, 'ok');
+          toast(`¡Cuenta creada con éxito en Supabase! Bienvenido, ${currentUser.name} 🚀`, 'ok');
           updateAuthUserUI();
           hideHome();
           navigate('dashboard');
-          authModal.classList.remove('active');
+          if (authModal) authModal.classList.remove('active');
         } else {
           toast(res.detail || 'Error en el registro', 'warn');
         }
       } catch (err) {
-        toast('Error al procesar el registro', 'warn');
+        toast('Error al procesar el registro con Supabase', 'warn');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+        }
       }
     });
   }
@@ -3092,28 +3000,7 @@ function init() {
   const googleBtn = $('googleAuthBtn');
   if (googleBtn) {
     googleBtn.addEventListener('click', async () => {
-      try {
-        const mockGoogleEmail = `usuario.google.${Math.floor(Math.random()*1000)}@gmail.com`;
-        const res = await api.loginGoogle({
-          googleToken: 'mock_google_oauth_token',
-          email: mockGoogleEmail,
-          name: 'Usuario Google',
-          picture: 'https://api.dicebear.com/7.x/initials/svg?seed=GoogleUser'
-        });
-        if (res.status === 'success') {
-          currentUser = res.user;
-          isGuestSession = false;
-          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-          localStorage.setItem('bustrack_auth_token', res.token);
-          toast(`Sesión iniciada con Google (${currentUser.email})`, 'ok');
-          updateAuthUserUI();
-          hideHome();
-          navigate('dashboard');
-          authModal.classList.remove('active');
-        }
-      } catch (_) {
-        toast('Error en autenticación con Google', 'warn');
-      }
+      await openOAuthPrompt('google');
     });
   }
 
@@ -3121,43 +3008,42 @@ function init() {
   const appleBtn = $('appleAuthBtn');
   if (appleBtn) {
     appleBtn.addEventListener('click', async () => {
-      try {
-        const res = await api.loginApple({
-          appleToken: 'mock_apple_oauth_token',
-          email: `apple_user_${Math.floor(Math.random()*1000)}@privaterelay.appleid.com`,
-          name: 'Usuario Apple'
-        });
-        if (res.status === 'success') {
-          currentUser = res.user;
-          isGuestSession = false;
-          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-          localStorage.setItem('bustrack_auth_token', res.token);
-          toast('Sesión iniciada con Apple ID', 'ok');
-          updateAuthUserUI();
-          hideHome();
-          navigate('dashboard');
-          authModal.classList.remove('active');
-        }
-      } catch (_) {
-        toast('Error en autenticación con Apple', 'warn');
-      }
+      await openOAuthPrompt('apple');
     });
   }
 
-  // Logout Button
-  const logoutBtn = $('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      currentUser = null;
-      isGuestSession = false;
-      localStorage.removeItem('bustrack_user');
-      localStorage.removeItem('bustrack_auth_token');
-      sessionStorage.removeItem('bustrack_guest');
-      toast('Sesión cerrada correctamente', 'info');
-      updateAuthUserUI();
-      if (authModal) authModal.classList.remove('active');
-    });
+  // Logout Buttons (sidebar y modal)
+  async function performLogout() {
+    const userName = currentUser?.name || 'Usuario';
+    currentUser = null;
+    isGuestSession = false;
+    localStorage.removeItem('bustrack_user');
+    localStorage.removeItem('bustrack_auth_token');
+    sessionStorage.removeItem('bustrack_guest');
+
+    // Intentar cerrar sesión en Supabase también
+    try {
+      if (supabaseClient) await supabaseClient.auth.signOut();
+    } catch (_) {}
+    try {
+      const SUPABASE_URL = 'https://tbkgtblucdzkazpwlwda.supabase.co';
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRia2d0Ymx1Y2R6a2F6cHdsd2RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2MjEzMDIsImV4cCI6MjEwNjE5NzMwMn0.-l_2o1G4eb3bhDgknHLH7SSx1IobaC-9jbVTTwBmkfM';
+      await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+    } catch (_) { /* Silencioso si falla */ }
+
+    toast(`Hasta pronto, ${userName}. Sesión cerrada correctamente. 👋`, 'info');
+    updateAuthUserUI();
+    if (authModal) authModal.classList.remove('active');
   }
+
+  const logoutBtn = $('logoutBtn');
+  if (logoutBtn) logoutBtn.addEventListener('click', performLogout);
+
+  const modalLogoutBtn = $('modalLogoutBtn');
+  if (modalLogoutBtn) modalLogoutBtn.addEventListener('click', performLogout);
 
   // ------------------------------------------------------------------
   // COMMAND PALETTE (CTRL + K) LOGIC
@@ -3207,7 +3093,6 @@ function init() {
       const action = item.dataset.action;
       closeCommandPalette();
       if (action === 'go-dashboard') switchView('dashboard');
-      else if (action === 'go-passenger') switchView('passenger');
       else if (action === 'go-map') switchView('map');
       else if (action === 'go-fleet') switchView('fleet');
       else if (action === 'toggle-theme') {
@@ -3221,9 +3106,8 @@ function init() {
   // ------------------------------------------------------------------
   // NOTIFICATION DROPDOWN PANEL
   // ------------------------------------------------------------------
-  const notifBtn = $('notifBtn');
-  const notifDropdownPanel = $('notifDropdownPanel');
-  const notifMarkAllReadBtn = $('notifMarkAllReadBtn');
+  // notifBtn, notifDropdownPanel, notifMarkAllReadBtn ya declarados en scope global
+
 
   function renderNotifDropdown() {
     const list = $('notifList');
@@ -3540,7 +3424,7 @@ function init() {
   const mobileCta = $('mobileFloatingCta');
   if (mobileCta) {
     mobileCta.addEventListener('click', () => {
-      switchView('passenger');
+      // passenger view removed
       hapticFeedback([10, 30, 10]);
     });
   }
@@ -3557,7 +3441,7 @@ function init() {
       });
     }, { threshold: 0.1 });
 
-    document.querySelectorAll('.stat-card, .card, .passenger-hero-card').forEach(el => {
+    document.querySelectorAll('.stat-card, .card').forEach(el => {
       el.classList.add('scroll-reveal');
       observer.observe(el);
     });

@@ -97,6 +97,20 @@ authRouter.get('/me', authenticateToken, (req, res) => {
   res.json({ user: safeUser });
 });
 
+/** POST /api/v1/auth/oauth-callback — Registra/actualiza usuario OAuth (Google/Apple via Supabase) */
+authRouter.post('/oauth-callback', writeLimiter, async (req, res) => {
+  try {
+    const { supabaseId, email, name, provider, avatarUrl } = req.body;
+    if (!email || !supabaseId) {
+      return res.status(400).json({ status: 'error', detail: 'Email y supabaseId son obligatorios.' });
+    }
+    const result = await AuthService.loginWithOAuthCallback({ supabaseId, email, name, provider, avatarUrl });
+    res.json({ status: 'success', message: `Sesión iniciada con ${provider}`, ...result });
+  } catch (err) {
+    res.status(400).json({ type: 'about:blank', title: 'Bad Request', status: 400, detail: err.message });
+  }
+});
+
 /** POST /api/v1/auth/logout — Client Logout */
 authRouter.post('/logout', (req, res) => {
   res.json({ status: 'success', message: 'Sesión cerrada correctamente' });
