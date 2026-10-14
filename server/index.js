@@ -5,6 +5,7 @@
 import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs'; // ✅ ESM-safe
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -25,6 +26,10 @@ const app = express();
 const server = http.createServer(app);
 
 const isProd = config.nodeEnv === 'production';
+
+// ─── 0. Trust Proxy (requerido detrás de Nginx / Supabase Edge) ──────────────
+// Habilita req.ip correcto y rate-limiter por IP real.
+app.set('trust proxy', 1);
 
 // ─── 1. Security Headers (Helmet) ────────────────────────────────────────────
 app.use(helmet({
@@ -85,12 +90,18 @@ app.use(helmet({
 }));
 
 // ─── 2. CORS ──────────────────────────────────────────────────────────────────
-const allowedOrigins = config.corsOrigin === '*'
-  ? true
-  : config.corsOrigin.split(',').map(o => o.trim());
+// ⛔ Nunca usar '*' con credentials:true. Se exige una whitelist explícita.
+const rawOrigins = (config.corsOrigin || '').split(',').map(o => o.trim()).filter(Boolean);
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    // Permitir peticiones sin origin (curl, Postman, SSR server-side)
+    if (!origin) return callback(null, true);
+    if (rawOrigins.includes('*') || rawOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error(`Origen no permitido por CORS: ${origin}`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-Id'],
@@ -105,14 +116,21 @@ app.use(correlationMiddleware);
 app.use(requestLogger);
 app.use(sanitizeInputs);
 
-// ─── 5. Block debug/admin endpoints ───────────────────────────────────────────
-// These paths should NEVER be accessible in production
+// ─── 5. Block debug/admin/sensitive endpoints ──────────────────────────────────
+// ⛔ Bloquear rutas sensibles antes de cualquier handler. Se compara contra
+// el path URL-decodificado para evitar bypass con %73erver/ etc.
 const blockedPaths = [
   '/admin', '/debug', '/phpinfo', '/wp-admin', '/wp-login',
   '/.env', '/.git', '/server', '/config', '/package.json',
+  '/data', '/repomix-output', '/docker-compose',
 ];
 app.use((req, res, next) => {
-  const p = req.path.toLowerCase();
+  let p;
+  try {
+    p = decodeURIComponent(req.path).toLowerCase();
+  } catch {
+    return res.status(400).type('text/plain').send('Bad Request');
+  }
   if (blockedPaths.some(blocked => p === blocked || p.startsWith(blocked + '/'))) {
     return res.status(404).type('text/plain').send('Not found');
   }
@@ -144,14 +162,27 @@ app.get('/thanks', (_req, res) => {
 });
 
 // ─── 9. Static Client Serving ─────────────────────────────────────────────────
+// ✅ Servir SOLO la carpeta public/ — nunca la raíz del repositorio.
+// Esto evita exponer .sqlite, docker-compose.yml, repomix-output.xml, etc.
 app.use('/vendor/leaflet', express.static(path.join(rootDir, 'node_modules', 'leaflet', 'dist')));
 
-app.use(express.static(rootDir, {
+// Servir archivos estáticos del cliente desde la carpeta public/ solamente.
+// Si no existe public/, se sirven los archivos HTML/CSS/JS de la raíz como fallback
+// solo para compatibilidad durante la migración (ver ítem #2 del plan).
+const publicDir = path.join(rootDir, 'public');
+const clientDir = existsSync(publicDir) ? publicDir : rootDir;
+
+app.use(express.static(clientDir, {
   index: 'index.html',
-  // Cache static assets aggressively
   maxAge: isProd ? '1d' : 0,
-  // Don't expose server directory
   dotfiles: 'deny',
+  // ⛔ Nunca exponer la carpeta server/, data/, test/, docs/ ni archivos sensibles.
+  setHeaders: (res, filePath) => {
+    const forbidden = ['/server/', '/data/', '/test/', '/docs/', '.sqlite', '.env', '.xml'];
+    if (forbidden.some(f => filePath.includes(f))) {
+      res.statusCode = 403;
+    }
+  },
 }));
 
 // ─── 10. Custom 404 ───────────────────────────────────────────────────────────
@@ -163,14 +194,40 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 // ─── 12. Real-Time WebSocket Telemetry Gateway ────────────────────────────────
-const wss = new WebSocketServer({ server, path: '/ws/telemetry' });
+// ítem #9: maxPayload limita mensajes a 64 KB; origin check rechaza conexiones externas.
+const wss = new WebSocketServer({
+  server,
+  path: '/ws/telemetry',
+  maxPayload: 64 * 1024, // ✅ 64 KB — previene payloads gigantes
+  verifyClient: ({ origin }, done) => {
+    // Permitir conexiones sin origin (herramientas locales, tests) solo en desarrollo
+    if (!origin) return done(!isProd);
+    if (rawOrigins.includes('*') || rawOrigins.includes(origin)) return done(true);
+    done(false, 403, 'Origin not allowed');
+  },
+});
 
-// Simple rate-limit: track message counts per client
+// ✅ Heartbeat: cierra sockets muertos cada 30 segundos
+const wsHeartbeat = setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (ws.isAlive === false) {
+      ws.terminate();
+      return;
+    }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 30_000);
+wss.on('close', () => clearInterval(wsHeartbeat));
+
+// Rate-limit: track message counts per client
 const wsMessageCounts = new WeakMap();
 
 wss.on('connection', (ws, req) => {
+  ws.isAlive = true; // ✅ para heartbeat
+  ws.on('pong', () => { ws.isAlive = true; });
+
   const clientIp = req.socket.remoteAddress;
-  console.log(`[WS] Client connected from ${clientIp}. Total: ${wss.clients.size}`);
   telemetryEngine.registerClient(ws);
   wsMessageCounts.set(ws, { count: 0, resetAt: Date.now() + 60_000 });
 

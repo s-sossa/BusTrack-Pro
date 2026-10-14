@@ -11,6 +11,7 @@ import { db } from '../database/db.js';
 import { authRouter } from './authRoutes.js';
 import { writeLimiter } from '../middleware/rateLimiter.js';
 import { validateBusStatus, validateAlertSeverity } from '../middleware/sanitizer.js';
+import { authenticateToken, requireRole } from '../middleware/auth.js'; // ✅ ítem #3
 
 export const apiRouter = Router();
 
@@ -41,7 +42,8 @@ apiRouter.get('/health', (req, res) => {
   });
 });
 
-apiRouter.get('/database/status', (req, res) => {
+// ⛔ ítem #3: database/status solo accesible para admins autenticados
+apiRouter.get('/database/status', authenticateToken, requireRole('admin'), (req, res) => {
   if (typeof db.getDbStatus === 'function') {
     res.json(db.getDbStatus());
   } else {
@@ -65,12 +67,13 @@ apiRouter.get('/routes/:id', (req, res, next) => {
 });
 
 // --- 3. DRIVERS ---
-apiRouter.get('/drivers', (req, res) => {
+// ⛔ ítem #8: /drivers requiere autenticación para proteger datos sensibles
+apiRouter.get('/drivers', authenticateToken, requireRole('admin'), (req, res) => {
   const drivers = FleetService.getDrivers();
   res.json(drivers);
 });
 
-apiRouter.get('/drivers/:id', (req, res, next) => {
+apiRouter.get('/drivers/:id', authenticateToken, requireRole('admin'), (req, res, next) => {
   try {
     const driver = FleetService.getDriverById(req.params.id);
     res.json(driver);
@@ -86,7 +89,8 @@ apiRouter.get('/buses', (req, res) => {
   res.json(buses);
 });
 
-apiRouter.post('/buses', writeLimiter, (req, res, next) => {
+// ⛔ ítem #3: POST y PATCH de buses requieren autenticación + rol admin
+apiRouter.post('/buses', authenticateToken, requireRole('admin'), writeLimiter, (req, res, next) => {
   try {
     const bus = FleetService.createBus(req.body);
     telemetryEngine.broadcast('bus_created', bus);
@@ -105,7 +109,7 @@ apiRouter.get('/buses/:id', (req, res, next) => {
   }
 });
 
-apiRouter.patch('/buses/:id/status', writeLimiter, validateBusStatus, (req, res, next) => {
+apiRouter.patch('/buses/:id/status', authenticateToken, requireRole('admin'), writeLimiter, validateBusStatus, (req, res, next) => {
   try {
     const { status } = req.body;
     const bus = FleetService.updateBusStatus(req.params.id, status);
@@ -123,7 +127,8 @@ apiRouter.get('/alerts', (req, res) => {
   res.json(alerts);
 });
 
-apiRouter.post('/alerts', writeLimiter, validateAlertSeverity, (req, res, next) => {
+// ⛔ ítem #3: POST y PATCH de alertas requieren autenticación + rol admin
+apiRouter.post('/alerts', authenticateToken, requireRole('admin'), writeLimiter, validateAlertSeverity, (req, res, next) => {
   try {
     const alert = AlertService.createAlert(req.body);
     telemetryEngine.broadcast('alert_created', alert);
@@ -133,7 +138,7 @@ apiRouter.post('/alerts', writeLimiter, validateAlertSeverity, (req, res, next) 
   }
 });
 
-apiRouter.patch('/alerts/read-all', writeLimiter, (req, res) => {
+apiRouter.patch('/alerts/read-all', authenticateToken, requireRole('admin'), writeLimiter, (req, res) => {
   const result = AlertService.markAllAsRead();
   telemetryEngine.broadcast('alerts_read_all', result);
   res.json(result);

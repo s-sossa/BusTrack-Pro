@@ -1,5 +1,6 @@
 /* ==============================================================================
-   BusTrack Pro — Authentication API Routes (Email, Google, Apple)
+   BusTrack Pro — Authentication API Routes
+   ✅ Solo Email + Supabase Auth. No Google/Apple directo.
    ============================================================================== */
 
 import { Router } from 'express';
@@ -50,45 +51,9 @@ authRouter.post('/login', writeLimiter, async (req, res, next) => {
   }
 });
 
-/** POST /api/v1/auth/google — Google OAuth Login / Register */
-authRouter.post('/google', writeLimiter, async (req, res, next) => {
-  try {
-    const { googleToken, email, name, picture } = req.body;
-    const result = await AuthService.loginWithGoogle({ googleToken, email, name, picture });
-    res.json({
-      status: 'success',
-      message: 'Inicio de sesión con Google exitoso',
-      ...result,
-    });
-  } catch (err) {
-    res.status(400).json({
-      type: 'about:blank',
-      title: 'Bad Request',
-      status: 400,
-      detail: err.message,
-    });
-  }
-});
-
-/** POST /api/v1/auth/apple — Apple OAuth Login / Register */
-authRouter.post('/apple', writeLimiter, async (req, res, next) => {
-  try {
-    const { appleToken, email, name } = req.body;
-    const result = await AuthService.loginWithApple({ appleToken, email, name });
-    res.json({
-      status: 'success',
-      message: 'Inicio de sesión con Apple exitoso',
-      ...result,
-    });
-  } catch (err) {
-    res.status(400).json({
-      type: 'about:blank',
-      title: 'Bad Request',
-      status: 400,
-      detail: err.message,
-    });
-  }
-});
+// ⛔ Google y Apple OAuth eliminados del servidor.
+// El flujo corre en el cliente con Supabase JS SDK.
+// El callback llega al endpoint /oauth-callback de abajo.
 
 /** GET /api/v1/auth/me — Current User Profile */
 authRouter.get('/me', authenticateToken, (req, res) => {

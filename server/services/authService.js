@@ -1,5 +1,7 @@
 /* ==============================================================================
-   BusTrack Pro — Authentication Service (Email, Google, Apple)
+   BusTrack Pro — Authentication Service (Email + Supabase Auth)
+   ✅ No se usa Google ni Apple sign-in directo.
+   ✅ Rol por defecto: 'passenger'. Solo admins se asignan manualmente.
    ============================================================================== */
 
 import bcrypt from 'bcryptjs';
@@ -65,7 +67,7 @@ export class AuthService {
               id: supabaseUserId,
               email: cleanEmail,
               full_name: cleanName,
-              role: 'admin',
+              role: 'passenger', // ✅ Rol por defecto: passenger, NO admin
               auth_provider: 'email',
               avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`,
               created_at: new Date().toISOString(),
@@ -104,7 +106,7 @@ export class AuthService {
       email: cleanEmail,
       passwordHash,
       name: cleanName,
-      role: 'admin',
+      role: 'passenger', // ✅ Rol por defecto: passenger, NO admin
       provider: 'email',
       avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`,
     });
@@ -119,18 +121,16 @@ export class AuthService {
   }
 
 
-  /** OAuth Callback — Registra/actualiza usuario de Supabase OAuth (Google, Apple) */
+  /** OAuth Callback — Registra/actualiza usuario de Supabase OAuth */
   static async loginWithOAuthCallback({ supabaseId, email, name, provider, avatarUrl }) {
     const cleanEmail = email.toLowerCase().trim();
     const cleanName = (name || cleanEmail.split('@')[0]).trim();
     const cleanProvider = provider || 'oauth';
     const cleanAvatar = avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`;
 
-    // Buscar si ya existe en la BD local (por email o por id de Supabase)
     let existingUser = db.findUserByEmail(cleanEmail) || db.findUserById(supabaseId);
 
     if (existingUser) {
-      // Actualizar datos del perfil (nombre/avatar pueden cambiar en el proveedor)
       const updated = db.updateUser(existingUser.id, {
         name: cleanName,
         avatarUrl: cleanAvatar,
@@ -141,15 +141,14 @@ export class AuthService {
       return { user: safeUser, token };
     }
 
-    // Crear usuario nuevo en la BD local con el UUID de Supabase
     const newUser = db.createUser({
       id: supabaseId,
       email: cleanEmail,
       name: cleanName,
-      role: 'admin',
+      role: 'passenger', // ✅ Rol por defecto: passenger, NO admin
       provider: cleanProvider,
       avatarUrl: cleanAvatar,
-      passwordHash: null, // Los usuarios OAuth no tienen contraseña local
+      passwordHash: null,
     });
 
     try {
@@ -165,12 +164,12 @@ export class AuthService {
   /** Login user with Email & Password */
   static async loginWithEmail({ email, password }) {
     if (!email || !password) {
-      throw new Error('Correo y contraseña son requeridos.');
+      throw new Error('Credenciales inválidas.');
     }
 
     const cleanEmail = email.toLowerCase().trim();
 
-    // 1. Si Supabase está configurado, intentar primero autenticar contra Supabase Auth
+    // 1. Si Supabase está configurado, autenticar primero contra Supabase Auth
     if (isSupabaseConfigured) {
       try {
         const { data: supaData, error: supaError } = await supabase.auth.signInWithPassword({
@@ -188,7 +187,7 @@ export class AuthService {
               email: cleanEmail,
               passwordHash,
               name: supaData.user.user_metadata?.name || cleanEmail.split('@')[0],
-              role: 'admin',
+              role: 'passenger', // ✅ Rol por defecto
               provider: 'email',
               avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanEmail)}`,
             });
@@ -208,17 +207,18 @@ export class AuthService {
 
     // 2. Autenticación con la base de datos local
     const user = db.findUserByEmail(cleanEmail);
+    // ⛔ Mensaje genérico para evitar enumeración de cuentas
     if (!user || !user.passwordHash) {
-      throw new Error('Credenciales inválidas o la cuenta fue creada con Google/Apple.');
+      throw new Error('Credenciales inválidas.');
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
-      throw new Error('Correo o contraseña incorrectos.');
+      throw new Error('Credenciales inválidas.');
     }
 
     try {
-      db.pushActivity(`Inicio de sesión: ${user.name} (${user.email})`, 'info');
+      db.pushActivity(`Inicio de sesión: ${user.name}`, 'info');
     } catch (_) {}
 
     const token = this.generateToken(user);
@@ -226,82 +226,8 @@ export class AuthService {
     return { user: safeUser, token };
   }
 
-  /** Login / Register with Google OAuth */
-  static async loginWithGoogle({ googleToken, email, name, picture }) {
-    if (!email) {
-      throw new Error('No se pudo verificar el correo de Google.');
-    }
+  // ⛔ Google y Apple OAuth eliminados — se usa exclusivamente Supabase Auth.
+  // El flujo OAuth se maneja del lado del cliente con Supabase JS SDK.
+  // El servidor recibe el callback via /api/v1/auth/oauth-callback.
 
-    const cleanEmail = email.toLowerCase().trim();
-    let user = db.findUserByEmail(cleanEmail);
-
-    if (!user) {
-      user = db.createUser({
-        email: cleanEmail,
-        passwordHash: null,
-        name: name || cleanEmail.split('@')[0],
-        role: 'admin',
-        provider: 'google',
-        avatarUrl: picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanEmail)}`,
-      });
-
-      if (isSupabaseConfigured) {
-        try {
-          await supabase.from('users').upsert({
-            email: cleanEmail,
-            full_name: user.name,
-            role: 'admin',
-            auth_provider: 'google',
-            avatar_url: user.avatarUrl,
-          });
-        } catch (_) {}
-      }
-    }
-
-    try {
-      db.pushActivity(`Inicio de sesión con Google: ${user.name}`, 'info');
-    } catch (_) {}
-
-    const token = this.generateToken(user);
-    const { passwordHash: _, ...safeUser } = user;
-    return { user: safeUser, token };
-  }
-
-  /** Login / Register with Apple OAuth */
-  static async loginWithApple({ appleToken, email, name }) {
-    const cleanEmail = (email || `apple_${Date.now()}@privaterelay.appleid.com`).toLowerCase().trim();
-    let user = db.findUserByEmail(cleanEmail);
-
-    if (!user) {
-      user = db.createUser({
-        email: cleanEmail,
-        passwordHash: null,
-        name: name || 'Usuario Apple',
-        role: 'passenger',
-        provider: 'apple',
-        avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=Apple`,
-      });
-
-      if (isSupabaseConfigured) {
-        try {
-          await supabase.from('users').upsert({
-            email: cleanEmail,
-            full_name: user.name,
-            role: 'passenger',
-            auth_provider: 'apple',
-            avatar_url: user.avatarUrl,
-          });
-        } catch (_) {}
-      }
-    }
-
-    try {
-      db.pushActivity(`Inicio de sesión con Apple: ${user.name}`, 'info');
-    } catch (_) {}
-
-    const token = this.generateToken(user);
-    const { passwordHash: _, ...safeUser } = user;
-    return { user: safeUser, token };
-  }
 }
-

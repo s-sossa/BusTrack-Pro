@@ -17,7 +17,7 @@
 'use strict';
  
 /* ==========================================================
-   1. DATOS Y UTILIDADES
+   1. DATOS Y UTILIDADES 
    ========================================================== */
  
 // Los colores salen del CSS para que cambiar el acento repinte
@@ -49,6 +49,25 @@ function updateBackendStatusBadge(status, text) {
   label.textContent = text;
 }
 
+// Helper: escapa caracteres HTML para evitar XSS al usar innerHTML (ítem #35)
+function esc(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Helper: obtiene el token JWT del almacenamiento local
+function getAuthToken() {
+  try {
+    const s = localStorage.getItem('bustrack_session');
+    return s ? JSON.parse(s).token : null;
+  } catch { return null; }
+}
+
 const api = {
   async checkHealth() {
     try {
@@ -60,40 +79,60 @@ const api = {
   },
   async getBuses() {
     const res = await fetch(`${API_BASE}/api/v1/buses`);
+    if (!res.ok) throw new Error(`Error ${res.status} al obtener buses`);
     return res.json();
   },
   async getAlerts() {
     const res = await fetch(`${API_BASE}/api/v1/alerts`);
+    if (!res.ok) throw new Error(`Error ${res.status} al obtener alertas`);
     return res.json();
   },
   async updateBusStatus(id, status) {
+    const token = getAuthToken();
     const res = await fetch(`${API_BASE}/api/v1/buses/${id}/status`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({ status }),
     });
+    if (!res.ok) throw new Error(`Error ${res.status} al actualizar estado del bus`);
     return res.json();
   },
   async createBus(payload) {
+    const token = getAuthToken();
     const res = await fetch(`${API_BASE}/api/v1/buses`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(payload),
     });
+    if (!res.ok) throw new Error(`Error ${res.status} al crear bus`);
     return res.json();
   },
   async createAlert(payload) {
+    const token = getAuthToken();
     const res = await fetch(`${API_BASE}/api/v1/alerts`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(payload),
     });
+    if (!res.ok) throw new Error(`Error ${res.status} al crear alerta`);
     return res.json();
   },
   async markAllAlertsRead() {
+    const token = getAuthToken();
     const res = await fetch(`${API_BASE}/api/v1/alerts/read-all`, {
       method: 'PATCH',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     });
+    if (!res.ok) throw new Error(`Error ${res.status} al marcar alertas`);
     return res.json();
   },
   async login(email, password) {
@@ -102,6 +141,10 @@ const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || 'Error al iniciar sesión');
+    }
     return res.json();
   },
   async register(payload) {
@@ -110,33 +153,26 @@ const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || 'Error al registrarse');
+    }
     return res.json();
   },
-  async loginGoogle(payload) {
-    const res = await fetch(`${API_BASE}/api/v1/auth/google`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    return res.json();
-  },
-  async loginApple(payload) {
-    const res = await fetch(`${API_BASE}/api/v1/auth/apple`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    return res.json();
-  },
+  // loginGoogle y loginApple eliminados — se usa Supabase JS SDK en el cliente
   async getMe(token) {
     const res = await fetch(`${API_BASE}/api/v1/auth/me`, {
       headers: { 'Authorization': `Bearer ${token}` },
     });
+    if (!res.ok) return null;
     return res.json();
   },
   async getDatabaseStatus() {
     try {
-      const res = await fetch(`${API_BASE}/api/v1/database/status`);
+      const token = getAuthToken();
+      const res = await fetch(`${API_BASE}/api/v1/database/status`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
       if (!res.ok) return null;
       return await res.json();
     } catch (err) {
@@ -250,11 +286,51 @@ function handleServerEvent(msg) {
     if (!exists) {
       alerts.unshift(msg.data);
       renderAlerts();
-      addNotification(msg.data.icon, `<strong>${msg.data.title}:</strong> ${msg.data.bus}`);
+      // ítem #35: esc() para datos del servidor antes de insertar en DOM
+      addNotification(msg.data.icon, `<strong>${esc(msg.data.title)}:</strong> ${esc(msg.data.bus)}`);
     }
   } else if (msg.event === 'alerts_read_all') {
     alerts.forEach(a => { a.read = true; });
     renderAlerts();
+  }
+}
+
+// ítem #34: Reconexión WebSocket con backoff exponencial
+let wsRetryDelay = 1000;
+const WS_MAX_DELAY = 30000;
+
+function connectWebSocket() {
+  try {
+    wsInstance = new WebSocket(WS_BASE);
+    wsInstance.onopen = () => {
+      backendConnected = true;
+      wsRetryDelay = 1000; // reset backoff
+      updateBackendStatusBadge('online', 'API Online (WS)');
+    };
+    wsInstance.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        handleServerEvent(data);
+      } catch (err) {
+        console.warn('WS JSON parse error:', err);
+      }
+    };
+    wsInstance.onclose = () => {
+      backendConnected = false;
+      updateBackendStatusBadge('offline', 'Modo Local');
+      // Reintentar con backoff
+      setTimeout(() => {
+        wsRetryDelay = Math.min(wsRetryDelay * 2, WS_MAX_DELAY);
+        connectWebSocket();
+      }, wsRetryDelay);
+    };
+    wsInstance.onerror = () => {
+      // onclose se disparará tras onerror; el backoff lo maneja
+      backendConnected = false;
+      updateBackendStatusBadge('offline', 'Modo Local');
+    };
+  } catch (err) {
+    console.warn('WebSocket init failed:', err);
   }
 }
 
@@ -263,31 +339,7 @@ function initBackendConnection() {
     if (ok) {
       backendConnected = true;
       updateBackendStatusBadge('online', 'API Online');
-      try {
-        wsInstance = new WebSocket(WS_BASE);
-        wsInstance.onopen = () => {
-          backendConnected = true;
-          updateBackendStatusBadge('online', 'API Online (WS)');
-        };
-        wsInstance.onmessage = (e) => {
-          try {
-            const data = JSON.parse(e.data);
-            handleServerEvent(data);
-          } catch (err) {
-            console.warn('WS JSON parse error:', err);
-          }
-        };
-        wsInstance.onclose = () => {
-          backendConnected = false;
-          updateBackendStatusBadge('offline', 'Modo Local');
-        };
-        wsInstance.onerror = () => {
-          backendConnected = false;
-          updateBackendStatusBadge('offline', 'Modo Local');
-        };
-      } catch (err) {
-        console.warn('WebSocket init failed:', err);
-      }
+      connectWebSocket();
     } else {
       backendConnected = false;
       updateBackendStatusBadge('offline', 'Modo Local');
@@ -300,10 +352,27 @@ function initBackendConnection() {
 
  
 const ROUTES = [
-  { id: 'A', name: 'Centro — Aeropuerto',     varName: '--route-a', color: '#5b6ef5', stops: 8,  length: 22 },
-  { id: 'B', name: 'Norte — Sur',             varName: '--route-b', color: '#7c4ddb', stops: 12, length: 35 },
-  { id: 'C', name: 'Este — Centro',           varName: '--route-c', color: '#2aa3c4', stops: 6,  length: 18 },
-  { id: 'D', name: 'Sur — Zona Industrial',   varName: '--route-d', color: '#2bb885', stops: 10, length: 28 },
+  // Rutas reales del Gran Área Metropolitana y regiones de Costa Rica
+  { id: 'SJO-201', name: 'SJO-201 – San José ↔ Alajuela (vía Aeropuerto SJO)',  varName: '--route-a', color: '#5b6ef5', stops: 8,  length: 22,
+    stopIds: ['stop-central', 'stop-coca-cola', 'stop-sabana', 'stop-escazu', 'stop-santa-ana', 'stop-city-mall', 'stop-aeropuerto-sjo', 'stop-alajuela-fecosa'] },
+  { id: 'SJO-300', name: 'SJO-300 – San José ↔ Heredia (vía Ruta 3)',           varName: '--route-b', color: '#7c4ddb', stops: 6,  length: 18,
+    stopIds: ['stop-central', 'stop-7-10', 'stop-parque', 'stop-heredia-terminal', 'stop-santo-domingo', 'stop-san-pablo'] },
+  { id: 'SJO-400', name: 'SJO-400 – San José ↔ Cartago (vía Autopista Florencio del Castillo)', varName: '--route-c', color: '#2aa3c4', stops: 7, length: 25,
+    stopIds: ['stop-central', 'stop-hospital', 'stop-san-pedro', 'stop-ucr', 'stop-curridabat', 'stop-tres-rios', 'stop-cartago-mall'] },
+  { id: 'SJO-401', name: 'SJO-401 – San José ↔ Turrialba (vía Cartago)',        varName: '--route-d', color: '#2bb885', stops: 6,  length: 90,
+    stopIds: ['stop-central', 'stop-cartago-mall', 'stop-tres-rios', 'stop-paraiso', 'stop-cervantes', 'stop-turrialba'] },
+  { id: 'SJO-402', name: 'SJO-402 – Cartago ↔ San José (Express Ciudad Jardín)', varName: '--route-e', color: '#f5a623', stops: 5, length: 24,
+    stopIds: ['stop-cartago-mall', 'stop-tres-rios', 'stop-curridabat', 'stop-san-pedro', 'stop-central'] },
+  { id: 'SJO-600', name: 'SJO-600 – San José ↔ Desamparados ↔ Aserrí',         varName: '--route-f', color: '#e24c6c', stops: 5,  length: 20,
+    stopIds: ['stop-central', 'stop-sanjose', 'stop-zapote', 'stop-desamparados', 'stop-aserri'] },
+  { id: 'SJO-601', name: 'SJO-601 – San José ↔ San Isidro de El General',       varName: '--route-g', color: '#ff7043', stops: 5,  length: 120,
+    stopIds: ['stop-central', 'stop-hospital', 'stop-desamparados', 'stop-empalme', 'stop-san-isidro'] },
+  { id: 'PAC-327', name: 'PAC-327 – San José ↔ Puntarenas (vía Esparza)',        varName: '--route-h', color: '#26c6da', stops: 5,  length: 110,
+    stopIds: ['stop-coca-cola', 'stop-san-ramon', 'stop-esparza', 'stop-puntarenas-muelle', 'stop-puntarenas-terminal'] },
+  { id: 'GUA-900', name: 'GUA-900 – San José ↔ Liberia (vía Cañas)',             varName: '--route-i', color: '#66bb6a', stops: 6,  length: 230,
+    stopIds: ['stop-coca-cola', 'stop-alajuela-fecosa', 'stop-coyol', 'stop-canas', 'stop-liberia-terminal', 'stop-la-cruz'] },
+  { id: 'CAR-32',  name: 'CAR-32  – San José ↔ Limón (vía Siquirres)',           varName: '--route-j', color: '#ab47bc', stops: 6,  length: 160,
+    stopIds: ['stop-7-10', 'stop-cartago-mall', 'stop-turrialba', 'stop-siquirres', 'stop-guapiles', 'stop-limon-terminal'] },
 ];
  
 const DRIVERS = [
@@ -757,7 +826,7 @@ function pushActivity() {
 }
  
 /* ==========================================================
-   5. FLOTA
+   5. BUSES
    ========================================================== */
  
 function sortValue(bus, key) {
@@ -1670,18 +1739,20 @@ let alerts = ALERT_SEED.slice();
 function renderAlerts() {
   const data = state.alertFilter === 'all' ? alerts : alerts.filter(a => a.type === state.alertFilter);
   const el = $('alertsList');
+  if (!el) return;
   if (!data.length) {
     el.innerHTML = '<p class="empty-state">No hay alertas en esta categoría</p>';
   } else {
+    // ítem #35: escapar title/desc/bus antes de inyectar en innerHTML
     el.innerHTML = data.map(a => `
-      <article class="alert-item ${a.type} ${a.read ? 'read' : ''}" data-alert="${a.id}">
-        <span class="alert-icon-wrap ${a.type}">${a.icon}</span>
+      <article class="alert-item ${esc(a.type)} ${a.read ? 'read' : ''}" data-alert="${esc(String(a.id))}">
+        <span class="alert-icon-wrap ${esc(a.type)}">${esc(a.icon)}</span>
         <div class="alert-content">
-          <p class="alert-title">${a.title}</p>
-          <p class="alert-desc">${a.desc}</p>
+          <p class="alert-title">${esc(a.title)}</p>
+          <p class="alert-desc">${esc(a.desc)}</p>
           <p class="alert-meta">
-            <span class="alert-time">${a.time}</span>
-            ${a.bus.startsWith('BUS') ? `<span class="alert-bus-tag" data-bus="${a.bus}">${a.bus}</span>` : `<span class="alert-bus-tag">${a.bus}</span>`}
+            <span class="alert-time">${esc(a.time)}</span>
+            ${String(a.bus).startsWith('BUS') ? `<span class="alert-bus-tag" data-bus="${esc(a.bus)}">${esc(a.bus)}</span>` : `<span class="alert-bus-tag">${esc(a.bus)}</span>`}
           </p>
         </div>
       </article>`).join('');
@@ -2550,205 +2621,222 @@ function init() {
   };
 
   // ------------------------------------------------------------------
-  // AUTHENTICATION & LANDING GATE LOGIC (Email, Google, Apple)
+  // AUTHENTICATION & LANDING GATE LOGIC (Email, Google, Apple via Supabase)
   // ------------------------------------------------------------------
 
-  let currentUser = null;
-  let isGuestSession = false;
-  let currentOAuthProvider = 'google';
-  try {
-    const savedUser = localStorage.getItem('bustrack_user');
-    if (savedUser) currentUser = JSON.parse(savedUser);
-    const guestFlag = sessionStorage.getItem('bustrack_guest');
-    if (guestFlag === 'true') isGuestSession = true;
-    const savedToken = localStorage.getItem('bustrack_auth_token');
-    if (savedToken) {
-      api.getMe(savedToken).then(res => {
-        if (res && res.user) {
-          currentUser = res.user;
-          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-          updateAuthUserUI();
-        }
-      }).catch(() => {});
-    }
-  } catch (_) {}
-
-  function updateAuthUserUI() {
-    const avatarSlot = $('userAvatarSlot');
-    const nameSlot = $('userNameSlot');
-    const roleSlot = $('userRoleSlot');
-    const activeBox = $('userProfileActiveBox');
-    const loginForm = $('loginForm');
-    const regForm = $('registerForm');
-    const oauthBox = document.querySelector('.oauth-buttons-container');
-    const divider = document.querySelector('.auth-divider');
-    const sidebarAuthBox = $('sidebarAuthBox');
-    const sidebarUserBox = $('sidebarUserBox');
-
-    if (currentUser) {
-      if (sidebarAuthBox) {
-        sidebarAuthBox.hidden = true;
-        sidebarAuthBox.style.display = 'none';
-      }
-      if (sidebarUserBox) {
-        sidebarUserBox.hidden = false;
-        sidebarUserBox.style.display = 'flex';
-      }
-
-      if (avatarSlot) avatarSlot.textContent = currentUser.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
-      if (nameSlot) nameSlot.textContent = currentUser.name;
-      if (roleSlot) roleSlot.textContent = currentUser.role === 'admin' ? 'Administrador' : 'Pasajero';
-
-      if (activeBox) {
-        activeBox.hidden = false;
-        $('userActiveAvatar').src = currentUser.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(currentUser.name)}`;
-        $('userActiveName').textContent = currentUser.name;
-        $('userActiveEmail').textContent = currentUser.email;
-        $('userActiveBadge').textContent = `Cuenta ${currentUser.provider.toUpperCase()} (${currentUser.role})`;
-      }
-      if (loginForm) loginForm.hidden = true;
-      if (regForm) regForm.hidden = true;
-      if (oauthBox) oauthBox.style.display = 'none';
-      if (divider) divider.style.display = 'none';
-      const tabs = document.querySelector('.auth-tabs');
-      if (tabs) tabs.style.display = 'none';
-    } else {
-      if (sidebarAuthBox) {
-        sidebarAuthBox.hidden = false;
-        sidebarAuthBox.style.display = 'flex';
-      }
-      if (sidebarUserBox) {
-        sidebarUserBox.hidden = true;
-        sidebarUserBox.style.display = 'none';
-      }
-
-      if (activeBox) activeBox.hidden = true;
-      if (oauthBox) oauthBox.style.display = 'flex';
-      if (divider) divider.style.display = 'flex';
-      const tabs = document.querySelector('.auth-tabs');
-      if (tabs) tabs.style.display = 'grid';
-
-      // Show active tab form
-      const isReg = $('tabRegister')?.classList.contains('active');
-      if (loginForm) loginForm.hidden = isReg;
-      if (regForm) regForm.hidden = !isReg;
-    }
-  }
-  updateAuthUserUI();
-
-  // Auth Button & Modal controls
-  const authBtn = $('authBtn');
-  const authModal = $('authModal');
-  const authClose = $('authClose');
-  const oauthPromptModal = $('oauthPromptModal');
-  const oauthPromptClose = $('oauthPromptClose');
-  const sidebarLoginBtn = $('sidebarLoginBtn');
-  const sidebarRegisterBtn = $('sidebarRegisterBtn');
-
-  function openAuthModal(initialTab = 'login') {
-    if (!authModal) return;
-    authModal.classList.add('active');
-    if (initialTab === 'register') {
-      const tabReg = $('tabRegister');
-      if (tabReg) tabReg.click();
-      setTimeout(() => $('regName')?.focus(), 120);
-    } else {
-      const tabLog = $('tabLogin');
-      if (tabLog) tabLog.click();
-      setTimeout(() => $('loginEmail')?.focus(), 120);
-    }
-  }
-
-  if (sidebarLoginBtn) {
-    sidebarLoginBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openAuthModal('login');
-    });
-  }
-
-  if (sidebarRegisterBtn) {
-    sidebarRegisterBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openAuthModal('register');
-    });
-  }
-
-  if (authBtn && authModal) {
-    authBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openAuthModal('login');
-    });
-  }
-  if (authClose && authModal) {
-    authClose.addEventListener('click', () => authModal.classList.remove('active'));
-  }
-  if (oauthPromptClose && oauthPromptModal) {
-    oauthPromptClose.addEventListener('click', () => oauthPromptModal.classList.remove('active'));
-  }
-
-  // --- SUPABASE CLIENTE (OAuth real para Google & Apple) ---
-  const SUPABASE_URL = 'https://tbkgtblucdzkazpwlwda.supabase.co';
+  // ── Supabase client (singleton) ──────────────────────────────────────
+  const SUPABASE_URL      = 'https://tbkgtblucdzkazpwlwda.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRia2d0Ymx1Y2R6a2F6cHdsd2RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2MjEzMDIsImV4cCI6MjEwNjE5NzMwMn0.-l_2o1G4eb3bhDgknHLH7SSx1IobaC-9jbVTTwBmkfM';
   const supabaseClient = (typeof supabase !== 'undefined' && supabase.createClient)
     ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
 
-  // Helper: crear sesión local a partir de un usuario de Supabase Auth
+  // ── Session state ────────────────────────────────────────────────────
+  let currentUser    = null;
+  let isGuestSession = false;
+
+  // Restore persisted session from localStorage on cold start
+  try {
+    const saved = localStorage.getItem('bustrack_user');
+    if (saved) currentUser = JSON.parse(saved);
+    if (sessionStorage.getItem('bustrack_guest') === 'true') isGuestSession = true;
+  } catch (_) {}
+
+  // ── UI helpers ───────────────────────────────────────────────────────
+  /** Show/hide auth vs. profile sections consistently */
+  function updateAuthUserUI() {
+    const sidebarAuthBox = $('sidebarAuthBox');
+    const sidebarUserBox = $('sidebarUserBox');
+    const avatarSlot     = $('userAvatarSlot');
+    const nameSlot       = $('userNameSlot');
+    const roleSlot       = $('userRoleSlot');
+    const activeBox      = $('userProfileActiveBox');
+    const loginFormEl    = $('loginForm');
+    const regFormEl      = $('registerForm');
+    const oauthBox       = document.querySelector('.oauth-buttons-container');
+    const divider        = document.querySelector('.auth-divider');
+    const authTabsEl     = document.querySelector('.auth-tabs');
+
+    if (currentUser) {
+      // ── Logged-in state ──
+      if (sidebarAuthBox) { sidebarAuthBox.hidden = true;  sidebarAuthBox.style.display = 'none'; }
+      if (sidebarUserBox) { sidebarUserBox.hidden = false; sidebarUserBox.style.display = 'flex'; }
+
+      const initials = (currentUser.name || 'U')
+        .split(' ').map(n => n[0] || '').join('').slice(0, 2).toUpperCase();
+      if (avatarSlot) avatarSlot.textContent = initials;
+      if (nameSlot)   nameSlot.textContent   = currentUser.name || 'Usuario';
+      if (roleSlot)   roleSlot.textContent   = currentUser.role === 'admin' ? 'Administrador' : 'Operador';
+
+      if (activeBox) {
+        activeBox.hidden = false;
+        const activeAvatar = $('userActiveAvatar');
+        const activeName   = $('userActiveName');
+        const activeEmail  = $('userActiveEmail');
+        const activeBadge  = $('userActiveBadge');
+        if (activeAvatar) activeAvatar.src = currentUser.avatarUrl
+          || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(currentUser.name || 'U')}`;
+        if (activeName)  activeName.textContent  = currentUser.name || '';
+        if (activeEmail) activeEmail.textContent = currentUser.email || '';
+        const providerLabel = (currentUser.provider || 'email').toUpperCase();
+        if (activeBadge) activeBadge.textContent = `Cuenta ${providerLabel} · ${currentUser.role || 'admin'}`;
+      }
+
+      if (loginFormEl)  loginFormEl.hidden = true;
+      if (regFormEl)    regFormEl.hidden   = true;
+      if (oauthBox)     oauthBox.style.display = 'none';
+      if (divider)      divider.style.display  = 'none';
+      if (authTabsEl)   authTabsEl.style.display = 'none';
+    } else {
+      // ── Logged-out state ──
+      if (sidebarAuthBox) { sidebarAuthBox.hidden = false; sidebarAuthBox.style.display = 'flex'; }
+      if (sidebarUserBox) { sidebarUserBox.hidden = true;  sidebarUserBox.style.display = 'none'; }
+      if (activeBox)    activeBox.hidden = true;
+      if (oauthBox)     oauthBox.style.display = 'flex';
+      if (divider)      divider.style.display  = '';
+      if (authTabsEl)   authTabsEl.style.display = 'grid';
+
+      // Show whichever tab form is currently active
+      const isRegTab = $('tabRegister')?.classList.contains('active');
+      if (loginFormEl) loginFormEl.hidden = !!isRegTab;
+      if (regFormEl)   regFormEl.hidden   = !isRegTab;
+    }
+  }
+  updateAuthUserUI();
+
+  // ── Form inline validation ───────────────────────────────────────────
+  function setFieldError(inputEl, message) {
+    if (!inputEl) return;
+    inputEl.classList.toggle('input-error', !!message);
+    let hint = inputEl.parentElement.querySelector('.field-error-hint');
+    if (message) {
+      if (!hint) {
+        hint = document.createElement('span');
+        hint.className = 'field-error-hint';
+        inputEl.parentElement.appendChild(hint);
+      }
+      hint.textContent = message;
+    } else if (hint) {
+      hint.remove();
+    }
+  }
+
+  function clearFieldErrors(...ids) {
+    ids.forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      el.classList.remove('input-error');
+      const hint = el.parentElement?.querySelector('.field-error-hint');
+      if (hint) hint.remove();
+    });
+  }
+
+  // ── Password strength meter ──────────────────────────────────────────
+  function scorePassword(pw) {
+    let score = 0;
+    if (pw.length >= 8)  score++;
+    if (pw.length >= 12) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    return score; // 0-5
+  }
+
+  function renderPasswordStrength(inputId, barId) {
+    const input = $(inputId);
+    const bar   = $(barId);
+    if (!input || !bar) return;
+    input.addEventListener('input', () => {
+      const score = scorePassword(input.value);
+      const labels = ['', 'Muy débil', 'Débil', 'Moderada', 'Fuerte', 'Muy fuerte'];
+      const colors = ['', '#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#27ae60'];
+      bar.style.width  = `${(score / 5) * 100}%`;
+      bar.style.background = colors[score] || '#ccc';
+      bar.title = labels[score] || '';
+    });
+  }
+
+  // Inject password strength bar into the register form
+  const regPasswordInput = $('regPassword');
+  if (regPasswordInput) {
+    const wrapper = regPasswordInput.parentElement;
+    const barWrapper = document.createElement('div');
+    barWrapper.className = 'pw-strength-track';
+    barWrapper.innerHTML = '<div id="pwStrengthBar" class="pw-strength-bar"></div>';
+    wrapper.appendChild(barWrapper);
+    renderPasswordStrength('regPassword', 'pwStrengthBar');
+  }
+
+  // ── Supabase session helpers ─────────────────────────────────────────
+  /** Build a local currentUser object from a Supabase Auth user record */
+  function buildUserFromSupabase(supaUser, extraName) {
+    const name = extraName
+      || supaUser.user_metadata?.full_name
+      || supaUser.user_metadata?.name
+      || (supaUser.email ? supaUser.email.split('@')[0] : 'Usuario');
+    const provider = supaUser.app_metadata?.provider || supaUser.app_metadata?.providers?.[0] || 'email';
+    return {
+      id:        supaUser.id,
+      email:     supaUser.email,
+      name,
+      role:      'admin',
+      provider,
+      avatarUrl: supaUser.user_metadata?.avatar_url
+        || supaUser.user_metadata?.picture
+        || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`
+    };
+  }
+
+  /** Persist user & token, update UI, close modal */
+  function finalizeLogin(user, token) {
+    currentUser    = user;
+    isGuestSession = false;
+    localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+    if (token) localStorage.setItem('bustrack_auth_token', token);
+    updateAuthUserUI();
+    hideHome();
+    navigate('dashboard');
+    if (authModal) authModal.classList.remove('active');
+  }
+
+  /**
+   * Called after a successful Supabase OAuth redirect / popup.
+   * Tries to sync with our backend; falls back to pure client-side session.
+   */
   async function handleSupabaseSession(supaUser) {
     if (!supaUser) return;
-    const provider = supaUser.app_metadata?.provider || 'oauth';
-    const name = supaUser.user_metadata?.full_name
-      || supaUser.user_metadata?.name
-      || supaUser.email?.split('@')[0]
-      || 'Usuario';
+    const user = buildUserFromSupabase(supaUser);
 
-    // Registrar/actualizar en el backend local para obtener JWT propio
+    // Try to sync with backend for a signed JWT
     try {
-      const res = await fetch('/api/v1/auth/oauth-callback', {
+      const res = await fetch(`${API_BASE}/api/v1/auth/oauth-callback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           supabaseId: supaUser.id,
-          email: supaUser.email,
-          name,
-          provider,
-          avatarUrl: supaUser.user_metadata?.avatar_url || supaUser.user_metadata?.picture || ''
+          email:      supaUser.email,
+          name:       user.name,
+          provider:   user.provider,
+          avatarUrl:  user.avatarUrl
         })
       });
       if (res.ok) {
         const data = await res.json();
         if (data.status === 'success') {
-          currentUser = data.user;
-          isGuestSession = false;
-          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-          localStorage.setItem('bustrack_auth_token', data.token);
-          toast(`¡Bienvenido, ${currentUser.name}! 🎉`, 'ok');
-          updateAuthUserUI();
-          showHome();
-          if (authModal) authModal.classList.remove('active');
+          toast(`¡Bienvenido, ${data.user.name}! 🎉`, 'ok');
+          finalizeLogin(data.user, data.token);
           return;
         }
       }
     } catch (_) {}
 
-    // Fallback: crear sesión local sin backend
-    currentUser = {
-      id: supaUser.id,
-      email: supaUser.email,
-      name,
-      role: 'admin',
-      provider,
-      avatarUrl: supaUser.user_metadata?.avatar_url || supaUser.user_metadata?.picture || ''
-    };
-    isGuestSession = false;
-    localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-    toast(`¡Bienvenido, ${name}! 🎉`, 'ok');
-    updateAuthUserUI();
-    showHome();
-    if (authModal) authModal.classList.remove('active');
+    // Fallback: use Supabase session directly
+    const session = (await supabaseClient?.auth.getSession())?.data?.session;
+    toast(`¡Bienvenido, ${user.name}! 🎉`, 'ok');
+    finalizeLogin(user, session?.access_token || null);
   }
 
-  // Detectar sesión OAuth al cargar la página (redirect/popup callback)
+  // Listen for OAuth redirect callback (runs on page load after redirect)
   if (supabaseClient) {
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
       if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user && !currentUser) {
@@ -2756,7 +2844,7 @@ function init() {
       }
     });
 
-    // Recuperar sesión activa de Supabase si existe
+    // Restore an existing active Supabase session (e.g. after browser refresh)
     supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user && !currentUser) {
         await handleSupabaseSession(session.user);
@@ -2764,22 +2852,245 @@ function init() {
     });
   }
 
-  // Función principal de OAuth — abre el proveedor real
-  async function openOAuthPrompt(provider) {
+  // ── Modal open/close controls ────────────────────────────────────────
+  const authModal        = $('authModal');
+  const authClose        = $('authClose');
+  const oauthPromptModal = $('oauthPromptModal');
+  const oauthPromptClose = $('oauthPromptClose');
+  const sidebarLoginBtn  = $('sidebarLoginBtn');
+  const sidebarRegisterBtn = $('sidebarRegisterBtn');
+  const authBtn          = $('authBtn');
+
+  function openAuthModal(initialTab = 'login') {
+    if (!authModal) return;
+    // Reset any lingering error states
+    clearFieldErrors('loginEmail', 'loginPassword', 'regName', 'regEmail', 'regPassword');
+    authModal.classList.add('active');
+    updateAuthUserUI();
+    if (initialTab === 'register') {
+      $('tabRegister')?.click();
+      setTimeout(() => $('regName')?.focus(), 120);
+    } else {
+      $('tabLogin')?.click();
+      setTimeout(() => $('loginEmail')?.focus(), 120);
+    }
+  }
+
+  if (sidebarLoginBtn)    sidebarLoginBtn.addEventListener('click',    (e) => { e.stopPropagation(); openAuthModal('login'); });
+  if (sidebarRegisterBtn) sidebarRegisterBtn.addEventListener('click', (e) => { e.stopPropagation(); openAuthModal('register'); });
+  if (authBtn)            authBtn.addEventListener('click',            (e) => { e.stopPropagation(); openAuthModal('login'); });
+  if (authClose)          authClose.addEventListener('click', () => authModal.classList.remove('active'));
+  if (oauthPromptClose && oauthPromptModal) {
+    oauthPromptClose.addEventListener('click', () => oauthPromptModal.classList.remove('active'));
+  }
+  // Close auth modal on overlay click
+  if (authModal) {
+    authModal.addEventListener('click', (e) => {
+      if (e.target === authModal) authModal.classList.remove('active');
+    });
+  }
+
+  // ── Tab switching (Login / Register) ─────────────────────────────────
+  const tabLogin    = $('tabLogin');
+  const tabRegister = $('tabRegister');
+  const loginFormEl  = $('loginForm');
+  const regFormEl    = $('registerForm');
+
+  function activateTab(tab) {
+    const isReg = (tab === 'register');
+    if (tabLogin)    { tabLogin.classList.toggle('active', !isReg);  tabLogin.setAttribute('aria-selected',    String(!isReg)); }
+    if (tabRegister) { tabRegister.classList.toggle('active', isReg); tabRegister.setAttribute('aria-selected', String(isReg)); }
+    if (loginFormEl) loginFormEl.hidden = isReg;
+    if (regFormEl)   regFormEl.hidden   = !isReg;
+    clearFieldErrors('loginEmail', 'loginPassword', 'regName', 'regEmail', 'regPassword');
+  }
+
+  if (tabLogin)    tabLogin.addEventListener('click',    () => activateTab('login'));
+  if (tabRegister) tabRegister.addEventListener('click', () => activateTab('register'));
+
+  // ── Loader helpers for submit buttons ───────────────────────────────
+  function setBtnLoading(btnId, loading, originalText, loadingText) {
+    const btn = $(btnId);
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.textContent = loading ? loadingText : originalText;
+  }
+
+  // ── LOGIN FORM ───────────────────────────────────────────────────────
+  if (loginFormEl) {
+    loginFormEl.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email    = ($('loginEmail')?.value   || '').trim();
+      const password = ($('loginPassword')?.value || '');
+      clearFieldErrors('loginEmail', 'loginPassword');
+
+      // Client-side validation
+      if (!email)    { setFieldError($('loginEmail'),    'Ingresá tu correo electrónico.'); return; }
+      if (!password) { setFieldError($('loginPassword'), 'Ingresá tu contraseña.'); return; }
+
+      setBtnLoading('loginSubmitBtn', true, 'Iniciar Sesión', 'Verificando...');
+
+      try {
+        // 1) Supabase Auth (primary path)
+        if (supabaseClient) {
+          const { data: supaAuth, error: supaErr } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+          if (supaErr) {
+            // Map Supabase error codes to friendly Spanish messages
+            const msg = supaErr.message || '';
+            if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
+              setFieldError($('loginPassword'), 'Correo o contraseña incorrectos.');
+            } else if (msg.includes('Email not confirmed')) {
+              toast('Debés confirmar tu correo antes de iniciar sesión. Revisá tu bandeja de entrada.', 'warn');
+            } else {
+              toast(`Error de Supabase: ${msg}`, 'warn');
+            }
+            setBtnLoading('loginSubmitBtn', false, 'Iniciar Sesión', '');
+            return;
+          }
+
+          if (supaAuth?.user) {
+            let displayName = supaAuth.user.user_metadata?.full_name
+              || supaAuth.user.user_metadata?.name
+              || email.split('@')[0];
+
+            // Enrich with profile row if available
+            try {
+              const { data: profile } = await supabaseClient
+                .from('users')
+                .select('full_name, role, avatar_url')
+                .eq('id', supaAuth.user.id)
+                .maybeSingle();
+              if (profile?.full_name) displayName = profile.full_name;
+            } catch (_) {}
+
+            const user = buildUserFromSupabase(supaAuth.user, displayName);
+            toast(`¡Bienvenido de nuevo, ${user.name}! 👋`, 'ok');
+            finalizeLogin(user, supaAuth.session?.access_token || null);
+            setBtnLoading('loginSubmitBtn', false, 'Iniciar Sesión', '');
+            return;
+          }
+        }
+
+        // 2) Backend API fallback (when Supabase SDK not available)
+        const res = await api.login(email, password);
+        if (res?.status === 'success') {
+          toast(`¡Bienvenido de nuevo, ${res.user.name}!`, 'ok');
+          finalizeLogin(res.user, res.token);
+        } else {
+          setFieldError($('loginPassword'), res?.detail || 'Credenciales incorrectas.');
+        }
+      } catch (err) {
+        toast('Error de conexión. Verificá tu internet e intentá de nuevo.', 'warn');
+        console.error('[Auth Login]', err);
+      } finally {
+        setBtnLoading('loginSubmitBtn', false, 'Iniciar Sesión', '');
+      }
+    });
+  }
+
+  // ── REGISTER FORM ────────────────────────────────────────────────────
+  if (regFormEl) {
+    regFormEl.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name     = ($('regName')?.value     || '').trim();
+      const email    = ($('regEmail')?.value    || '').trim();
+      const password = ($('regPassword')?.value || '');
+      const consent  = $('regConsent')?.checked;
+      clearFieldErrors('regName', 'regEmail', 'regPassword');
+
+      // Client-side validation
+      let valid = true;
+      if (!name)  { setFieldError($('regName'),  'Ingresá tu nombre completo.'); valid = false; }
+      if (!email) { setFieldError($('regEmail'), 'Ingresá un correo electrónico válido.'); valid = false; }
+      if (password.length < 6) { setFieldError($('regPassword'), 'La contraseña debe tener al menos 6 caracteres.'); valid = false; }
+      if (!consent) { toast('Debés aceptar los Términos y la Política de Privacidad.', 'warn'); valid = false; }
+      if (!valid) return;
+
+      setBtnLoading('registerSubmitBtn', true, 'Crear Cuenta', 'Creando cuenta...');
+
+      try {
+        // 1) Supabase Auth signup (primary path)
+        if (supabaseClient) {
+          const { data: supaReg, error: supaErr } = await supabaseClient.auth.signUp({
+            email,
+            password,
+            options: { data: { full_name: name, name } }
+          });
+
+          if (supaErr) {
+            const msg = supaErr.message || '';
+            if (msg.includes('already registered') || msg.includes('User already registered') || msg.includes('already been registered')) {
+              setFieldError($('regEmail'), 'Ya existe una cuenta con este correo.');
+            } else if (msg.includes('Password should be')) {
+              setFieldError($('regPassword'), 'La contraseña no cumple los requisitos de seguridad.');
+            } else {
+              toast(`Error de Supabase: ${msg}`, 'warn');
+            }
+            setBtnLoading('registerSubmitBtn', false, 'Crear Cuenta', '');
+            return;
+          }
+
+          if (supaReg?.user) {
+            // Upsert public profile row (best-effort, non-blocking)
+            supabaseClient.from('users').upsert({
+              id:            supaReg.user.id,
+              email,
+              full_name:     name,
+              role:          'admin',
+              auth_provider: 'email',
+              avatar_url:    `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`
+            }, { onConflict: 'id' }).catch(() => {});
+
+            // Supabase may require email confirmation — check if session was immediately created
+            if (supaReg.session) {
+              const user = buildUserFromSupabase(supaReg.user, name);
+              toast(`¡Cuenta creada! Bienvenido, ${user.name} 🚀`, 'ok');
+              finalizeLogin(user, supaReg.session.access_token);
+              setBtnLoading('registerSubmitBtn', false, 'Crear Cuenta', '');
+              return;
+            } else {
+              // Email confirmation flow
+              toast('¡Cuenta creada! Revisá tu correo para confirmar tu cuenta antes de iniciar sesión. 📧', 'ok');
+              activateTab('login');
+              $('loginEmail') && ($('loginEmail').value = email);
+              setBtnLoading('registerSubmitBtn', false, 'Crear Cuenta', '');
+              return;
+            }
+          }
+        }
+
+        // 2) Backend API fallback
+        const res = await api.register({ name, email, password, consentTerms: true });
+        if (res?.status === 'success') {
+          toast(`¡Cuenta creada! Bienvenido, ${res.user.name} 🚀`, 'ok');
+          finalizeLogin(res.user, res.token);
+        } else {
+          toast(res?.detail || 'Error al crear la cuenta. Intentá de nuevo.', 'warn');
+        }
+      } catch (err) {
+        toast('Error de conexión. Verificá tu internet e intentá de nuevo.', 'warn');
+        console.error('[Auth Register]', err);
+      } finally {
+        setBtnLoading('registerSubmitBtn', false, 'Crear Cuenta', '');
+      }
+    });
+  }
+
+  // ── OAUTH (Google / Apple) ───────────────────────────────────────────
+  async function triggerOAuth(provider) {
     if (!supabaseClient) {
-      toast('El SDK de Supabase no está cargado. Recarga la página.', 'warn');
+      toast('El SDK de Supabase no está disponible. Recargá la página.', 'warn');
       return;
     }
 
     const providerName = provider === 'google' ? 'Google' : 'Apple';
+    // References to BOTH modal buttons (we may be in authModal or oauthPromptModal)
+    const modalBtn = provider === 'google' ? $('googleAuthBtn') : $('appleAuthBtn');
+    const origHTML  = modalBtn?.innerHTML;
 
-    // Mostrar loader visual en el botón
-    const btn = provider === 'google' ? $('landingGoogleAuthBtn') : $('landingAppleAuthBtn');
-    const originalHTML = btn?.innerHTML;
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = `<svg style="animation:spin 0.8s linear infinite;width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg> Conectando...`;
-    }
+    const spinnerHTML = `<svg style="animation:spin 0.8s linear infinite;width:18px;height:18px;vertical-align:middle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg>&nbsp;Conectando...`;
+    if (modalBtn) { modalBtn.disabled = true; modalBtn.innerHTML = spinnerHTML; }
 
     try {
       const redirectTo = window.location.origin + window.location.pathname;
@@ -2787,263 +3098,57 @@ function init() {
         provider,
         options: {
           redirectTo,
-          queryParams: provider === 'google' ? { access_type: 'offline', prompt: 'select_account' } : {}
+          queryParams: provider === 'google'
+            ? { access_type: 'offline', prompt: 'select_account' }
+            : {}
         }
       });
 
       if (error) {
-        toast(`Error al iniciar ${providerName}: ${error.message}`, 'warn');
-        if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
+        toast(`No se pudo conectar con ${providerName}: ${error.message}`, 'warn');
+        if (modalBtn) { modalBtn.disabled = false; modalBtn.innerHTML = origHTML; }
       }
-      // Si no hay error, el navegador redirige automáticamente al proveedor
+      // On success the browser navigates away to the provider — no further action needed.
     } catch (err) {
-      toast(`No se pudo conectar con ${providerName}`, 'warn');
-      if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
+      toast(`Error al conectar con ${providerName}. Intentá de nuevo.`, 'warn');
+      if (modalBtn) { modalBtn.disabled = false; modalBtn.innerHTML = origHTML; }
+      console.error(`[OAuth ${provider}]`, err);
     }
   }
 
-  // --- MODAL FORM HANDLERS ---
-  const tabLogin = $('tabLogin');
-  const tabRegister = $('tabRegister');
-  if (tabLogin && tabRegister) {
-    tabLogin.addEventListener('click', () => {
-      tabLogin.classList.add('active');
-      tabRegister.classList.remove('active');
-      $('loginForm').hidden = false;
-      $('registerForm').hidden = true;
-    });
-    tabRegister.addEventListener('click', () => {
-      tabRegister.classList.add('active');
-      tabLogin.classList.remove('active');
-      $('registerForm').hidden = false;
-      $('loginForm').hidden = true;
-    });
-  }
+  const googleAuthBtn = $('googleAuthBtn');
+  const appleAuthBtn  = $('appleAuthBtn');
+  if (googleAuthBtn) googleAuthBtn.addEventListener('click', () => triggerOAuth('google'));
+  if (appleAuthBtn)  appleAuthBtn.addEventListener('click',  () => triggerOAuth('apple'));
 
-  // Modal Login Submit (Conectado a Supabase y Backend)
-  const loginForm = $('loginForm');
-  if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = $('loginEmail').value.trim();
-      const password = $('loginPassword').value;
-      const submitBtn = $('loginSubmitBtn');
-      const originalText = submitBtn ? submitBtn.textContent : 'Iniciar Sesión';
-
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Conectando con Supabase...';
-      }
-
-      try {
-        let authenticated = false;
-
-        // 1. Intentar autenticar con Supabase Auth directamente
-        if (supabaseClient) {
-          try {
-            const { data: supaAuth, error: supaErr } = await supabaseClient.auth.signInWithPassword({
-              email,
-              password
-            });
-
-            if (!supaErr && supaAuth?.user) {
-              const supaUser = supaAuth.user;
-              let displayName = supaUser.user_metadata?.name || supaUser.user_metadata?.full_name || email.split('@')[0];
-
-              // Consultar perfil guardado en la tabla users de Supabase
-              try {
-                const { data: profile } = await supabaseClient
-                  .from('users')
-                  .select('full_name, role, avatar_url')
-                  .eq('email', email)
-                  .maybeSingle();
-                if (profile?.full_name) displayName = profile.full_name;
-              } catch (_) {}
-
-              currentUser = {
-                id: supaUser.id,
-                email: supaUser.email,
-                name: displayName,
-                role: 'admin',
-                provider: 'supabase',
-                avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`
-              };
-
-              isGuestSession = false;
-              localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-              if (supaAuth.session?.access_token) {
-                localStorage.setItem('bustrack_auth_token', supaAuth.session.access_token);
-              }
-              authenticated = true;
-              toast(`¡Bienvenido de nuevo, ${currentUser.name}! (Supabase Auth)`, 'ok');
-            }
-          } catch (supaEx) {
-            console.warn('[Supabase Client Login]', supaEx);
-          }
-        }
-
-        // 2. Si no se autenticó por cliente o Supabase no respondió, intentar con el backend API
-        if (!authenticated) {
-          const res = await api.login(email, password);
-          if (res.status === 'success') {
-            currentUser = res.user;
-            isGuestSession = false;
-            localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-            localStorage.setItem('bustrack_auth_token', res.token);
-            toast(`¡Bienvenido de nuevo, ${currentUser.name}!`, 'ok');
-            authenticated = true;
-          } else {
-            toast(res.detail || 'Credenciales incorrectas en Supabase o cuenta no encontrada', 'warn');
-          }
-        }
-
-        if (authenticated) {
-          updateAuthUserUI();
-          hideHome();
-          navigate('dashboard');
-          if (authModal) authModal.classList.remove('active');
-        }
-      } catch (err) {
-        toast('No se pudo conectar al servidor de autenticación', 'warn');
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = originalText;
-        }
-      }
-    });
-  }
-
-  // Modal Register Submit (Conectado a Supabase y Backend)
-  const regForm = $('registerForm');
-  if (regForm) {
-    regForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = $('regName').value.trim();
-      const email = $('regEmail').value.trim();
-      const password = $('regPassword').value;
-      const consentTerms = $('regConsent').checked;
-      const submitBtn = $('registerSubmitBtn');
-      const originalText = submitBtn ? submitBtn.textContent : 'Crear Cuenta';
-
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Registrando en Supabase...';
-      }
-
-      try {
-        let supabaseSuccess = false;
-
-        // 1. Intentar registrar en Supabase Auth directamente desde el cliente
-        if (supabaseClient) {
-          try {
-            const { data: supaReg, error: supaErr } = await supabaseClient.auth.signUp({
-              email,
-              password,
-              options: {
-                data: { name }
-              }
-            });
-
-            if (supaErr) {
-              if (supaErr.message.includes('already registered') || supaErr.message.includes('User already registered')) {
-                toast('Ya existe una cuenta con este correo en Supabase', 'warn');
-                return;
-              }
-              console.warn('[Supabase Client SignUp]', supaErr.message);
-            } else if (supaReg?.user) {
-              supabaseSuccess = true;
-              // Guardar en tabla users de Supabase
-              try {
-                await supabaseClient.from('users').upsert({
-                  id: supaReg.user.id,
-                  email,
-                  full_name: name,
-                  role: 'admin',
-                  auth_provider: 'email',
-                  avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`
-                }, { onConflict: 'email' });
-              } catch (_) {}
-            }
-          } catch (supaEx) {
-            console.warn('[Supabase Client SignUp Ex]', supaEx);
-          }
-        }
-
-        // 2. Sincronizar y completar registro en el backend API
-        const res = await api.register({ name, email, password, consentTerms });
-        if (res.status === 'success') {
-          currentUser = res.user;
-          isGuestSession = false;
-          localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-          localStorage.setItem('bustrack_auth_token', res.token);
-          toast(`¡Cuenta creada con éxito en Supabase! Bienvenido, ${currentUser.name} 🚀`, 'ok');
-          updateAuthUserUI();
-          hideHome();
-          navigate('dashboard');
-          if (authModal) authModal.classList.remove('active');
-        } else {
-          toast(res.detail || 'Error en el registro', 'warn');
-        }
-      } catch (err) {
-        toast('Error al procesar el registro con Supabase', 'warn');
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = originalText;
-        }
-      }
-    });
-  }
-
-  // Modal Google OAuth button
-  const googleBtn = $('googleAuthBtn');
-  if (googleBtn) {
-    googleBtn.addEventListener('click', async () => {
-      await openOAuthPrompt('google');
-    });
-  }
-
-  // Modal Apple OAuth button
-  const appleBtn = $('appleAuthBtn');
-  if (appleBtn) {
-    appleBtn.addEventListener('click', async () => {
-      await openOAuthPrompt('apple');
-    });
-  }
-
-  // Logout Buttons (sidebar y modal)
+  // ── LOGOUT ───────────────────────────────────────────────────────────
   async function performLogout() {
-    const userName = currentUser?.name || 'Usuario';
-    currentUser = null;
+    const name = currentUser?.name || 'Usuario';
+
+    // Sign out from Supabase (clears the session cookie/token)
+    if (supabaseClient) {
+      try { await supabaseClient.auth.signOut(); } catch (_) {}
+    }
+
+    // Clear local state
+    currentUser    = null;
     isGuestSession = false;
     localStorage.removeItem('bustrack_user');
     localStorage.removeItem('bustrack_auth_token');
     sessionStorage.removeItem('bustrack_guest');
 
-    // Intentar cerrar sesión en Supabase también
-    try {
-      if (supabaseClient) await supabaseClient.auth.signOut();
-    } catch (_) {}
-    try {
-      const SUPABASE_URL = 'https://tbkgtblucdzkazpwlwda.supabase.co';
-      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRia2d0Ymx1Y2R6a2F6cHdsd2RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2MjEzMDIsImV4cCI6MjEwNjE5NzMwMn0.-l_2o1G4eb3bhDgknHLH7SSx1IobaC-9jbVTTwBmkfM';
-      await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-      });
-    } catch (_) { /* Silencioso si falla */ }
-
-    toast(`Hasta pronto, ${userName}. Sesión cerrada correctamente. 👋`, 'info');
+    toast(`Hasta pronto, ${name}. Sesión cerrada correctamente. 👋`, 'info');
     updateAuthUserUI();
     if (authModal) authModal.classList.remove('active');
   }
 
-  const logoutBtn = $('logoutBtn');
-  if (logoutBtn) logoutBtn.addEventListener('click', performLogout);
-
+  const logoutBtn      = $('logoutBtn');
   const modalLogoutBtn = $('modalLogoutBtn');
+  if (logoutBtn)      logoutBtn.addEventListener('click',      performLogout);
   if (modalLogoutBtn) modalLogoutBtn.addEventListener('click', performLogout);
+
+
+
 
   // ------------------------------------------------------------------
   // COMMAND PALETTE (CTRL + K) LOGIC

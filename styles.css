@@ -1987,8 +1987,57 @@ button, input, select { font-family: inherit; }
 }
 
 /* ============================================================
+   AUTH FORM — INLINE VALIDATION & PASSWORD STRENGTH
+   ============================================================ */
+
+/* Error state on inputs */
+.form-group input.input-error {
+  border-color: #e74c3c !important;
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.18) !important;
+  animation: shake 0.32s ease;
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-5px); }
+  60%      { transform: translateX(5px); }
+  80%      { transform: translateX(-3px); }
+}
+
+/* Inline error hint below input */
+.field-error-hint {
+  display: block;
+  color: #f09aa8;
+  font-size: 11.5px;
+  margin-top: 5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* Password strength meter */
+.pw-strength-track {
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  margin-top: 7px;
+  overflow: hidden;
+}
+.pw-strength-bar {
+  height: 100%;
+  width: 0%;
+  border-radius: 4px;
+  transition: width 0.28s ease, background 0.28s ease;
+}
+
+/* Spin animation for OAuth button loader */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
+/* ============================================================
    DB STATUS PILL & DIAGNOSTICS MODAL (100% REAL DATABASE)
    ============================================================ */
+
 .db-status-pill {
   display: inline-flex;
   align-items: center;

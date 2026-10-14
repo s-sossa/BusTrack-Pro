@@ -9,21 +9,22 @@ function sanitizeString(value) {
   return value
     .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '') // strip script tags
     .replace(/<[^>]+>/g, '')                              // strip HTML tags
-    .replace(/['"`;]/g, '')                               // strip SQL/JS injection chars
+    // ✅ ítem #7: NO quitamos comillas ni punto y coma — eso rompe contraseñas.
+    // La protección contra SQL injection es responsabilidad de prepared statements.
     .trim()
-    .slice(0, 1000);                                      // max length guard
+    .slice(0, 2000); // max length guard aumentado para campos largos
 }
 
-/** Recursively sanitize all string values in an object */
-function sanitizeObject(obj) {
+/** Recursively sanitize all string values in an object, preserving password fields */
+function sanitizeObject(obj, skipKeys = new Set(['password', 'passwordHash', 'currentPassword', 'newPassword'])) {
   if (typeof obj === 'string') return sanitizeString(obj);
-  if (Array.isArray(obj)) return obj.map(sanitizeObject);
+  if (Array.isArray(obj)) return obj.map(item => sanitizeObject(item, skipKeys));
   if (obj !== null && typeof obj === 'object') {
     const clean = {};
     for (const [key, value] of Object.entries(obj)) {
-      // Sanitize key too (defense in depth)
       const cleanKey = sanitizeString(key).replace(/[^a-zA-Z0-9_-]/g, '');
-      clean[cleanKey] = sanitizeObject(value);
+      // ✅ No sanitizar campos de contraseña (los maneja bcrypt)
+      clean[cleanKey] = skipKeys.has(key) ? value : sanitizeObject(value, skipKeys);
     }
     return clean;
   }

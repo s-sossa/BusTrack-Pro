@@ -7,11 +7,7 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "test": "node --test test/api.test.js test/database.test.js test/auth.test.js",
-    "db:status": "node server/database/status.js",
-    "db:seed": "node server/database/initDb.js",
-    "db:up": "docker compose up -d",
-    "db:down": "docker compose down"
+    "test": "cross-env NODE_ENV=test node --test test/api.test.js test/database.test.js test/auth.test.js"
   },
   "keywords": [
     "transit",
@@ -29,7 +25,7 @@
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "expo": "^57.0.27",
+    "expo": "~57.0.28",
     "express": "^4.21.2",
     "express-rate-limit": "^8.7.0",
     "helmet": "^8.3.0",
@@ -37,5 +33,11 @@
     "leaflet": "^1.9.4",
     "pg": "^8.13.3",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

@@ -4,14 +4,20 @@
 
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'bustrack_super_secret_jwt_key_2026_cr';
+// ⛔ JWT_SECRET debe estar definido en las variables de entorno. Si no, el servidor NO arranca.
+if (!process.env.JWT_SECRET) {
+  console.error('[SECURITY] FATAL: JWT_SECRET no está definido en las variables de entorno. Abortando.');
+  process.exit(1);
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /** Middleware: Authenticate Request via Bearer Token or Cookie */
 export function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.startsWith('Bearer ')
     ? authHeader.split(' ')[1]
-    : req.query.token;
+    : null; // ⛔ No se acepta token por query string (seguridad)
 
   if (!token) {
     return res.status(401).json({
@@ -41,7 +47,7 @@ export function optionalAuth(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.startsWith('Bearer ')
     ? authHeader.split(' ')[1]
-    : null;
+    : null; // ⛔ No se acepta token por query string
 
   if (token) {
     try {
