@@ -14,8 +14,8 @@ export const authRouter = Router();
 /** POST /api/v1/auth/register — Email Registration */
 authRouter.post('/register', writeLimiter, async (req, res, next) => {
   try {
-    const { email, password, name, consentTerms } = req.body;
-    const result = await AuthService.registerWithEmail({ email, password, name, consentTerms });
+    const { email, password, name, consentTerms, consentPrivacy } = req.body;
+    const result = await AuthService.registerWithEmail({ email, password, name, consentTerms, consentPrivacy });
     res.status(201).json({
       status: 'success',
       message: 'Cuenta creada exitosamente',

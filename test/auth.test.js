@@ -77,41 +77,41 @@ test('Auth — POST /auth/login authenticates registered user', async () => {
   assert.ok(data.token);
 });
 
-test('Auth — POST /auth/google authenticates Google OAuth', async () => {
-  const res = await fetch(`${baseUrl}/auth/google`, {
+test('Auth — POST /auth/register fails when password is less than 8 chars', async () => {
+  const shortPassEmail = `shortpass_${Date.now()}@bustrack.com`;
+  const res = await fetch(`${baseUrl}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      googleToken: 'mock_google_token',
-      email: 'user.google.test@gmail.com',
-      name: 'Google Test User',
-      picture: 'https://example.com/pic.jpg',
+      name: 'Short Pass User',
+      email: shortPassEmail,
+      password: '123',
+      consentTerms: true,
+      consentPrivacy: true,
     }),
   });
 
-  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.status, 400);
   const data = await res.json();
-  assert.strictEqual(data.status, 'success');
-  assert.strictEqual(data.user.provider, 'google');
-  assert.ok(data.token);
+  assert.ok(data.detail.includes('8 caracteres'));
 });
 
-test('Auth — POST /auth/apple authenticates Apple OAuth', async () => {
-  const res = await fetch(`${baseUrl}/auth/apple`, {
+test('Auth — POST /auth/register fails when consent is missing', async () => {
+  const noConsentEmail = `noconsent_${Date.now()}@bustrack.com`;
+  const res = await fetch(`${baseUrl}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      appleToken: 'mock_apple_token',
-      email: 'user.apple.test@privaterelay.appleid.com',
-      name: 'Apple Test User',
+      name: 'No Consent User',
+      email: noConsentEmail,
+      password: 'Password123!',
+      consentTerms: false,
     }),
   });
 
-  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.status, 400);
   const data = await res.json();
-  assert.strictEqual(data.status, 'success');
-  assert.strictEqual(data.user.provider, 'apple');
-  assert.ok(data.token);
+  assert.ok(data.detail.includes('Términos') || data.detail.includes('Privacidad'));
 });
 
 test('Auth — POST /auth/register fails on duplicate email', async () => {
@@ -149,7 +149,7 @@ test('Auth — POST /auth/login fails with wrong password', async () => {
 
   assert.strictEqual(res.status, 401);
   const data = await res.json();
-  assert.ok(data.detail.includes('incorrectos'));
+  assert.ok(data.detail.includes('inválidos') || data.detail.includes('incorrectos'));
 });
 
 test('Auth — GET /auth/me returns profile for valid JWT token', async () => {

@@ -251,6 +251,7 @@ button, input, select { font-family: inherit; }
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
+  text-decoration: none;
   transition: transform 0.15s ease, background var(--t), border-color var(--t), box-shadow var(--t), color var(--t);
   white-space: nowrap;
   user-select: none;

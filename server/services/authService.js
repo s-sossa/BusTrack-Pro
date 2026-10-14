@@ -24,17 +24,20 @@ export class AuthService {
   }
 
   /** Register user with Email & Password */
-  static async registerWithEmail({ email, password, name, consentTerms }) {
+  static async registerWithEmail({ email, password, name, consentTerms, consentPrivacy }) {
     if (!consentTerms) {
-      throw new Error('Debes aceptar los Términos y la Política de Privacidad para registrarte.');
+      throw new Error('Debes aceptar los Términos y Condiciones para registrarte.');
+    }
+    if (consentPrivacy === false || (consentPrivacy === undefined && consentTerms === false)) {
+      throw new Error('Debes aceptar la Política de Privacidad para registrarte.');
     }
 
     if (!email || !password || !name) {
       throw new Error('Todos los campos son obligatorios.');
     }
 
-    if (password.length < 6) {
-      throw new Error('La contraseña debe tener al menos 6 caracteres.');
+    if (password.length < 8) {
+      throw new Error('La contraseña debe tener al menos 8 caracteres.');
     }
 
     const cleanEmail = email.toLowerCase().trim();
@@ -164,7 +167,7 @@ export class AuthService {
   /** Login user with Email & Password */
   static async loginWithEmail({ email, password }) {
     if (!email || !password) {
-      throw new Error('Credenciales inválidas.');
+      throw new Error('Correo o contraseña inválidos, intentelo de nuevo');
     }
 
     const cleanEmail = email.toLowerCase().trim();
@@ -207,14 +210,14 @@ export class AuthService {
 
     // 2. Autenticación con la base de datos local
     const user = db.findUserByEmail(cleanEmail);
-    // ⛔ Mensaje genérico para evitar enumeración de cuentas
+    // ⛔ Mensaje exacto requerido por el usuario
     if (!user || !user.passwordHash) {
-      throw new Error('Credenciales inválidas.');
+      throw new Error('Correo o contraseña inválidos, intentelo de nuevo');
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
-      throw new Error('Credenciales inválidas.');
+      throw new Error('Correo o contraseña inválidos, intentelo de nuevo');
     }
 
     try {

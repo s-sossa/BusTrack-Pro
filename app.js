@@ -2876,9 +2876,30 @@ function init() {
     }
   }
 
-  if (sidebarLoginBtn)    sidebarLoginBtn.addEventListener('click',    (e) => { e.stopPropagation(); openAuthModal('login'); });
-  if (sidebarRegisterBtn) sidebarRegisterBtn.addEventListener('click', (e) => { e.stopPropagation(); openAuthModal('register'); });
-  if (authBtn)            authBtn.addEventListener('click',            (e) => { e.stopPropagation(); openAuthModal('login'); });
+  if (sidebarLoginBtn) {
+    sidebarLoginBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      window.location.href = '/login';
+    });
+  }
+  if (sidebarRegisterBtn) {
+    sidebarRegisterBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      window.location.href = '/register';
+    });
+  }
+  if (authBtn) {
+    authBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!currentUser) {
+        window.location.href = '/login';
+      } else {
+        openAuthModal('login');
+      }
+    });
+  }
   if (authClose)          authClose.addEventListener('click', () => authModal.classList.remove('active'));
   if (oauthPromptClose && oauthPromptModal) {
     oauthPromptClose.addEventListener('click', () => oauthPromptModal.classList.remove('active'));

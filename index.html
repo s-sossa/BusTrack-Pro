@@ -237,8 +237,8 @@
     <div class="sidebar-footer">
       <!-- Botones de Acceso (visibles cuando NO hay sesión iniciada) -->
       <div class="sidebar-auth-box" id="sidebarAuthBox">
-        <button
-          type="button"
+        <a
+          href="/login"
           class="sidebar-auth-btn btn-auth-login"
           id="sidebarLoginBtn"
           title="Iniciar Sesión"
@@ -248,9 +248,9 @@
             <path d="M11 16l4-4-4-4M15 12H3M7 4h9a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7"/>
           </svg>
           <span>Iniciar Sesión</span>
-        </button>
-        <button
-          type="button"
+        </a>
+        <a
+          href="/register"
           class="sidebar-auth-btn btn-auth-register"
           id="sidebarRegisterBtn"
           title="Registrarse"
@@ -262,7 +262,7 @@
             <path d="M15 8v6M12 11h6"/>
           </svg>
           <span>Registrarse</span>
-        </button>
+        </a>
       </div>
 
       <!-- Perfil de usuario (visible solo cuando SÍ hay sesión activa) -->
