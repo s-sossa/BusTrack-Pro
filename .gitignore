@@ -10,3 +10,5 @@ coverage/
 repomix-output.*
 docker-compose.yml
 data/
+.agents/
+graphify-out/
