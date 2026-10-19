@@ -2625,8 +2625,8 @@ function init() {
   // ------------------------------------------------------------------
 
   // ── Supabase client (singleton) ──────────────────────────────────────
-  const SUPABASE_URL      = 'https://tbkgtblucdzkazpwlwda.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRia2d0Ymx1Y2R6a2F6cHdsd2RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2MjEzMDIsImV4cCI6MjEwNjE5NzMwMn0.-l_2o1G4eb3bhDgknHLH7SSx1IobaC-9jbVTTwBmkfM';
+  const SUPABASE_URL      = 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
+  const SUPABASE_ANON_KEY = 'PEGAR_PUBLISHABLE_KEY_DEL_PROYECTO';
   const supabaseClient = (typeof supabase !== 'undefined' && supabase.createClient)
     ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
@@ -2779,7 +2779,7 @@ function init() {
       id:        supaUser.id,
       email:     supaUser.email,
       name,
-      role:      'admin',
+      role:      'passenger',
       provider,
       avatarUrl: supaUser.user_metadata?.avatar_url
         || supaUser.user_metadata?.picture
@@ -2804,21 +2804,16 @@ function init() {
    * Tries to sync with our backend; falls back to pure client-side session.
    */
   async function handleSupabaseSession(supaUser) {
-    if (!supaUser) return;
-    const user = buildUserFromSupabase(supaUser);
+    const session = (await supabaseClient?.auth.getSession())?.data?.session;
+    if (!session) return;
 
-    // Try to sync with backend for a signed JWT
     try {
       const res = await fetch(`${API_BASE}/api/v1/auth/oauth-callback`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          supabaseId: supaUser.id,
-          email:      supaUser.email,
-          name:       user.name,
-          provider:   user.provider,
-          avatarUrl:  user.avatarUrl
-        })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
       });
       if (res.ok) {
         const data = await res.json();
@@ -2830,10 +2825,9 @@ function init() {
       }
     } catch (_) {}
 
-    // Fallback: use Supabase session directly
-    const session = (await supabaseClient?.auth.getSession())?.data?.session;
+    const user = buildUserFromSupabase(supaUser);
     toast(`¡Bienvenido, ${user.name}! 🎉`, 'ok');
-    finalizeLogin(user, session?.access_token || null);
+    finalizeLogin(user, session.access_token);
   }
 
   // Listen for OAuth redirect callback (runs on page load after redirect)
@@ -2975,17 +2969,16 @@ function init() {
               || supaAuth.user.user_metadata?.name
               || email.split('@')[0];
 
-            // Enrich with profile row if available
-            try {
-              const { data: profile } = await supabaseClient
-                .from('users')
-                .select('full_name, role, avatar_url')
-                .eq('id', supaAuth.user.id)
-                .maybeSingle();
-              if (profile?.full_name) displayName = profile.full_name;
-            } catch (_) {}
+            const { data: profile } = await supabaseClient
+              .from('users')
+              .select('full_name, role, avatar_url')
+              .eq('id', supaAuth.user.id)
+              .maybeSingle();
 
-            const user = buildUserFromSupabase(supaAuth.user, displayName);
+            const user = buildUserFromSupabase(supaAuth.user, profile?.full_name || displayName);
+            user.role = profile?.role || 'passenger';
+            user.avatarUrl = profile?.avatar_url || user.avatarUrl;
+
             toast(`¡Bienvenido de nuevo, ${user.name}! 👋`, 'ok');
             finalizeLogin(user, supaAuth.session?.access_token || null);
             setBtnLoading('loginSubmitBtn', false, 'Iniciar Sesión', '');
@@ -3024,7 +3017,7 @@ function init() {
       let valid = true;
       if (!name)  { setFieldError($('regName'),  'Ingresá tu nombre completo.'); valid = false; }
       if (!email) { setFieldError($('regEmail'), 'Ingresá un correo electrónico válido.'); valid = false; }
-      if (password.length < 6) { setFieldError($('regPassword'), 'La contraseña debe tener al menos 6 caracteres.'); valid = false; }
+      if (password.length < 8) { setFieldError($('regPassword'), 'La contraseña debe tener al menos 8 caracteres.'); valid = false; }
       if (!consent) { toast('Debés aceptar los Términos y la Política de Privacidad.', 'warn'); valid = false; }
       if (!valid) return;
 
@@ -3053,16 +3046,6 @@ function init() {
           }
 
           if (supaReg?.user) {
-            // Upsert public profile row (best-effort, non-blocking)
-            supabaseClient.from('users').upsert({
-              id:            supaReg.user.id,
-              email,
-              full_name:     name,
-              role:          'admin',
-              auth_provider: 'email',
-              avatar_url:    `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`
-            }, { onConflict: 'id' }).catch(() => {});
-
             // Supabase may require email confirmation — check if session was immediately created
             if (supaReg.session) {
               const user = buildUserFromSupabase(supaReg.user, name);

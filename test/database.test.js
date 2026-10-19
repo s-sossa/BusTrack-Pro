@@ -18,7 +18,6 @@ test('Database Architecture — Real Relational Tables in SQLite Master', () => 
     SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'
   `).all().map(t => t.name);
 
-  assert.ok(tables.includes('users'), 'Table users must exist');
   assert.ok(tables.includes('routes'), 'Table routes must exist');
   assert.ok(tables.includes('drivers'), 'Table drivers must exist');
   assert.ok(tables.includes('buses'), 'Table buses must exist');
@@ -59,13 +58,13 @@ test('Database Persistence — Data Persists Across Server Restarts to Disk', ()
   const bus1 = db1.createBus({ routeId: 'A', driverId: 'D001' });
   assert.ok(bus1.id.startsWith('BUS-'));
 
-  const user1 = db1.createUser({
-    email: 'persisted@bustrack.com',
-    passwordHash: 'hashed_secret_test_123',
-    name: 'Inspector Persistente',
-    role: 'dispatcher',
+  const alert1 = db1.createAlert({
+    severity: 'warning',
+    title: 'Test persistence alert',
+    description: 'Testing SQLite file persistence',
+    bus_id: bus1.id,
   });
-  assert.equal(user1.email, 'persisted@bustrack.com');
+  assert.equal(alert1.title, 'Test persistence alert');
 
   // Explicitly close DB 1
   db1.close();
@@ -82,10 +81,8 @@ test('Database Persistence — Data Persists Across Server Restarts to Disk', ()
   assert.equal(reloadedBus.id, bus1.id);
   assert.equal(reloadedBus.plate, bus1.plate);
 
-  const reloadedUser = db2.findUserByEmail('persisted@bustrack.com');
-  assert.ok(reloadedUser, 'Created user must survive database restart');
-  assert.equal(reloadedUser.name, 'Inspector Persistente');
-  assert.equal(reloadedUser.role, 'dispatcher');
+  const alerts = db2.getAllAlerts();
+  assert.ok(alerts.some(a => a.title === 'Test persistence alert'), 'Created alert must survive restart');
 
   db2.close();
 

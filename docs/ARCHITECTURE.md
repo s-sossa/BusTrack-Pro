@@ -67,6 +67,11 @@ graph TD
    - Computes operational KPIs: fleet utilization rate, passenger volume, average delay minutes, fuel consumption, maintenance frequency.
    - Generates CSV and PDF exports for transport authorities and company management.
 
+7. **Authentication & Identity Domain (gestionada por Supabase Auth)**:
+   - Supabase Auth es la única fuente de verdad para cuentas y credenciales.
+   - Perfiles almacenados en la tabla `public.users` en Supabase con Row Level Security (RLS) estricto y triggers automáticos (`on_auth_user_created`, `users_set_updated_at`).
+   - El backend Express consume `supabaseAdmin` exclusivamente para autenticar tokens y leer perfiles, sin almacenar contraseñas ni duplicar tablas de usuarios en SQLite local.
+
 ---
 
 ## 3. Reliability & Resiliency Patterns

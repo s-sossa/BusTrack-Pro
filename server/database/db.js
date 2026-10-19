@@ -144,23 +144,7 @@ export class Database {
 
   _initTables() {
     this.sqlite.exec(`
-      -- 1. USERS TABLE
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        email TEXT UNIQUE NOT NULL,
-        password_hash TEXT,
-        full_name TEXT NOT NULL,
-        role TEXT DEFAULT 'passenger',
-        auth_provider TEXT DEFAULT 'email',
-        provider_id TEXT,
-        avatar_url TEXT,
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-
-      -- 2. ROUTES TABLE
+      -- 1. ROUTES TABLE
       CREATE TABLE IF NOT EXISTS routes (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -171,10 +155,10 @@ export class Database {
         created_at TEXT DEFAULT (datetime('now'))
       );
 
-      -- 3. DRIVERS TABLE
+      -- 2. DRIVERS TABLE
       CREATE TABLE IF NOT EXISTS drivers (
         id TEXT PRIMARY KEY,
-        user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+        user_id TEXT,
         name TEXT NOT NULL,
         initials TEXT NOT NULL,
         license_number TEXT UNIQUE NOT NULL,
@@ -226,10 +210,10 @@ export class Database {
 
       CREATE INDEX IF NOT EXISTS idx_alerts_severity_read ON alerts(severity, is_read);
 
-      -- 6. ACTIVITY LOGS TABLE
+      -- 5. ACTIVITY LOGS TABLE
       CREATE TABLE IF NOT EXISTS activity_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+        user_id TEXT,
         action_text TEXT NOT NULL,
         action_type TEXT DEFAULT 'info',
         created_at TEXT DEFAULT (datetime('now'))
@@ -254,25 +238,7 @@ export class Database {
   }
 
   _seedDatabase() {
-    // 1. Seed Users
-    const userCount = this.sqlite.prepare('SELECT COUNT(*) as count FROM users WHERE email = ?').get('admin@bustrack.com');
-    if (userCount.count === 0) {
-      const insertUser = this.sqlite.prepare(`
-        INSERT INTO users (id, email, password_hash, full_name, role, auth_provider, avatar_url, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
-      `);
-      insertUser.run(
-        'usr-admin-01',
-        'admin@bustrack.com',
-        '$2a$10$wNlh4J6m5n9S8d.WvYQk8.L0yW.fO2e9jG4iZ5rK7hM3oP2nQ1r2s', // Admin123!
-        'Gerente Admin',
-        'admin',
-        'email',
-        'https://api.dicebear.com/7.x/initials/svg?seed=Gerente%20Admin'
-      );
-    }
-
-    // 2. Seed Routes
+    // 1. Seed Routes
     const routeCount = this.sqlite.prepare('SELECT COUNT(*) as count FROM routes').get();
     if (routeCount.count === 0) {
       const insertRoute = this.sqlite.prepare(`
@@ -479,23 +445,7 @@ export class Database {
         UPDATE alerts SET is_read = 1 WHERE is_read = 0
       `),
 
-      // Users
-      selectUserByEmail: this.sqlite.prepare(`
-        SELECT id, email, password_hash as passwordHash, full_name as name, role, auth_provider as provider, avatar_url as avatarUrl, created_at as createdAt
-        FROM users
-        WHERE LOWER(email) = LOWER(?)
-      `),
 
-      selectUserById: this.sqlite.prepare(`
-        SELECT id, email, password_hash as passwordHash, full_name as name, role, auth_provider as provider, avatar_url as avatarUrl, created_at as createdAt
-        FROM users
-        WHERE id = ?
-      `),
-
-      insertUser: this.sqlite.prepare(`
-        INSERT INTO users (id, email, password_hash, full_name, role, auth_provider, avatar_url, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
-      `),
 
       // Activities
       selectActivities: this.sqlite.prepare(`
@@ -544,9 +494,7 @@ export class Database {
     return this.getActivities();
   }
 
-  get users() {
-    return this.sqlite.prepare('SELECT id, email, full_name as name, role, auth_provider as provider FROM users').all();
-  }
+
 
   // --- STOPS API ---
   getAllStops() {
@@ -819,11 +767,11 @@ export class Database {
   }
 
   createAlert(data) {
-    const type = data.type || 'info';
+    const type = data.type || data.severity || 'info';
     const icon = data.icon || (type === 'critical' ? '🚨' : type === 'warning' ? '⚠️' : 'ℹ️');
-    const title = data.title;
-    const desc = data.desc;
-    const bus = data.bus || 'Sistema';
+    const title = data.title || '';
+    const desc = data.desc || data.description || '';
+    const bus = data.bus || data.bus_id || 'Sistema';
 
     const info = this.stmts.insertAlert.run(type, icon, title, desc, bus);
     return {
@@ -844,58 +792,7 @@ export class Database {
     return Number(info.changes);
   }
 
-  // --- USERS REPOSITORY ---
-  findUserByEmail(email) {
-    if (!email) return null;
-    const row = this.stmts.selectUserByEmail.get(email.trim());
-    return row || null;
-  }
 
-  findUserById(id) {
-    if (!id) return null;
-    const row = this.stmts.selectUserById.get(id);
-    return row || null;
-  }
-
-  createUser(userData) {
-    const id = userData.id || `usr-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const email = userData.email.toLowerCase().trim();
-    const name = userData.name.trim();
-    const role = userData.role || 'passenger';
-    const provider = userData.provider || 'email';
-    const avatarUrl = userData.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`;
-
-    this.stmts.insertUser.run(
-      id,
-      email,
-      userData.passwordHash || null,
-      name,
-      role,
-      provider,
-      avatarUrl
-    );
-
-    return this.findUserById(id);
-  }
-
-  updateUser(id, fields) {
-    if (!id) return null;
-    const allowed = ['name', 'avatarUrl', 'provider', 'role'];
-    const updates = [];
-    const values = [];
-    for (const key of allowed) {
-      if (fields[key] !== undefined) {
-        // SQLite columna: avatar_url, todo lo demás igual
-        const col = key === 'avatarUrl' ? 'avatar_url' : key;
-        updates.push(`${col} = ?`);
-        values.push(fields[key]);
-      }
-    }
-    if (updates.length === 0) return this.findUserById(id);
-    values.push(id);
-    this.db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
-    return this.findUserById(id);
-  }
 
   // --- ACTIVITIES LOG ---
   getActivities() {
@@ -930,7 +827,6 @@ export class Database {
 
     const sqliteVer = this.sqlite.prepare('SELECT sqlite_version() as v').get().v;
     const tables = [
-      { name: 'users', count: this.sqlite.prepare('SELECT COUNT(*) as c FROM users').get().c },
       { name: 'routes', count: this.sqlite.prepare('SELECT COUNT(*) as c FROM routes').get().c },
       { name: 'drivers', count: this.sqlite.prepare('SELECT COUNT(*) as c FROM drivers').get().c },
       { name: 'buses', count: this.sqlite.prepare('SELECT COUNT(*) as c FROM buses').get().c },

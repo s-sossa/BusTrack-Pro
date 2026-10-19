@@ -1,83 +1,53 @@
--- ============================================================
--- BusTrack Pro — Tabla de Usuarios en Supabase
--- Ejecutar en: Supabase Dashboard > SQL Editor
--- ============================================================
+-- ==============================================================================
+-- BusTrack Pro — Public Users Schema & RLS Security Policies for Supabase
+-- Single Source of Truth for User Accounts
+-- ==============================================================================
 
--- 1. Crear tabla users vinculada a Supabase Auth
-CREATE TABLE IF NOT EXISTS public.users (
-  id            UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email         TEXT UNIQUE NOT NULL,
-  full_name     TEXT,
-  role          TEXT DEFAULT 'admin' CHECK (role IN ('admin', 'passenger')),
-  auth_provider TEXT DEFAULT 'email',
-  avatar_url    TEXT,
-  created_at    TIMESTAMPTZ DEFAULT NOW(),
-  updated_at    TIMESTAMPTZ DEFAULT NOW()
+create table if not exists public.users (
+  id            uuid primary key references auth.users(id) on delete cascade,
+  email         text unique not null,
+  full_name     text,
+  role          text not null default 'passenger' check (role in ('admin','passenger')),
+  auth_provider text not null default 'email',
+  avatar_url    text,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
 );
 
--- 2. Habilitar Row Level Security
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+alter table public.users enable row level security;
 
--- 3. Politicas de seguridad
--- Permitir lectura de usuarios
-CREATE POLICY "Permitir lectura de perfiles de usuario"
-  ON public.users FOR SELECT
-  USING (true);
+create policy "Ver propio perfil" on public.users for select to authenticated
+  using (auth.uid() = id);
 
--- Permitir registro/insercion de usuarios (Anon y Authenticated)
-CREATE POLICY "Permitir registro de nuevos usuarios"
-  ON public.users FOR INSERT
-  WITH CHECK (true);
+create policy "Actualizar propio perfil" on public.users for update to authenticated
+  using (auth.uid() = id)
+  with check (auth.uid() = id and role = (select u.role from public.users u where u.id = auth.uid()));
 
--- Permitir a los usuarios actualizar su propio perfil
-CREATE POLICY "Usuarios pueden actualizar su propio perfil"
-  ON public.users FOR UPDATE
-  USING (auth.uid() = id OR true);
+create or replace function public.set_updated_at() returns trigger language plpgsql set search_path = '' as $$
+begin new.updated_at = now(); return new; end; $$;
 
--- Service role puede gestionar todos los usuarios
-CREATE POLICY "Service role puede gestionar todos los usuarios"
-  ON public.users FOR ALL
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
+create trigger users_set_updated_at before update on public.users
+  for each row execute function public.set_updated_at();
 
--- 4. Trigger para updated_at automatico
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ language 'plpgsql';
+create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  insert into public.users (id, email, full_name, avatar_url, auth_provider)
+  values (new.id, new.email,
+    coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', split_part(new.email,'@',1)),
+    new.raw_user_meta_data->>'avatar_url',
+    coalesce(new.raw_app_meta_data->>'provider','email'))
+  on conflict (id) do nothing;
+  return new;
+end; $$;
 
-CREATE TRIGGER update_users_updated_at
-  BEFORE UPDATE ON public.users
-  FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+create trigger on_auth_user_created after insert on auth.users
+  for each row execute function public.handle_new_user();
 
--- 5. Trigger: crear fila en users cuando se registra en Supabase Auth
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.users (id, email, full_name, avatar_url, auth_provider)
-  VALUES (
-    NEW.id,
-    NEW.email,
-    NEW.raw_user_meta_data->>'name',
-    NEW.raw_user_meta_data->>'avatar_url',
-    COALESCE(NEW.raw_user_meta_data->>'provider', 'email')
-  )
-  ON CONFLICT (email) DO UPDATE SET
-    full_name = EXCLUDED.full_name,
-    updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+insert into public.users (id, email, full_name, auth_provider)
+select id, email,
+  coalesce(raw_user_meta_data->>'full_name', split_part(email,'@',1)),
+  coalesce(raw_app_meta_data->>'provider','email')
+from auth.users on conflict (id) do nothing;
 
-CREATE OR REPLACE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
-
--- ============================================================
--- Listo! Ahora cada registro en Supabase Auth crea
--- automaticamente un registro en public.users
--- ============================================================
+-- ⛔ Para otorgar rol de administrador, hacerlo SIEMPRE manualmente desde el SQL Editor:
+-- update public.users set role = 'admin' where email = 'correo@dominio.com';

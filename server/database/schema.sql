@@ -12,23 +12,9 @@ CREATE TYPE user_role AS ENUM ('admin', 'dispatcher', 'driver', 'passenger');
 CREATE TYPE bus_status AS ENUM ('active', 'delayed', 'stopped', 'maintenance');
 CREATE TYPE alert_severity AS ENUM ('critical', 'warning', 'info');
 
--- 3. USERS TABLE
-CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255), -- NULL for OAuth users
-    full_name VARCHAR(120) NOT NULL,
-    role user_role DEFAULT 'passenger',
-    auth_provider VARCHAR(50) DEFAULT 'email', -- 'email', 'google', 'apple'
-    provider_id VARCHAR(255),
-    avatar_url TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Index for authentication lookup
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_provider ON users(auth_provider, provider_id);
+-- 3. USERS (Gestionada exclusivamente por Supabase Auth)
+-- Ver schema completo, RLS y triggers en docs/supabase-users-table.sql:
+-- public.users (id uuid primary key references auth.users(id), email, full_name, role, auth_provider, avatar_url, created_at, updated_at)
 
 -- 4. ROUTES TABLE
 CREATE TABLE IF NOT EXISTS routes (

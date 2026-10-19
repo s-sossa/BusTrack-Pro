@@ -737,6 +737,14 @@
 
         const data = await response.json();
 
+        if (data.status === 'pending') {
+          showError(data.message);
+          submitBtn.disabled = false;
+          btnSpinner.style.display = 'none';
+          btnText.textContent = 'Crear Cuenta';
+          return;
+        }
+
         if (!response.ok || data.status !== 'success') {
           showError(data.detail || data.message || 'Error al registrar la cuenta. Inténtalo de nuevo.');
           submitBtn.disabled = false;

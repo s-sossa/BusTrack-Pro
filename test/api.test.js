@@ -6,10 +6,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { app } from '../server/index.js';
+import { app, wss } from '../server/index.js';
+
+import { AuthService } from '../server/services/authService.js';
 
 let serverInstance;
 let baseUrl;
+
+const testAuthToken = AuthService.generateToken({
+  id: 'usr-test-admin',
+  email: 'admin@bustrack.com',
+  name: 'Admin Tester',
+  role: 'admin',
+  provider: 'email',
+});
 
 test.before(async () => {
   process.env.NODE_ENV = 'test';
@@ -25,6 +35,7 @@ test.before(async () => {
 
 test.after(async () => {
   await new Promise((resolve) => serverInstance.close(resolve));
+  wss?.close();
 });
 
 // Helper for HTTP requests using native fetch
@@ -34,6 +45,7 @@ async function request(path, options = {}) {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${testAuthToken}`,
       ...(options.headers || {}),
     },
   });
