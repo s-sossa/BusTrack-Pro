@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { createClient } from '@supabase/supabase-js';
 import { JWT_SECRET } from '../middleware/auth.js';
 import { supabase, supabaseAdmin, isSupabaseConfigured } from '../supabase.js';
 
@@ -14,8 +15,20 @@ export class AuthService {
     );
   }
 
-  static async loadProfile(authUser) {
-    const { data, error } = await supabaseAdmin
+  static async loadProfile(authUser, accessToken = null) {
+    let client = supabaseAdmin;
+    // Si no hay SUPABASE_SERVICE_ROLE_KEY pero tenemos el accessToken del usuario,
+    // usamos un cliente autenticado para que la política RLS ("Ver propio perfil") permita leer su rol.
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY && accessToken && isSupabaseConfigured) {
+      const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const key = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+      client = createClient(url, key, {
+        auth: { persistSession: false, autoRefreshToken: false },
+        global: { headers: { Authorization: `Bearer ${accessToken}` } },
+      });
+    }
+
+    const { data, error } = await client
       .from('users')
       .select('full_name, role, avatar_url, auth_provider')
       .eq('id', authUser.id)
@@ -59,7 +72,7 @@ export class AuthService {
     if (!data.session) {
       return { user: null, token: null, pendingConfirmation: true };
     }
-    const user = await this.loadProfile(data.user);
+    const user = await this.loadProfile(data.user, data.session?.access_token);
     return { user, token: this.generateToken(user) };
   }
 
@@ -73,7 +86,7 @@ export class AuthService {
     });
     if (error || !data.user) throw new Error(INVALID_CREDENTIALS);
 
-    const user = await this.loadProfile(data.user);
+    const user = await this.loadProfile(data.user, data.session?.access_token);
     return { user, token: this.generateToken(user) };
   }
 
@@ -82,7 +95,7 @@ export class AuthService {
     const { data, error } = await supabase.auth.getUser(accessToken);
     if (error || !data.user) throw new Error('Sesión de proveedor inválida.');
 
-    const user = await this.loadProfile(data.user);
+    const user = await this.loadProfile(data.user, accessToken);
     return { user, token: this.generateToken(user) };
   }
 }

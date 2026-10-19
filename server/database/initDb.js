@@ -96,9 +96,13 @@ export async function initPostgresDatabase(connectionString) {
     if (parseInt(alertCheck.rows[0].count, 10) === 0) {
       console.log('[DB] Seeding alerts...');
       for (const a of SEED_ALERTS) {
+        const severity = a.severity || a.type || 'info';
+        const description = a.description || a.desc || '';
+        const busId = (a.bus_id || a.bus || '').includes('BUS') ? (a.bus_id || a.bus) : null;
+        const isRead = Boolean(a.is_read != null ? a.is_read : a.read);
         await client.query(
           'INSERT INTO alerts (severity, title, description, bus_id, is_read) VALUES ($1, $2, $3, $4, $5)',
-          [a.type, a.title, a.desc, a.bus.includes('BUS') ? a.bus : null, a.read]
+          [severity, a.title, description, busId, isRead]
         );
       }
     }

@@ -233,3 +233,22 @@ test('Passenger Pilot (U Fidélitas) — GET /api/v1/passenger/stops/:id/arrival
   assert.ok(firstArrival.operator);
 });
 
+test('Security Guardrails — Block access to /docs, /test, /server and sensitive file extensions', async () => {
+  const docsRes = await fetch(`${baseUrl}/docs/DATABASE_SCHEMA.sql`);
+  assert.equal(docsRes.status, 404);
+  const docsText = await docsRes.text();
+  assert.ok(!docsText.includes('CREATE TABLE'), 'Debe bloquear contenido de base de datos');
+
+  const testRes = await fetch(`${baseUrl}/test/api.test.js`);
+  assert.equal(testRes.status, 404);
+  const testText = await testRes.text();
+  assert.ok(!testText.includes('serverInstance'), 'Debe bloquear archivos de test');
+
+  const serverRes = await fetch(`${baseUrl}/server/index.js`);
+  assert.equal(serverRes.status, 404);
+
+  const sqliteRes = await fetch(`${baseUrl}/data/bustrack.sqlite`);
+  assert.equal(sqliteRes.status, 404);
+});
+
+

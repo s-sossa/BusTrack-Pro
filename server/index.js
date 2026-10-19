@@ -121,13 +121,18 @@ app.use(requestLogger);
 app.use(sanitizeInputs);
 
 // ─── 5. Block debug/admin/sensitive endpoints ──────────────────────────────────
-// ⛔ Bloquear rutas sensibles antes de cualquier handler. Se compara contra
-// el path URL-decodificado para evitar bypass con %73erver/ etc.
+// ⛔ Bloquear rutas sensibles antes de cualquier handler o servicio estático.
+// Se compara contra el path URL-decodificado para evitar bypass con %73erver/ etc.
 const blockedPaths = [
   '/admin', '/debug', '/phpinfo', '/wp-admin', '/wp-login',
   '/.env', '/.git', '/server', '/config', '/package.json',
   '/data', '/repomix-output', '/docker-compose',
+  '/docs', '/test', '/.expo', '/.agents', '/.claude',
 ];
+const blockedExtensions = [
+  '.sqlite', '.sqlite-shm', '.sqlite-wal', '.sql', '.env', '.xml', '.jsonl', '.log',
+];
+
 app.use((req, res, next) => {
   let p;
   try {
@@ -135,7 +140,10 @@ app.use((req, res, next) => {
   } catch {
     return res.status(400).type('text/plain').send('Bad Request');
   }
-  if (blockedPaths.some(blocked => p === blocked || p.startsWith(blocked + '/'))) {
+  if (
+    blockedPaths.some(blocked => p === blocked || p.startsWith(blocked + '/')) ||
+    blockedExtensions.some(ext => p.endsWith(ext) || p.includes(ext + '/'))
+  ) {
     return res.status(404).type('text/plain').send('Not found');
   }
   next();
@@ -188,13 +196,6 @@ app.use(express.static(clientDir, {
   index: 'index.html',
   maxAge: isProd ? '1d' : 0,
   dotfiles: 'deny',
-  // ⛔ Nunca exponer la carpeta server/, data/, test/, docs/ ni archivos sensibles.
-  setHeaders: (res, filePath) => {
-    const forbidden = ['/server/', '/data/', '/test/', '/docs/', '.sqlite', '.env', '.xml'];
-    if (forbidden.some(f => filePath.includes(f))) {
-      res.statusCode = 403;
-    }
-  },
 }));
 
 // ─── 10. Custom 404 ───────────────────────────────────────────────────────────

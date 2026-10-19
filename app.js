@@ -63,8 +63,7 @@ function esc(str) {
 // Helper: obtiene el token JWT del almacenamiento local
 function getAuthToken() {
   try {
-    const s = localStorage.getItem('bustrack_session');
-    return s ? JSON.parse(s).token : null;
+    return localStorage.getItem('bustrack_auth_token') || null;
   } catch { return null; }
 }
 
@@ -2626,7 +2625,7 @@ function init() {
 
   // ── Supabase client (singleton) ──────────────────────────────────────
   const SUPABASE_URL      = 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
-  const SUPABASE_ANON_KEY = 'PEGAR_PUBLISHABLE_KEY_DEL_PROYECTO';
+  const SUPABASE_ANON_KEY = 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
   const supabaseClient = (typeof supabase !== 'undefined' && supabase.createClient)
     ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
@@ -2799,31 +2798,37 @@ function init() {
     if (authModal) authModal.classList.remove('active');
   }
 
+  /** Canjear access_token de Supabase con backend para obtener JWT local firmado */
+  async function canjearSesionSupabase(accessToken) {
+    const res = await fetch(`${API_BASE}/api/v1/auth/oauth-callback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+    if (!res.ok) throw new Error('No se pudo validar la sesión en el backend');
+    return res.json(); // { status: 'success', user, token }
+  }
+
   /**
    * Called after a successful Supabase OAuth redirect / popup.
    * Tries to sync with our backend; falls back to pure client-side session.
    */
   async function handleSupabaseSession(supaUser) {
     const session = (await supabaseClient?.auth.getSession())?.data?.session;
-    if (!session) return;
+    if (!session?.access_token) return;
 
     try {
-      const res = await fetch(`${API_BASE}/api/v1/auth/oauth-callback`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.status === 'success') {
-          toast(`¡Bienvenido, ${data.user.name}! 🎉`, 'ok');
-          finalizeLogin(data.user, data.token);
-          return;
-        }
+      const data = await canjearSesionSupabase(session.access_token);
+      if (data.status === 'success' || data.token) {
+        toast(`¡Bienvenido, ${data.user.name}! 🎉`, 'ok');
+        finalizeLogin(data.user, data.token);
+        return;
       }
-    } catch (_) {}
+    } catch (err) {
+      console.warn('[Supabase OAuth Exchange]', err);
+    }
 
     const user = buildUserFromSupabase(supaUser);
     toast(`¡Bienvenido, ${user.name}! 🎉`, 'ok');
@@ -2964,25 +2969,34 @@ function init() {
             return;
           }
 
-          if (supaAuth?.user) {
-            let displayName = supaAuth.user.user_metadata?.full_name
-              || supaAuth.user.user_metadata?.name
-              || email.split('@')[0];
+          if (supaAuth?.user && supaAuth?.session?.access_token) {
+            try {
+              const data = await canjearSesionSupabase(supaAuth.session.access_token);
+              toast(`¡Bienvenido de nuevo, ${data.user.name}! 👋`, 'ok');
+              finalizeLogin(data.user, data.token);
+              setBtnLoading('loginSubmitBtn', false, 'Iniciar Sesión', '');
+              return;
+            } catch (exchangeErr) {
+              console.warn('[Supabase Login Exchange Failed]', exchangeErr);
+              let displayName = supaAuth.user.user_metadata?.full_name
+                || supaAuth.user.user_metadata?.name
+                || email.split('@')[0];
 
-            const { data: profile } = await supabaseClient
-              .from('users')
-              .select('full_name, role, avatar_url')
-              .eq('id', supaAuth.user.id)
-              .maybeSingle();
+              const { data: profile } = await supabaseClient
+                .from('users')
+                .select('full_name, role, avatar_url')
+                .eq('id', supaAuth.user.id)
+                .maybeSingle();
 
-            const user = buildUserFromSupabase(supaAuth.user, profile?.full_name || displayName);
-            user.role = profile?.role || 'passenger';
-            user.avatarUrl = profile?.avatar_url || user.avatarUrl;
+              const user = buildUserFromSupabase(supaAuth.user, profile?.full_name || displayName);
+              user.role = profile?.role || 'passenger';
+              user.avatarUrl = profile?.avatar_url || user.avatarUrl;
 
-            toast(`¡Bienvenido de nuevo, ${user.name}! 👋`, 'ok');
-            finalizeLogin(user, supaAuth.session?.access_token || null);
-            setBtnLoading('loginSubmitBtn', false, 'Iniciar Sesión', '');
-            return;
+              toast(`¡Bienvenido de nuevo, ${user.name}! 👋`, 'ok');
+              finalizeLogin(user, supaAuth.session.access_token);
+              setBtnLoading('loginSubmitBtn', false, 'Iniciar Sesión', '');
+              return;
+            }
           }
         }
 
@@ -3047,10 +3061,16 @@ function init() {
 
           if (supaReg?.user) {
             // Supabase may require email confirmation — check if session was immediately created
-            if (supaReg.session) {
-              const user = buildUserFromSupabase(supaReg.user, name);
-              toast(`¡Cuenta creada! Bienvenido, ${user.name} 🚀`, 'ok');
-              finalizeLogin(user, supaReg.session.access_token);
+            if (supaReg.session?.access_token) {
+              try {
+                const data = await canjearSesionSupabase(supaReg.session.access_token);
+                toast(`¡Cuenta creada! Bienvenido, ${data.user.name} 🚀`, 'ok');
+                finalizeLogin(data.user, data.token);
+              } catch (_) {
+                const user = buildUserFromSupabase(supaReg.user, name);
+                toast(`¡Cuenta creada! Bienvenido, ${user.name} 🚀`, 'ok');
+                finalizeLogin(user, supaReg.session.access_token);
+              }
               setBtnLoading('registerSubmitBtn', false, 'Crear Cuenta', '');
               return;
             } else {

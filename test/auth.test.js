@@ -129,3 +129,20 @@ test('Auth Service — Unconfigured or live Supabase handles gracefully without 
   const data = await res.json();
   assert.ok(data.detail);
 });
+
+test('Auth Service — Live Supabase signUp & signIn integration', { skip: 'Requiere credenciales en vivo de Supabase con confirmación automática de correo' }, async () => {
+  const email = `test_live_${Date.now()}@bustrack.com`;
+  const password = 'SuperSecret123!';
+  const res = await fetch(`${baseUrl}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Integration User',
+      email,
+      password,
+      consentTerms: true,
+      consentPrivacy: true,
+    }),
+  });
+  assert.ok(res.status === 201 || res.status === 200);
+});
