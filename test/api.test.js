@@ -3,6 +3,10 @@
    Using native node:test and node:assert (Node.js 20+)
    ============================================================================== */
 
+import dotenv from 'dotenv';
+dotenv.config();
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'bustrack_pro_production_secret_key_change_me_in_prod';
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';

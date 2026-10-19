@@ -38,23 +38,6 @@ export async function initPostgresDatabase(connectionString) {
       console.log('[DB] Schema and RLS policies verified successfully.');
     }
 
-    // Check if initial admin user exists
-    const userCheck = await client.query('SELECT COUNT(*) FROM users WHERE email = $1', ['admin@bustrack.com']);
-    if (parseInt(userCheck.rows[0].count, 10) === 0) {
-      console.log('[DB] Seeding default admin user...');
-      await client.query(`
-        INSERT INTO users (id, email, password_hash, full_name, role, auth_provider, avatar_url)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-      `, [
-        'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-        'admin@bustrack.com',
-        '$2a$10$wNlh4J6m5n9S8d.WvYQk8.L0yW.fO2e9jG4iZ5rK7hM3oP2nQ1r2s',
-        'Gerente Admin',
-        'admin',
-        'email',
-        'https://api.dicebear.com/7.x/initials/svg?seed=Gerente%20Admin'
-      ]);
-    }
 
     // Seed Routes if empty
     const routeCheck = await client.query('SELECT COUNT(*) FROM routes');

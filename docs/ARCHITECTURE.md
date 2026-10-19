@@ -55,9 +55,10 @@ graph TD
 3. **Driver Domain**:
    - Manages authorized operators (`drivers`), license validation, shift tracking, safety ratings, and trip completions.
 
-4. **Telemetry & Geo-Tracking Domain**:
-   - Ingests high-frequency GPS coordinate beacons (x, y coordinates, speed, heading, fuel, passenger load).
-   - Feeds real-time consumers through low-latency WebSocket broadcasting with sub-50ms fanout.
+4. **Telemetry & Geo-Tracking Domain (Simulación Local)**:
+   - Ingesta beacons de coordenadas GPS simuladas (coordenadas x, y, velocidad, combustible, ocupación).
+   - *Nota de sincronización:* La flota, recorridos de buses y alertas operan actualmente mediante el motor de simulación local (`telemetrySimulator.js` y SQLite en memoria) para propósitos de demostración y prototipado, mientras que la autenticación e identidades residen 100% sincronizadas en Supabase Auth.
+   - Distribuye eventos en tiempo real a consumidores conectados mediante WebSocket (`/ws/telemetry`).
 
 5. **Alert & Incident Domain**:
    - Monitors telemetry thresholds (speeding, engine temperature, low fuel < 20%, severe delays, geofence deviation).

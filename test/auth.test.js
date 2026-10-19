@@ -3,6 +3,10 @@
    Tested against Supabase Auth (Single Source of Truth) + Validation Rules
    ============================================================================== */
 
+import dotenv from 'dotenv';
+dotenv.config();
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'bustrack_pro_production_secret_key_change_me_in_prod';
+
 import { test, before, after } from 'node:test';
 import assert from 'node:assert';
 import http from 'node:http';

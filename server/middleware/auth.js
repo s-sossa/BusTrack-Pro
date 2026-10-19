@@ -2,6 +2,8 @@
    BusTrack Pro — JWT Authentication & Authorization Middleware
    ============================================================================== */
 
+import dotenv from 'dotenv';
+dotenv.config();
 import jwt from 'jsonwebtoken';
 
 // ⛔ JWT_SECRET debe estar definido en las variables de entorno. Si no, el servidor NO arranca.

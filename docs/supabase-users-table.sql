@@ -51,3 +51,7 @@ from auth.users on conflict (id) do nothing;
 
 -- ⛔ Para otorgar rol de administrador, hacerlo SIEMPRE manualmente desde el SQL Editor:
 -- update public.users set role = 'admin' where email = 'correo@dominio.com';
+
+-- Revocación de permisos de ejecución para roles públicos/anónimos
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.rls_auto_enable() from public, anon, authenticated;

@@ -1,6 +1,7 @@
 -- ==============================================================================
--- BusTrack Pro — Database Schema & Row Level Security (RLS) Blueprint
+-- BusTrack Pro — Non-Auth Database Schema & RLS Blueprint for PostgreSQL / Supabase
 -- Target DB: PostgreSQL 15+ / Supabase
+-- (Note: User management is handled exclusively by Supabase Auth in public.users)
 -- ==============================================================================
 
 -- 1. EXTENSIONS
@@ -8,15 +9,19 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 2. ENUMS
-CREATE TYPE user_role AS ENUM ('admin', 'dispatcher', 'driver', 'passenger');
-CREATE TYPE bus_status AS ENUM ('active', 'delayed', 'stopped', 'maintenance');
-CREATE TYPE alert_severity AS ENUM ('critical', 'warning', 'info');
+DO $$ BEGIN
+    CREATE TYPE bus_status AS ENUM ('active', 'delayed', 'stopped', 'maintenance');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
--- 3. USERS (Gestionada exclusivamente por Supabase Auth)
--- Ver schema completo, RLS y triggers en docs/supabase-users-table.sql:
--- public.users (id uuid primary key references auth.users(id), email, full_name, role, auth_provider, avatar_url, created_at, updated_at)
+DO $$ BEGIN
+    CREATE TYPE alert_severity AS ENUM ('critical', 'warning', 'info');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
--- 4. ROUTES TABLE
+-- 3. ROUTES TABLE
 CREATE TABLE IF NOT EXISTS routes (
     id VARCHAR(10) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -26,10 +31,10 @@ CREATE TABLE IF NOT EXISTS routes (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 5. DRIVERS TABLE
+-- 4. DRIVERS TABLE
 CREATE TABLE IF NOT EXISTS drivers (
     id VARCHAR(20) PRIMARY KEY,
-    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    user_id UUID,
     name VARCHAR(120) NOT NULL,
     initials VARCHAR(5) NOT NULL,
     license_number VARCHAR(50) UNIQUE NOT NULL,
@@ -39,7 +44,7 @@ CREATE TABLE IF NOT EXISTS drivers (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 6. BUSES TABLE (FLEET)
+-- 5. BUSES TABLE (FLEET)
 CREATE TABLE IF NOT EXISTS buses (
     id VARCHAR(20) PRIMARY KEY,
     bus_number VARCHAR(10) NOT NULL,
@@ -60,10 +65,10 @@ CREATE TABLE IF NOT EXISTS buses (
 );
 
 -- Indexes for spatial/telemetry queries
-CREATE INDEX idx_buses_route ON buses(route_id);
-CREATE INDEX idx_buses_status ON buses(status);
+CREATE INDEX IF NOT EXISTS idx_buses_route ON buses(route_id);
+CREATE INDEX IF NOT EXISTS idx_buses_status ON buses(status);
 
--- 7. ALERTS TABLE
+-- 6. ALERTS TABLE
 CREATE TABLE IF NOT EXISTS alerts (
     id BIGSERIAL PRIMARY KEY,
     severity alert_severity NOT NULL DEFAULT 'info',
@@ -74,12 +79,12 @@ CREATE TABLE IF NOT EXISTS alerts (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_alerts_severity_read ON alerts(severity, is_read);
+CREATE INDEX IF NOT EXISTS idx_alerts_severity_read ON alerts(severity, is_read);
 
--- 8. ACTIVITIES LOG TABLE
+-- 7. ACTIVITIES LOG TABLE
 CREATE TABLE IF NOT EXISTS activity_logs (
     id BIGSERIAL PRIMARY KEY,
-    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    user_id UUID,
     action_text TEXT NOT NULL,
     action_type VARCHAR(30) DEFAULT 'info',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -87,38 +92,50 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 
 -- ==============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
--- Ensures data privacy, isolation & protection against public DB leaks
 -- ==============================================================================
 
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE routes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE drivers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE buses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE alerts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
 
--- 1. USERS POLICIES
--- Users can view their own profile; admins can view all users
-CREATE POLICY user_self_read ON users FOR SELECT
-    USING (auth.uid() = id OR current_setting('request.jwt.claims', true)::json->>'role' = 'admin');
+-- Public Read Policies
+DO $$ BEGIN
+    CREATE POLICY routes_public_read ON routes FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY user_self_update ON users FOR UPDATE
-    USING (auth.uid() = id);
+DO $$ BEGIN
+    CREATE POLICY buses_public_read ON buses FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
--- 2. PUBLIC READ POLICIES (Routes, Buses telemetry, Public Stops)
--- All authenticated & anonymous users can view live route & bus telemetry
-CREATE POLICY routes_public_read ON routes FOR SELECT USING (true);
-CREATE POLICY buses_public_read ON buses FOR SELECT USING (true);
-CREATE POLICY drivers_public_read ON drivers FOR SELECT USING (true);
-CREATE POLICY alerts_public_read ON alerts FOR SELECT USING (true);
+DO $$ BEGIN
+    CREATE POLICY drivers_public_read ON drivers FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
--- 3. ADMIN / DISPATCHER WRITE POLICIES
--- Only Admins and Dispatchers can insert or update buses, routes & alerts
-CREATE POLICY buses_admin_write ON buses FOR ALL
-    USING (current_setting('request.jwt.claims', true)::json->>'role' IN ('admin', 'dispatcher'));
+DO $$ BEGIN
+    CREATE POLICY alerts_public_read ON alerts FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY alerts_admin_write ON alerts FOR ALL
-    USING (current_setting('request.jwt.claims', true)::json->>'role' IN ('admin', 'dispatcher'));
+-- Admin / Dispatcher Write Policies
+DO $$ BEGIN
+    CREATE POLICY buses_admin_write ON buses FOR ALL
+        USING (current_setting('request.jwt.claims', true)::json->>'role' IN ('admin', 'dispatcher'));
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY activity_logs_admin_read ON activity_logs FOR SELECT
-    USING (current_setting('request.jwt.claims', true)::json->>'role' IN ('admin', 'dispatcher'));
+DO $$ BEGIN
+    CREATE POLICY alerts_admin_write ON alerts FOR ALL
+        USING (current_setting('request.jwt.claims', true)::json->>'role' IN ('admin', 'dispatcher'));
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE POLICY activity_logs_admin_read ON activity_logs FOR SELECT
+        USING (current_setting('request.jwt.claims', true)::json->>'role' IN ('admin', 'dispatcher'));
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
