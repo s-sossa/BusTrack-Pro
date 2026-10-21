@@ -7,6 +7,17 @@ import { config } from '../config.js';
 import { PassengerService } from './passengerService.js';
 
 const ROUTE_PATHS = {
+  'SJO-201': t => ({ x: 100 + t * 600, y: 150 + Math.sin(t * Math.PI) * 25 }),
+  'SJO-300': t => ({ x: 120 + t * 560, y: 220 + Math.sin(t * Math.PI + 0.5) * 20 }),
+  'SJO-400': t => ({ x: 150 + t * 500, y: 300 + Math.sin(t * Math.PI + 1) * 25 }),
+  'SJO-401': t => ({ x: 180 + t * 480, y: 340 + Math.cos(t * Math.PI) * 30 }),
+  'SJO-402': t => ({ x: 200 + t * 450, y: 280 + Math.sin(t * Math.PI * 1.5) * 20 }),
+  'SJO-600': t => ({ x: 220 + Math.sin(t * Math.PI) * 25, y: 80 + t * 320 }),
+  'SJO-601': t => ({ x: 300 + Math.sin(t * Math.PI) * 40, y: 50 + t * 360 }),
+  'PAC-327': t => ({ x: 400 + t * 300, y: 100 + Math.sin(t * Math.PI) * 35 }),
+  'GUA-900': t => ({ x: 500 + t * 250, y: 80 + Math.cos(t * Math.PI) * 40 }),
+  'CAR-32':  t => ({ x: 250 + t * 450, y: 120 + Math.sin(t * Math.PI * 2) * 30 }),
+  // Fallbacks
   A: t => ({ x: 50 + t * 700, y: 150 + Math.sin(t * Math.PI) * 30 }),
   B: t => ({ x: 50 + t * 700, y: 300 + Math.sin(t * Math.PI + 1) * 25 }),
   C: t => ({ x: 200 + Math.sin(t * Math.PI) * 18, y: 40 + t * 380 }),

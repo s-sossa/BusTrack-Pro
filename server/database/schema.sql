@@ -23,11 +23,14 @@ END $$;
 
 -- 3. ROUTES TABLE
 CREATE TABLE IF NOT EXISTS routes (
-    id VARCHAR(10) PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
+    id VARCHAR(20) PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
     color VARCHAR(20) NOT NULL,
+    var_name VARCHAR(20),
     stops_count INT DEFAULT 0,
-    length_km NUMERIC(5,2) DEFAULT 0.0,
+    length_km NUMERIC(6,2) DEFAULT 0.0,
+    operator VARCHAR(120),
+    concession VARCHAR(20),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -110,7 +110,7 @@ test('Database Diagnostics — Status & Table Row Counts', () => {
 
   const routesTable = status.tables.find(t => t.name === 'routes');
   assert.ok(routesTable);
-  assert.equal(routesTable.count, 4);
+  assert.equal(routesTable.count, 10);
 
   db.close();
 });
@@ -119,12 +119,14 @@ test('Database Queries — Real SQL Joins and Aggregations', () => {
   const db = new Database(':memory:');
   const routes = db.getAllRoutes();
 
-  assert.equal(routes.length, 4);
-  const routeA = routes.find(r => r.id === 'A');
-  assert.ok(routeA);
-  assert.ok(typeof routeA.totalBuses === 'number');
-  assert.ok(typeof routeA.passengersOnboard === 'number');
-  assert.ok(typeof routeA.coveragePercent === 'number');
+  assert.equal(routes.length, 10);
+  const routeSjo = routes.find(r => r.id === 'SJO-201');
+  assert.ok(routeSjo);
+  assert.equal(routeSjo.operator, 'TUASA (Transportes Unidos Alajuelenses S.A.)');
+  assert.equal(routeSjo.concession, 'SJO-201');
+  assert.ok(typeof routeSjo.totalBuses === 'number');
+  assert.ok(typeof routeSjo.passengersOnboard === 'number');
+  assert.ok(typeof routeSjo.coveragePercent === 'number');
 
   db.close();
 });

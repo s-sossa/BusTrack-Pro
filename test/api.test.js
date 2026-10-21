@@ -76,12 +76,13 @@ test('Transit Routes — GET /api/v1/routes', async () => {
   const res = await request('/api/v1/routes');
   assert.equal(res.status, 200);
   assert.ok(Array.isArray(res.body));
-  assert.equal(res.body.length, 4);
+  assert.equal(res.body.length, 10);
 
-  const routeA = res.body.find((r) => r.id === 'A');
-  assert.ok(routeA);
-  assert.equal(routeA.name, 'Centro — Aeropuerto');
-  assert.ok(typeof routeA.coveragePercent === 'number');
+  const routeSjo = res.body.find((r) => r.id === 'SJO-201');
+  assert.ok(routeSjo);
+  assert.equal(routeSjo.operator, 'TUASA (Transportes Unidos Alajuelenses S.A.)');
+  assert.equal(routeSjo.concession, 'SJO-201');
+  assert.ok(typeof routeSjo.coveragePercent === 'number');
 });
 
 test('Drivers Roster — GET /api/v1/drivers', async () => {
@@ -103,9 +104,9 @@ test('Fleet Management — GET /api/v1/buses with filters', async () => {
   assert.ok(resAll.body.length >= 12);
 
   // Filter by route
-  const resRouteA = await request('/api/v1/buses?route=A');
-  assert.equal(resRouteA.status, 200);
-  assert.ok(resRouteA.body.every((b) => b.route.id === 'A'));
+  const resRoute = await request('/api/v1/buses?route=SJO-201');
+  assert.equal(resRoute.status, 200);
+  assert.ok(resRoute.body.every((b) => b.route.id === 'SJO-201'));
 
   // Search query
   const resSearch = await request('/api/v1/buses?search=BUS-001');
@@ -117,13 +118,13 @@ test('Fleet Management — GET /api/v1/buses with filters', async () => {
 test('Fleet Management — POST /api/v1/buses (create bus)', async () => {
   const res = await request('/api/v1/buses', {
     method: 'POST',
-    body: JSON.stringify({ routeId: 'A', driverId: 'D001' }),
+    body: JSON.stringify({ routeId: 'SJO-201', driverId: 'D001' }),
   });
   assert.equal(res.status, 201);
   assert.ok(res.body.id.startsWith('BUS-'));
   assert.equal(res.body.status, 'stopped');
   assert.equal(res.body.speed, 0);
-  assert.equal(res.body.route.id, 'A');
+  assert.equal(res.body.route.id, 'SJO-201');
   assert.equal(res.body.driver.id, 'D001');
 });
 

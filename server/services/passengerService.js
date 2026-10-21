@@ -99,11 +99,11 @@ const PILOT_LINES = [
 
 export class PassengerService {
   static getPilotStops() {
-    return db.stops.filter(s => s.id && s.id.startsWith('stop-'));
+    return FIDELITAS_PILOT_STOPS;
   }
 
   static getStopById(stopId) {
-    return db.stops.find(s => s.id === stopId) || db.stops[0];
+    return FIDELITAS_PILOT_STOPS.find(s => s.id === stopId) || FIDELITAS_PILOT_STOPS[0];
   }
 
   static getStopArrivals(stopId = 'stop-fidelitas') {

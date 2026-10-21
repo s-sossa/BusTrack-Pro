@@ -352,28 +352,29 @@ function initBackendConnection() {
 
  
 const ROUTES = [
-  // Rutas reales del Gran Área Metropolitana y regiones de Costa Rica
-  { id: 'SJO-201', name: 'SJO-201 – San José ↔ Alajuela (vía Aeropuerto SJO)',  varName: '--route-a', color: '#5b6ef5', stops: 8,  length: 22,
-    stopIds: ['stop-central', 'stop-coca-cola', 'stop-sabana', 'stop-escazu', 'stop-santa-ana', 'stop-city-mall', 'stop-aeropuerto-sjo', 'stop-alajuela-fecosa'] },
-  { id: 'SJO-300', name: 'SJO-300 – San José ↔ Heredia (vía Ruta 3)',           varName: '--route-b', color: '#7c4ddb', stops: 6,  length: 18,
-    stopIds: ['stop-central', 'stop-7-10', 'stop-parque', 'stop-heredia-terminal', 'stop-santo-domingo', 'stop-san-pablo'] },
-  { id: 'SJO-400', name: 'SJO-400 – San José ↔ Cartago (vía Autopista Florencio del Castillo)', varName: '--route-c', color: '#2aa3c4', stops: 7, length: 25,
-    stopIds: ['stop-central', 'stop-hospital', 'stop-san-pedro', 'stop-ucr', 'stop-curridabat', 'stop-tres-rios', 'stop-cartago-mall'] },
-  { id: 'SJO-401', name: 'SJO-401 – San José ↔ Turrialba (vía Cartago)',        varName: '--route-d', color: '#2bb885', stops: 6,  length: 90,
-    stopIds: ['stop-central', 'stop-cartago-mall', 'stop-tres-rios', 'stop-paraiso', 'stop-cervantes', 'stop-turrialba'] },
-  { id: 'SJO-402', name: 'SJO-402 – Cartago ↔ San José (Express Ciudad Jardín)', varName: '--route-e', color: '#f5a623', stops: 5, length: 24,
-    stopIds: ['stop-cartago-mall', 'stop-tres-rios', 'stop-curridabat', 'stop-san-pedro', 'stop-central'] },
-  { id: 'SJO-600', name: 'SJO-600 – San José ↔ Desamparados ↔ Aserrí',         varName: '--route-f', color: '#e24c6c', stops: 5,  length: 20,
-    stopIds: ['stop-central', 'stop-sanjose', 'stop-zapote', 'stop-desamparados', 'stop-aserri'] },
-  { id: 'SJO-601', name: 'SJO-601 – San José ↔ San Isidro de El General',       varName: '--route-g', color: '#ff7043', stops: 5,  length: 120,
-    stopIds: ['stop-central', 'stop-hospital', 'stop-desamparados', 'stop-empalme', 'stop-san-isidro'] },
-  { id: 'PAC-327', name: 'PAC-327 – San José ↔ Puntarenas (vía Esparza)',        varName: '--route-h', color: '#26c6da', stops: 5,  length: 110,
-    stopIds: ['stop-coca-cola', 'stop-san-ramon', 'stop-esparza', 'stop-puntarenas-muelle', 'stop-puntarenas-terminal'] },
-  { id: 'GUA-900', name: 'GUA-900 – San José ↔ Liberia (vía Cañas)',             varName: '--route-i', color: '#66bb6a', stops: 6,  length: 230,
-    stopIds: ['stop-coca-cola', 'stop-alajuela-fecosa', 'stop-coyol', 'stop-canas', 'stop-liberia-terminal', 'stop-la-cruz'] },
-  { id: 'CAR-32',  name: 'CAR-32  – San José ↔ Limón (vía Siquirres)',           varName: '--route-j', color: '#ab47bc', stops: 6,  length: 160,
-    stopIds: ['stop-7-10', 'stop-cartago-mall', 'stop-turrialba', 'stop-siquirres', 'stop-guapiles', 'stop-limon-terminal'] },
+  // Rutas interprovinciales reales de Costa Rica — concesiones CTP/ARESEP
+  { id: 'SJO-201', name: 'San José – Alajuela vía Aeropuerto Juan Santamaría',        operator: 'TUASA (Transportes Unidos Alajuelenses S.A.)',          concession: 'SJO-201', varName: '--route-a', color: '#5b6ef5', stops: 8,  length: 22,
+    stopIds: ['stop-central-sjo', 'stop-coca-cola', 'stop-sabana', 'stop-escazu-centro', 'stop-santa-ana-centro', 'stop-city-mall', 'stop-aeropuerto-sjo', 'stop-alajuela-fecosa'] },
+  { id: 'SJO-300', name: 'San José – Heredia vía Tibás y Santo Domingo',              operator: 'Transportes Unidos La 400 S.A.',                        concession: 'SJO-300', varName: '--route-b', color: '#7c4ddb', stops: 6,  length: 18,
+    stopIds: ['stop-central-sjo', 'stop-7-10', 'stop-parque-central-sjo', 'stop-heredia-central', 'stop-santo-domingo', 'stop-san-pablo'] },
+  { id: 'SJO-400', name: 'San José – Cartago vía Autopista Florencio del Castillo',   operator: 'Auto Transportes Lumaca S.A.',                          concession: 'SJO-400', varName: '--route-c', color: '#2aa3c4', stops: 7,  length: 25,
+    stopIds: ['stop-central-sjo', 'stop-hospital-sanjuan', 'stop-san-pedro-centro', 'stop-ucr', 'stop-curridabat', 'stop-tres-rios', 'stop-metrocentro-cartago'] },
+  { id: 'SJO-401', name: 'San José – Turrialba vía Cartago y Paraíso',                operator: 'TRANSTUSA (Transportes Turrialba S.A.)',                 concession: 'SJO-401', varName: '--route-d', color: '#2bb885', stops: 6,  length: 90,
+    stopIds: ['stop-central-sjo', 'stop-metrocentro-cartago', 'stop-tres-rios', 'stop-paraiso', 'stop-cervantes', 'stop-turrialba'] },
+  { id: 'SJO-402', name: 'Cartago – San José Servicio Express Ciudad Jardín',         operator: 'Auto Transportes Lumaca S.A.',                          concession: 'SJO-402', varName: '--route-e', color: '#f5a623', stops: 5,  length: 24,
+    stopIds: ['stop-metrocentro-cartago', 'stop-tres-rios', 'stop-curridabat', 'stop-san-pedro-centro', 'stop-central-sjo'] },
+  { id: 'SJO-600', name: 'San José – Desamparados – Aserrí',                          operator: 'Autotransportes Desamparados S.A.',                     concession: 'SJO-600', varName: '--route-f', color: '#e24c6c', stops: 5,  length: 20,
+    stopIds: ['stop-central-sjo', 'stop-parque-central-sjo', 'stop-zapote', 'stop-desamparados', 'stop-aserri'] },
+  { id: 'SJO-601', name: 'San José – San Isidro de El General (Pérez Zeledón)',       operator: 'MUSOC (Empresa de Transportes M.U.S.O.C. S.A.)',         concession: 'SJO-601', varName: '--route-g', color: '#ff7043', stops: 5,  length: 120,
+    stopIds: ['stop-central-sjo', 'stop-hospital-sanjuan', 'stop-desamparados', 'stop-empalme', 'stop-perez-zeledon'] },
+  { id: 'PAC-327', name: 'San José – Puntarenas vía Esparza e Interamericana',        operator: 'Empresarios Unidos de Puntarenas S.A.',                 concession: 'PAC-327', varName: '--route-h', color: '#26c6da', stops: 5,  length: 110,
+    stopIds: ['stop-coca-cola', 'stop-san-ramon', 'stop-esparza', 'stop-puntarenas-ferry', 'stop-puntarenas-centro'] },
+  { id: 'GUA-900', name: 'San José – Liberia vía Cañas y Bagaces',                    operator: 'Pulmitan de Liberia S.A.',                              concession: 'GUA-900', varName: '--route-i', color: '#66bb6a', stops: 6,  length: 230,
+    stopIds: ['stop-coca-cola', 'stop-alajuela-fecosa', 'stop-coyol', 'stop-canas', 'stop-liberia-central', 'stop-la-cruz'] },
+  { id: 'CAR-32',  name: 'San José – Puerto Limón vía Guápiles (Ruta 32)',            operator: 'Autotransportes Caribeños S.A.',                        concession: 'CAR-32',  varName: '--route-j', color: '#ab47bc', stops: 6,  length: 160,
+    stopIds: ['stop-7-10', 'stop-metrocentro-cartago', 'stop-turrialba', 'stop-siquirres', 'stop-guapiles', 'stop-limon-centro'] },
 ];
+
  
 const DRIVERS = [
   { id: 'D001', name: 'Carlos Mendoza',  initials: 'CM', license: 'CR-2-0456-0891', trips: 1248, rating: 4.9, hours: 8.5 },
@@ -538,7 +539,13 @@ const STOPS = [
   { id: 'stop-puerto-viejo', name: 'Parada Puerto Viejo de Talamanca', subtext: 'Caribe Sur / Playa Salsa Brava', province: 'Limón', lat: 9.6565, lon: -82.7545, isPrimary: 1, x: 790, y: 280 },
   { id: 'stop-bribri', name: 'Bribri Centro (Talamanca)', province: 'Limón', lat: 9.6235, lon: -82.8415, isPrimary: 0, x: 785, y: 290 },
   { id: 'stop-sixaola', name: 'Sixaola (Frontera con Panamá)', subtext: 'Puente Internacional Binacional', province: 'Limón', lat: 9.5025, lon: -82.6145, isPrimary: 1, x: 800, y: 310 },
+
+  // ==========================================
+  // 8. PARADAS DE RUTA INTERAMERICANA (cruce)
+  // ==========================================
+  { id: 'stop-empalme', name: 'El Empalme / La División', subtext: 'Cruce Ruta Interamericana — Bifurcación Valle y Pacífico Sur', province: 'San José', lat: 9.7648, lon: -83.9412, isPrimary: 0, x: 320, y: 400 },
 ];
+
  
 const STATUS_LABELS = {
   active: 'En servicio',
@@ -1486,7 +1493,7 @@ function paintLayerRoutesAndStops(mapInstance, markersStore, isMini) {
         opacity: 0.85,
         dashArray: '8, 8'
       }).addTo(mapInstance);
-      poly.bindTooltip('Ruta ' + r.id + ': ' + r.name, { sticky: true });
+      poly.bindTooltip('<b>' + (r.concession || r.id) + '</b> ' + r.name + (r.operator ? '<br><small style="opacity:.8">' + r.operator + '</small>' : ''), { sticky: true, className: 'route-tooltip' });
       markersStore.routes[r.id] = poly;
     }
   });
@@ -2124,8 +2131,9 @@ function renderRoutes() {
     <article class="route-card" data-route="${r.id}" style="--rc:${r.color}" role="button" tabindex="0">
       <div class="route-header">
         <div>
-          <p class="route-id">Ruta ${r.id}</p>
+          <p class="route-id">Concesión ${r.concession || r.id}</p>
           <p class="route-name">${r.name}</p>
+          ${r.operator ? `<p class="route-operator" title="Empresa operadora">${r.operator}</p>` : ''}
         </div>
         <span class="status-badge ${s.activos ? 'status-active' : 'status-stopped'}">${s.activos ? 'Activa' : 'Sin buses'}</span>
       </div>
