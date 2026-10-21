@@ -134,6 +134,7 @@ export class TelemetryEngine {
         nextStop: b.nextStop,
         etaMin: b.etaMin,
         pos: b.pos,
+        _t: b._t,
         updatedAgo: b.updatedAgo,
       });
     }

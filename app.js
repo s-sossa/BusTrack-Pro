@@ -257,6 +257,7 @@ function handleServerEvent(msg) {
           b.etaMin = u.etaMin;
           b.pos = u.pos;
           b.updatedAgo = u.updatedAgo;
+          if (u._t !== undefined) b._t = u._t;
         }
       });
       refreshCounters();
@@ -585,12 +586,6 @@ const randInt = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 const fmt = n => Number(n).toLocaleString('es-CR');
  
-// Escapa texto antes de insertarlo con innerHTML.
-function esc(s) {
-  return String(s).replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  }[c]));
-}
  
 // Color de una ruta, resuelto contra el CSS actual.
 function routeColor(route) {
@@ -1120,24 +1115,199 @@ const CR_PROVINCES = {
   Limón: { center: [9.9935, -83.0332], zoom: 12, name: 'Limón' },
 };
 
-// Rutas GPS reales trazadas sobre carreteras y paradas reales
+// Rutas GPS reales trazadas sobre carreteras, autopistas y calles reales de Costa Rica
 const ROUTE_GPS_PATHS = {
-  A: [
-    [9.9325, -84.0815], [9.9348, -84.0864], [9.9355, -84.1042],
-    [9.9458, -84.1492], [9.9812, -84.1878], [10.0004, -84.2141], [10.0152, -84.2145]
+  // 1. SJO-201: San José ↔ Alajuela (Autopista General Cañas / Ruta 1)
+  'SJO-201': [
+    [9.9348, -84.0864], // Terminal Coca-Cola / Av. 1
+    [9.9355, -84.0950], // Paseo Colón
+    [9.9360, -84.1035], // Estatua León Cortés / Parque La Sabana
+    [9.9430, -84.1110], // Salida a Ruta 1 / Corobicí
+    [9.9485, -84.1160], // Puente Juan Pablo II / Pozuelo
+    [9.9535, -84.1225], // Frente a Hospital México
+    [9.9570, -84.1270], // Hotel San José Palacio
+    [9.9675, -84.1440], // Puente Río Virilla ("La Platina")
+    [9.9750, -84.1565], // Castella / Cruce Barreal
+    [9.9810, -84.1670], // Real Cariari / Centro de Convenciones
+    [9.9865, -84.1770], // Cruce San Antonio de Belén
+    [9.9910, -84.1880], // Bahía Cervecería Costa Rica
+    [9.9930, -84.1950], // Río Segundo de Alajuela
+    [10.0000, -84.2100], // Aeropuerto Internacional Juan Santamaría (SJO)
+    [10.0075, -84.2125], // City Mall Alajuela
+    [10.0120, -84.2140], // Entrada Radial Alajuela
+    [10.0165, -84.2142], // Parque Central de Alajuela
+    [10.0185, -84.2155], // Terminal Fecosa Alajuela
   ],
-  B: [
-    [9.9984, -84.1165], [9.9882, -84.1332], [9.9366, -84.0845],
-    [9.9333, -84.0792], [9.8974, -84.0664]
+
+  // 2. SJO-300: San José ↔ Heredia (Ruta 3 / Ruta 5)
+  'SJO-300': [
+    [9.9355, -84.0760], // Terminal 7-10 / San José Centro
+    [9.9430, -84.0790], // Tournón / Paso sobre Río Torres
+    [9.9510, -84.0815], // Cuatro Reinas de Tibás
+    [9.9570, -84.0835], // Parque San Juan de Tibás
+    [9.9690, -84.0880], // Puente Río Virilla hacia Heredia
+    [9.9795, -84.0915], // Basílica Santo Domingo de Heredia
+    [9.9840, -84.0970], // Miraflores
+    [9.9890, -84.1030], // San Pablo de Heredia / Paseo de las Flores
+    [9.9950, -84.1070], // Cruce La Valencia / Pirro
+    [9.9985, -84.1110], // Universidad Nacional (UNA)
+    [10.0005, -84.1165], // Parque Central de Heredia
+    [10.0020, -84.1180], // Terminal Central de Heredia
   ],
-  C: [
-    [9.8645, -83.9212], [9.8638, -83.9131], [9.9075, -83.9878],
-    [9.9338, -84.0535], [9.9365, -84.0512], [9.9392, -84.0321], [9.9332, -84.0768]
+
+  // 3. SJO-400: San José ↔ Cartago (Autopista Florencio del Castillo / Ruta 2)
+  'SJO-400': [
+    [9.9325, -84.0780], // Terminal Lumaca San José / Calle 5
+    [9.9330, -84.0650], // Barrio California / Estación al Atlántico
+    [9.9335, -84.0535], // Fuente de la Hispanidad / San Pedro
+    [9.9350, -84.0490], // UCR / San Pedro
+    [9.9280, -84.0320], // Plaza del Sol / Curridabat
+    [9.9220, -84.0200], // Hacienda Vieja
+    [9.9190, -84.0090], // El Fierro / Inicio Autopista Florencio del Castillo
+    [9.9120, -83.9980], // Cruce San Diego
+    [9.9070, -83.9870], // Tres Ríos / La Unión
+    [9.8970, -83.9550], // Alto de Ochomogo / Recope
+    [9.8880, -83.9450], // Cruce Quircot
+    [9.8770, -83.9350], // Taras de Cartago
+    [9.8690, -83.9310], // Paseo Metrópoli
+    [9.8655, -83.9260], // Colegio San Luis Gonzaga
+    [9.8640, -83.9210], // Ruinas de Cartago / Plaza Mayor
+    [9.8635, -83.9130], // Basílica de Los Ángeles (Cartago)
   ],
-  D: [
-    [9.9333, -84.0792], [9.9412, -84.0389], [9.9048, -83.6835], [10.2152, -83.7845], [9.9935, -83.0332]
-  ]
+
+  // 4. SJO-401: San José ↔ Turrialba (Vía Cartago, Paraíso, Cervantes / Ruta 10)
+  'SJO-401': [
+    [9.9325, -84.0780], // San José Lumaca
+    [9.8970, -83.9550], // Ochomogo
+    [9.8640, -83.9210], // Cartago Centro
+    [9.8550, -83.8950], // Caballo Blanco / Dulce Nombre
+    [9.8390, -83.8680], // Paraíso de Cartago
+    [9.8450, -83.8400], // Mirador Ujarrás cruce
+    [9.8620, -83.8220], // Birrisito
+    [9.8820, -83.8050], // Cervantes de Alvarado
+    [9.8890, -83.7750], // Santiago de Paraíso
+    [9.8940, -83.7450], // Juan Viñas (Ruta 10)
+    [9.8990, -83.7150], // Chitaría
+    [9.9010, -83.6950], // Entrada a Turrialba
+    [9.9048, -83.6835], // Terminal Central Transtusa (Turrialba)
+  ],
+
+  // 5. SJO-402: Cartago ↔ San José Express Ciudad Jardín
+  'SJO-402': [
+    [9.8635, -83.9130], // Basílica de Los Ángeles
+    [9.8640, -83.9210], // Cartago Plaza Mayor
+    [9.8770, -83.9350], // Taras
+    [9.8970, -83.9550], // Ochomogo
+    [9.9070, -83.9870], // Pista Florencio del Castillo
+    [9.9230, -84.0570], // Rotonda de las Garantías Sociales (Zapote)
+    [9.9270, -84.0740], // Plaza González Víquez
+    [9.9332, -84.0768], // Terminal San José Central
+  ],
+
+  // 6. SJO-600: San José ↔ Desamparados ↔ Aserrí
+  'SJO-600': [
+    [9.9330, -84.0790], // Terminal San José Central
+    [9.9265, -84.0745], // Plaza González Víquez
+    [9.9140, -84.0710], // Parque de la Paz
+    [9.9040, -84.0680], // San Antonio de Desamparados
+    [9.8974, -84.0664], // Desamparados Centro (Parque Central)
+    [9.8880, -84.0690], // El Cruce de Aserrí
+    [9.8750, -84.0760], // Salitrillos
+    [9.8630, -84.0880], // Aserrí Centro (Parque y Parroquia)
+  ],
+
+  // 7. SJO-601: San José ↔ San Isidro de El General (Pérez Zeledón / Ruta 2)
+  'SJO-601': [
+    [9.9330, -84.0790], // San José Terminal Musoc
+    [9.8770, -83.9350], // Cartago Taras
+    [9.8450, -83.9380], // Tejar del Guarco
+    [9.8120, -83.9420], // La Cangreja
+    [9.7420, -83.9510], // El Empalme (Ruta 2)
+    [9.7050, -83.9200], // Casa Mata
+    [9.6580, -83.8650], // Cañón del Guarco
+    [9.6380, -83.8420], // La Georgina
+    [9.5630, -83.7540], // Cerro de la Muerte (Cumbre Interamericana)
+    [9.4980, -83.7220], // División de Pérez Zeledón
+    [9.4200, -83.7090], // Rivas cruce
+    [9.3735, -83.7045], // San Isidro de El General Centro
+  ],
+
+  // 8. PAC-327: San José ↔ Puntarenas (Ruta 27 / Caldera / Esparza)
+  'PAC-327': [
+    [9.9348, -84.1042], // Sabana Oeste / Inicio Ruta 27
+    [9.9450, -84.1480], // Multiplaza Escazú
+    [9.9380, -84.1950], // Forum / Santa Ana
+    [9.9330, -84.2280], // Peaje Ciudad Colón
+    [9.9250, -84.3400], // Atenas Cruce (Ruta 27)
+    [9.9120, -84.5200], // Coyolar / Orotina
+    [9.9170, -84.7170], // Puerto Caldera
+    [9.9880, -84.6680], // Esparza cruce
+    [9.9790, -84.7350], // Barranca entrada
+    [9.9810, -84.7750], // El Roble de Puntarenas
+    [9.9830, -84.8080], // Chacarita
+    [9.9770, -84.8380], // Paseo de los Turistas
+    [9.9760, -84.8480], // Terminal Central de Puntarenas
+  ],
+
+  // 9. GUA-900: San José ↔ Liberia (Interamericana Norte / Ruta 1)
+  'GUA-900': [
+    [10.0004, -84.2141], // Alajuela / Cañas
+    [10.0450, -84.3500], // Naranjo cruce
+    [10.0580, -84.4320], // Palmares
+    [10.0880, -84.4710], // San Ramón (Empresarios Unidos)
+    [10.0150, -84.6320], // Cambronero
+    [9.9920, -84.7320],  // Barranca Interamericana Norte
+    [10.0850, -84.7890], // Miramar cruce
+    [10.2980, -84.9850], // Limonal
+    [10.4312, -85.0945], // Cañas Centro
+    [10.5285, -85.2582], // Bagaces Parque Central
+    [10.6315, -85.4382], // Terminal Municipal Liberia
+    [10.5935, -85.5442], // Aeropuerto Guanacaste (LIR)
+  ],
+
+  // 10. CAR-32: San José ↔ Limón (Ruta 32 Braulio Carrillo)
+  'CAR-32': [
+    [9.9412, -84.0720], // Terminal Caribeños San José
+    [10.0180, -84.0250], // San Isidro de Heredia cruce
+    [10.0520, -84.0120], // Túnel Zurquí (Braulio Carrillo)
+    [10.1530, -83.9520], // Cruce Río Sucio
+    [10.2152, -83.7845], // Guápiles Centro (Terminal Pococí)
+    [10.2115, -83.6845], // Guácimo Centro
+    [10.0982, -83.5075], // Siquirres Centro (Ruta 32)
+    [10.0842, -83.3345], // Batán de Matina
+    [10.0095, -83.1315], // Liverpool
+    [10.0012, -83.0785], // Puerto Moín (APM Terminals)
+    [9.9935, -83.0332],  // Terminal Caribeños Limón Centro
+  ],
 };
+
+// Aliases para compatibilidad
+ROUTE_GPS_PATHS.A = ROUTE_GPS_PATHS['SJO-201'];
+ROUTE_GPS_PATHS.B = ROUTE_GPS_PATHS['SJO-300'];
+ROUTE_GPS_PATHS.C = ROUTE_GPS_PATHS['SJO-400'];
+ROUTE_GPS_PATHS.D = ROUTE_GPS_PATHS['CAR-32'];
+
+// Tabla de distancias acumuladas por longitud de arco para avance realista
+const ROUTE_DISTANCES = {};
+function initRouteDistances() {
+  for (const [routeId, coords] of Object.entries(ROUTE_GPS_PATHS)) {
+    const dists = [0];
+    let total = 0;
+    for (let i = 0; i < coords.length - 1; i++) {
+      const p1 = coords[i];
+      const p2 = coords[i + 1];
+      const dLat = p2[0] - p1[0];
+      const dLon = (p2[1] - p1[1]) * Math.cos(((p1[0] + p2[0]) / 2) * (Math.PI / 180));
+      const d = Math.sqrt(dLat * dLat + dLon * dLon);
+      total += d;
+      dists.push(total);
+    }
+    ROUTE_DISTANCES[routeId] = { total: total || 1, dists };
+  }
+}
+initRouteDistances();
+
+let activeTrackedRouteLayer = null;
 
 let realLeafletMap = null;
 let leafletMarkers = {
@@ -1389,22 +1559,33 @@ function setupDashboardMapControls() {
   }
 }
 
-// Interpola posición GPS para un bus según su progreso _t [0..1]
+// Interpola posición GPS para un bus según su progreso _t [0..1] sobre las calles reales
 function getBusGpsPosition(bus) {
-  const coords = ROUTE_GPS_PATHS[bus.route.id] || ROUTE_GPS_PATHS.A;
+  const routeId = (bus && bus.route && bus.route.id) || 'SJO-201';
+  const coords = ROUTE_GPS_PATHS[routeId] || ROUTE_GPS_PATHS['SJO-201'];
   if (!coords || !coords.length) return [9.9333, -84.0833];
-  
-  const totalSegments = coords.length - 1;
+
+  const meta = ROUTE_DISTANCES[routeId] || ROUTE_DISTANCES['SJO-201'];
+  if (!meta || !meta.dists || meta.dists.length < 2) return coords[0];
+
   const t = Math.max(0, Math.min(1, bus._t !== undefined ? bus._t : 0.5));
-  const exactSegment = t * totalSegments;
-  const index = Math.min(Math.floor(exactSegment), totalSegments - 1);
-  const segFraction = exactSegment - index;
+  const targetDist = t * meta.total;
+
+  let index = 0;
+  for (let i = 0; i < meta.dists.length - 1; i++) {
+    if (targetDist <= meta.dists[i + 1]) {
+      index = i;
+      break;
+    }
+  }
 
   const p1 = coords[index];
   const p2 = coords[index + 1] || p1;
+  const segDist = meta.dists[index + 1] - meta.dists[index];
+  const fraction = segDist > 0 ? (targetDist - meta.dists[index]) / segDist : 0;
 
-  const lat = p1[0] + (p2[0] - p1[0]) * segFraction;
-  const lon = p1[1] + (p2[1] - p1[1]) * segFraction;
+  const lat = p1[0] + (p2[0] - p1[0]) * fraction;
+  const lon = p1[1] + (p2[1] - p1[1]) * fraction;
   return [lat, lon];
 }
 
@@ -1526,9 +1707,65 @@ function updateTrackingBanner() {
   }
 }
 
+// Resalta la calle/recorrido en el mapa con el color de la ruta asignada al bus
+function highlightRouteForBus(bus) {
+  if (!realLeafletMap) return;
+
+  if (activeTrackedRouteLayer) {
+    try { realLeafletMap.removeLayer(activeTrackedRouteLayer); } catch (_) {}
+    activeTrackedRouteLayer = null;
+  }
+
+  if (!bus || !bus.route) return;
+
+  const routeId = bus.route.id || 'SJO-201';
+  const coords = ROUTE_GPS_PATHS[routeId] || ROUTE_GPS_PATHS['SJO-201'];
+  if (!coords || coords.length < 2) return;
+
+  const color = bus.route.color || '#3b82f6';
+
+  // Halo / contraste oscuro para alta visibilidad en mapa claro o satelital
+  const baseLine = L.polyline(coords, {
+    color: '#070d18',
+    weight: 9,
+    opacity: 0.65,
+    lineCap: 'round',
+    lineJoin: 'round'
+  });
+
+  // Calle resaltada con el color oficial de la ruta
+  const mainLine = L.polyline(coords, {
+    color: color,
+    weight: 6,
+    opacity: 0.95,
+    lineCap: 'round',
+    lineJoin: 'round',
+    className: 'route-highlight-pulse'
+  });
+  mainLine.bindTooltip('Ruta activa: ' + (bus.route.name || routeId), { sticky: true });
+
+  activeTrackedRouteLayer = L.layerGroup([baseLine, mainLine]).addTo(realLeafletMap);
+  activeTrackedRouteLayer.bringToFront();
+
+  // Asegurar que los marcadores de buses queden visibles encima de la vía
+  if (leafletMarkers && leafletMarkers.buses) {
+    Object.values(leafletMarkers.buses).forEach(m => {
+      if (m && m.bringToFront) m.bringToFront();
+    });
+  }
+}
+
+function clearHighlightedRoute() {
+  if (activeTrackedRouteLayer && realLeafletMap) {
+    try { realLeafletMap.removeLayer(activeTrackedRouteLayer); } catch (_) {}
+    activeTrackedRouteLayer = null;
+  }
+}
+
 function stopTracking(msg) {
   if (!state.trackingBus) return;
   state.trackingBus = null;
+  clearHighlightedRoute();
   updateTrackingBanner();
   if (msg) toast(msg);
 }
@@ -1540,10 +1777,11 @@ function focusBus(busId) {
   state.trackingBus = busId;
   navigate('map');
   centerMapOnBus(busId, true);
+  highlightRouteForBus(bus);
   renderMapBusList();
   drawMapMarkers(true);
   updateTrackingBanner();
-  toast('Siguiendo ' + busId, 'info');
+  toast('Siguiendo ' + busId + ' · ' + (bus.route.id || ''), 'info');
 }
 
 let animId = null;
@@ -1551,16 +1789,25 @@ let lastTick = 0;
 
 function tick(ts) {
   animId = requestAnimationFrame(tick);
-  if (ts - lastTick < 65) return;
+  if (ts - lastTick < 35) return;
+  const dt = Math.min((ts - lastTick) / 1000, 0.1);
   lastTick = ts;
 
-  if (prefs.motion && !backendConnected) {
+  if (prefs.motion) {
     buses.forEach(b => {
       const moving = b.status === 'active' || b.status === 'delayed';
       if (moving) {
-        b._t = (b._t || 0) + (b._dir || 1) * (b._step || 0.005) * (b.speed / 40);
-        if (b._t >= 1) { b._t = 1; b._dir = -1; }
-        else if (b._t <= 0) { b._t = 0; b._dir = 1; }
+        const speed = b.speed || 38;
+        // Avance suave a velocidad vehicular simulada sobre las calles
+        const delta = (speed / 3600) * dt * 0.5;
+        b._t = (b._t !== undefined ? b._t : Math.random()) + (b._dir || 1) * delta;
+        if (b._t >= 1) {
+          b._t = 1;
+          b._dir = -1;
+        } else if (b._t <= 0) {
+          b._t = 0;
+          b._dir = 1;
+        }
       }
     });
   }

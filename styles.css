@@ -2313,3 +2313,23 @@ button, input, select { font-family: inherit; }
   100% { transform: scale(1.8); opacity: 0; }
 }
 
+/* Ocultar píldoras innecesarias del topbar */
+#dbStatusPill, #serverStatusPill, #liveToggle {
+  display: none !important;
+}
+
+/* Controles de mapa exclusivamente en Mapa en Vivo */
+#view-dashboard .map-controls {
+  display: none !important;
+}
+
+/* Animación sutil de resplandor para la calle/ruta seleccionada */
+.route-highlight-pulse {
+  animation: routeGlow 2.5s infinite alternate ease-in-out;
+}
+@keyframes routeGlow {
+  0% { stroke-opacity: 0.85; filter: drop-shadow(0 0 2px currentColor); }
+  100% { stroke-opacity: 1; filter: drop-shadow(0 0 6px currentColor); }
+}
+
+
