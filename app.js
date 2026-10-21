@@ -1315,6 +1315,7 @@ let leafletMarkers = {
   stops: {},
   user: null,
   routes: {},
+  highlightLayer: null,
 };
 
 let dashboardLeafletMap = null;
@@ -1323,6 +1324,7 @@ let dashboardMarkers = {
   stops: {},
   user: null,
   routes: {},
+  highlightLayer: null,
 };
 
 // Generador de capas base de mapas 100% gratuitas, sin marcas de agua y sin bloqueos 403
@@ -1416,6 +1418,13 @@ function initRealLeafletMap() {
   setTimeout(() => { if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false }); }, 500);
 
   drawMapMarkers(true);
+  if (state.trackingBus) {
+    const trackedBus = buses.find(b => b.id === state.trackingBus);
+    if (trackedBus) {
+      highlightRouteForBus(trackedBus);
+      centerMapOnBus(state.trackingBus, true);
+    }
+  }
 }
 
 function initDashboardLeafletMap() {
@@ -1456,6 +1465,12 @@ function initDashboardLeafletMap() {
   setTimeout(() => { if (dashboardLeafletMap) dashboardLeafletMap.invalidateSize({ animate: false }); }, 300);
 
   drawMapMarkers(true);
+  if (state.trackingBus) {
+    const trackedBus = buses.find(b => b.id === state.trackingBus);
+    if (trackedBus) {
+      highlightRouteForBus(trackedBus);
+    }
+  }
 }
 
 function paintLayerRoutesAndStops(mapInstance, markersStore, isMini) {
@@ -1707,59 +1722,125 @@ function updateTrackingBanner() {
   }
 }
 
-// Resalta la calle/recorrido en el mapa con el color de la ruta asignada al bus
-function highlightRouteForBus(bus) {
-  if (!realLeafletMap) return;
+function resolveRouteId(route) {
+  if (!route) return 'SJO-201';
+  const id = String(route.id || route);
+  const aliasMap = {
+    'A': 'SJO-201',
+    'B': 'SJO-300',
+    'C': 'SJO-400',
+    'D': 'CAR-32',
+  };
+  return aliasMap[id] || id;
+}
 
-  if (activeTrackedRouteLayer) {
-    try { realLeafletMap.removeLayer(activeTrackedRouteLayer); } catch (_) {}
-    activeTrackedRouteLayer = null;
+// Resalta la calle/recorrido en el mapa con el color oficial de la ruta del bus
+function applyRouteHighlightToMap(mapInstance, markersStore, bus, isMini) {
+  if (!mapInstance || !markersStore) {
+    console.warn('⚠️ applyRouteHighlight: map or store is null', { map: !!mapInstance, store: !!markersStore, bus: bus.id, isMini });
+    return;
   }
 
-  if (!bus || !bus.route) return;
+  const rawRouteId = bus.route ? (bus.route.id || 'SJO-201') : 'SJO-201';
+  const canonicalRouteId = resolveRouteId(bus.route);
+  const coords = ROUTE_GPS_PATHS[canonicalRouteId] || ROUTE_GPS_PATHS[rawRouteId] || ROUTE_GPS_PATHS['SJO-201'];
+  if (!coords || coords.length < 2) {
+    console.warn('⚠️ applyRouteHighlight: no coords for route', { canonical: canonicalRouteId, raw: rawRouteId });
+    return;
+  }
 
-  const routeId = bus.route.id || 'SJO-201';
-  const coords = ROUTE_GPS_PATHS[routeId] || ROUTE_GPS_PATHS['SJO-201'];
-  if (!coords || coords.length < 2) return;
+  const color = (bus.route && bus.route.color) || '#38bdf8';
 
-  const color = bus.route.color || '#3b82f6';
+  // 1. Atenuar todas las demás rutas de fondo para dar contraste espectacular a la calle elegida
+  if (markersStore.routes) {
+    Object.entries(markersStore.routes).forEach(([id, poly]) => {
+      if (poly && poly.setStyle) {
+        const isThisRoute = id === canonicalRouteId || id === rawRouteId;
+        poly.setStyle({
+          opacity: isThisRoute ? 0.2 : 0.08,
+          weight: isMini ? 2 : 3
+        });
+      }
+    });
+  }
 
-  // Halo / contraste oscuro para alta visibilidad en mapa claro o satelital
-  const baseLine = L.polyline(coords, {
-    color: '#070d18',
-    weight: 9,
-    opacity: 0.65,
+  // 2. Limpiar resaltado anterior si existe
+  if (markersStore.highlightLayer) {
+    try { mapInstance.removeLayer(markersStore.highlightLayer); } catch (_) {}
+    markersStore.highlightLayer = null;
+  }
+
+  // 3. Trazado vial iluminado sobre la calle:
+  // A) Borde exterior oscuro para contraste sobre cualquier mapa
+  const casing = L.polyline(coords, {
+    color: '#020617',
+    weight: isMini ? 8 : 14,
+    opacity: 0.9,
     lineCap: 'round',
     lineJoin: 'round'
   });
 
-  // Calle resaltada con el color oficial de la ruta
-  const mainLine = L.polyline(coords, {
+  // B) Vía principal ancha con el color exacto de la ruta
+  const mainStreet = L.polyline(coords, {
     color: color,
-    weight: 6,
+    weight: isMini ? 5 : 8,
+    opacity: 1,
+    lineCap: 'round',
+    lineJoin: 'round'
+  });
+  mainStreet.bindTooltip('🛣️ Calle de Ruta: ' + ((bus.route && bus.route.name) || canonicalRouteId), { sticky: true });
+
+  // C) Núcleo brillante de luz interior para efecto neón
+  const innerCore = L.polyline(coords, {
+    color: '#ffffff',
+    weight: isMini ? 1.5 : 2.5,
     opacity: 0.95,
     lineCap: 'round',
-    lineJoin: 'round',
-    className: 'route-highlight-pulse'
+    lineJoin: 'round'
   });
-  mainLine.bindTooltip('Ruta activa: ' + (bus.route.name || routeId), { sticky: true });
 
-  activeTrackedRouteLayer = L.layerGroup([baseLine, mainLine]).addTo(realLeafletMap);
-  activeTrackedRouteLayer.bringToFront();
+  const layerGroup = L.layerGroup([casing, mainStreet, innerCore]).addTo(mapInstance);
+  layerGroup.bringToFront();
+  markersStore.highlightLayer = layerGroup;
+  console.log('✅ Highlight layer added to', isMini ? 'dashboard' : 'fullmap', '| route:', canonicalRouteId, '| coords:', coords.length, '| color:', color);
 
-  // Asegurar que los marcadores de buses queden visibles encima de la vía
-  if (leafletMarkers && leafletMarkers.buses) {
-    Object.values(leafletMarkers.buses).forEach(m => {
+  // 4. Asegurar que los marcadores de los buses queden visibles encima de la calle
+  if (markersStore.buses) {
+    Object.values(markersStore.buses).forEach(m => {
       if (m && m.bringToFront) m.bringToFront();
     });
   }
 }
 
-function clearHighlightedRoute() {
-  if (activeTrackedRouteLayer && realLeafletMap) {
-    try { realLeafletMap.removeLayer(activeTrackedRouteLayer); } catch (_) {}
-    activeTrackedRouteLayer = null;
+function highlightRouteForBus(bus) {
+  if (!bus) {
+    console.warn('⚠️ highlightRouteForBus: bus is null');
+    return;
   }
+  console.log('🛣️ highlightRouteForBus:', bus.id, '| route:', bus.route?.id, '| realMap:', !!realLeafletMap, '| dashMap:', !!dashboardLeafletMap);
+  state.highlightBus = bus.id;
+  applyRouteHighlightToMap(realLeafletMap, leafletMarkers, bus, false);
+  applyRouteHighlightToMap(dashboardLeafletMap, dashboardMarkers, bus, true);
+}
+
+function clearHighlightedRoute() {
+  const resetMap = (mapInstance, markersStore, isMini) => {
+    if (!mapInstance || !markersStore) return;
+    if (markersStore.highlightLayer) {
+      try { mapInstance.removeLayer(markersStore.highlightLayer); } catch (_) {}
+      markersStore.highlightLayer = null;
+    }
+    if (markersStore.routes) {
+      Object.values(markersStore.routes).forEach(poly => {
+        if (poly && poly.setStyle) {
+          poly.setStyle({ opacity: 0.85, weight: isMini ? 3 : 4 });
+        }
+      });
+    }
+  };
+
+  resetMap(realLeafletMap, leafletMarkers, false);
+  resetMap(dashboardLeafletMap, dashboardMarkers, true);
 }
 
 function stopTracking(msg) {
@@ -1776,12 +1857,19 @@ function focusBus(busId) {
   state.highlightBus = busId;
   state.trackingBus = busId;
   navigate('map');
+
+  // Si el mapa aún no ha terminado de inicializarse, diferir
+  if (!realLeafletMap) {
+    setTimeout(() => focusBus(busId), 120);
+    return;
+  }
+
   centerMapOnBus(busId, true);
   highlightRouteForBus(bus);
   renderMapBusList();
   drawMapMarkers(true);
   updateTrackingBanner();
-  toast('Siguiendo ' + busId + ' · ' + (bus.route.id || ''), 'info');
+  toast('Siguiendo ' + busId + ' · Ruta ' + ((bus.route && bus.route.id) || ''), 'info');
 }
 
 let animId = null;
@@ -2531,8 +2619,20 @@ document.addEventListener('click', e => {
     return;
   }
  
+  const mapBus = e.target.closest('#mapBusList .map-bus-item, .map-bus-item');
+  if (mapBus && mapBus.dataset.bus) {
+    focusBus(mapBus.dataset.bus);
+    return;
+  }
+
   const bus = e.target.closest('[data-bus]');
-  if (bus) openBusModal(bus.dataset.bus);
+  if (bus) {
+    if (state.view === 'map') {
+      focusBus(bus.dataset.bus);
+      return;
+    }
+    openBusModal(bus.dataset.bus);
+  }
 });
  
 document.addEventListener('keydown', e => {
