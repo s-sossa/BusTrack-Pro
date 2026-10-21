@@ -3323,21 +3323,21 @@ function init() {
     sidebarLoginBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      window.location.href = '/login';
+      window.location.href = 'login.html';
     });
   }
   if (sidebarRegisterBtn) {
     sidebarRegisterBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      window.location.href = '/register';
+      window.location.href = 'register.html';
     });
   }
   if (authBtn) {
     authBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (!currentUser) {
-        window.location.href = '/login';
+        window.location.href = 'login.html';
       } else {
         openAuthModal('login');
       }
