@@ -10,6 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <!-- Supabase JS Client para autenticación directa en la nube -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     :root {
       --bg: #0a0f1c;
@@ -667,6 +669,13 @@
       el.addEventListener('change', clearError);
     });
 
+    // Inicialización del cliente Supabase en el navegador
+    const SUPABASE_URL = 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
+    const supaClient = (typeof supabase !== 'undefined' && supabase.createClient)
+      ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       clearError();
@@ -686,7 +695,6 @@
         return;
       }
 
-      // Regla explícita: al menos 8 caracteres
       if (!password || password.length < 8) {
         showError('La contraseña debe tener al menos 8 caracteres.', passwordInput);
         return;
@@ -697,7 +705,6 @@
         return;
       }
 
-      // Regla explícita: 2 casillas separadas obligatorias
       if (!consentTerms.checked) {
         showError('Debes aceptar los Términos y Condiciones para registrarte.');
         consentTerms.focus();
@@ -713,12 +720,7 @@
       // Estado de carga
       submitBtn.disabled = true;
       btnSpinner.style.display = 'inline-block';
-      btnText.textContent = 'Creando cuenta…';
-
-      // Determinar la URL del servidor backend según el entorno
-      const API_BASE = (window.location.protocol === 'file:' || (window.location.port && window.location.port !== '3000'))
-        ? `${window.location.protocol === 'file:' ? 'http:' : window.location.protocol}//${window.location.hostname || 'localhost'}:3000`
-        : '';
+      btnText.textContent = 'Registrando en Supabase…';
 
       function completeRegistration(user, token) {
         localStorage.setItem('bustrack_user', JSON.stringify(user));
@@ -726,73 +728,84 @@
           localStorage.setItem('bustrack_auth_token', token);
         }
 
-        // Guardar credenciales para permitir login posterior en GitHub Pages o sin conexión
-        try {
-          const accounts = JSON.parse(localStorage.getItem('bustrack_accounts') || '{}');
-          accounts[user.email.toLowerCase()] = {
-            password: password,
-            user: user
-          };
-          localStorage.setItem('bustrack_accounts', JSON.stringify(accounts));
-        } catch (_) {}
-
         btnText.textContent = '¡Cuenta creada! Entrando…';
         btnSpinner.style.display = 'none';
         submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
 
         setTimeout(() => {
           window.location.href = 'index.html';
-        }, 500);
+        }, 600);
       }
 
-      try {
-        const response = await fetch(`${API_BASE}/api/v1/auth/register`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name,
+      // 1) Registro oficial directo con Supabase Auth (Backend en la nube)
+      if (supaClient) {
+        try {
+          const { data, error } = await supaClient.auth.signUp({
             email,
             password,
-            consentTerms: true,
-            consentPrivacy: true
-          }),
-        });
+            options: {
+              data: {
+                full_name: name,
+                name: name
+              }
+            }
+          });
 
-        const data = await response.json();
+          if (error) {
+            const msg = error.message || '';
+            if (msg.includes('already registered') || msg.includes('User already registered')) {
+              showError('Ya existe una cuenta con este correo en Supabase. Puedes iniciar sesión.');
+            } else if (msg.includes('Password should be')) {
+              showError('La contraseña no cumple con los requisitos de seguridad de Supabase.');
+            } else {
+              showError('Error de Supabase: ' + msg);
+            }
+            submitBtn.disabled = false;
+            btnSpinner.style.display = 'none';
+            btnText.textContent = 'Crear Cuenta';
+            return;
+          }
 
-        if (data.status === 'pending') {
-          showError(data.message);
-          submitBtn.disabled = false;
+          const supaUser = data.user;
+          const userObj = {
+            id: supaUser?.id || ('USR-' + Date.now()),
+            name: name,
+            email: email,
+            role: 'passenger',
+            avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff'
+          };
+
+          // Si Supabase no requiere confirmación previa de email, entra de una vez
+          if (data.session?.access_token) {
+            completeRegistration(userObj, data.session.access_token);
+            return;
+          }
+
+          // Si Supabase requiere confirmación por correo:
+          localStorage.setItem('bustrack_user', JSON.stringify(userObj));
+          btnText.textContent = '¡Cuenta Registrada!';
           btnSpinner.style.display = 'none';
-          btnText.textContent = 'Crear Cuenta';
+          submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+          showError('¡Cuenta creada con éxito en Supabase! Revisa tu correo electrónico para confirmar la cuenta si tu proyecto lo requiere.');
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 1800);
           return;
+
+        } catch (supaErr) {
+          console.warn('[Supabase Direct Signup Exception]', supaErr);
         }
-
-        if (!response.ok || data.status !== 'success') {
-          showError(data.detail || data.message || 'Error al registrar la cuenta. Inténtalo de nuevo.');
-          submitBtn.disabled = false;
-          btnSpinner.style.display = 'none';
-          btnText.textContent = 'Crear Cuenta';
-          return;
-        }
-
-        // Éxito en backend
-        completeRegistration(data.user, data.token);
-
-      } catch (err) {
-        console.warn('[Register Network Warning] Servidor remoto no disponible. Registrando en modo cliente/GitHub Pages:', err);
-        // Fallback para GitHub Pages (alojamiento estático sin servidor Node backend)
-        const localUser = {
-          id: 'USR-' + Math.floor(1000 + Math.random() * 9000),
-          name: name,
-          email: email,
-          role: 'passenger',
-          avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=6366f1&color=fff'
-        };
-        completeRegistration(localUser, 'local-token-' + Date.now());
       }
+
+      // 2) Fallback de contingencia si Supabase no estuviera accesible
+      const localUser = {
+        id: 'USR-' + Math.floor(1000 + Math.random() * 9000),
+        name: name,
+        email: email,
+        role: 'passenger',
+        avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=6366f1&color=fff'
+      };
+      completeRegistration(localUser, 'local-token-' + Date.now());
     });
   </script>
 </body>

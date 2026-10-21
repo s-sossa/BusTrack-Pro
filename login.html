@@ -10,6 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <!-- Supabase JS Client para autenticación directa en la nube -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     :root {
       --bg: #0a0f1c;
@@ -544,6 +546,13 @@
       input.addEventListener('input', clearError);
     });
 
+    // Inicialización del cliente Supabase en el navegador
+    const SUPABASE_URL = 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
+    const supaClient = (typeof supabase !== 'undefined' && supabase.createClient)
+      ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       clearError();
@@ -560,12 +569,7 @@
       // Estado de carga
       submitBtn.disabled = true;
       btnSpinner.style.display = 'inline-block';
-      btnText.textContent = 'Verificando…';
-
-      // Determinar la URL del servidor backend según el entorno
-      const API_BASE = (window.location.protocol === 'file:' || (window.location.port && window.location.port !== '3000'))
-        ? `${window.location.protocol === 'file:' ? 'http:' : window.location.protocol}//${window.location.hostname || 'localhost'}:3000`
-        : '';
+      btnText.textContent = 'Iniciando sesión con Supabase…';
 
       function completeLogin(user, token) {
         localStorage.setItem('bustrack_user', JSON.stringify(user));
@@ -583,57 +587,52 @@
         }, 500);
       }
 
-      try {
-        const response = await fetch(`${API_BASE}/api/v1/auth/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, password }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || data.status !== 'success') {
-          showError('Correo o contraseña inválidos, intentelo de nuevo');
-          submitBtn.disabled = false;
-          btnSpinner.style.display = 'none';
-          btnText.textContent = 'Iniciar Sesión';
-          return;
-        }
-
-        completeLogin(data.user, data.token);
-
-      } catch (err) {
-        console.warn('[Login Network Warning] Backend no disponible, verificando cuentas locales de GitHub Pages:', err);
-
-        // 1. Verificar si existe la cuenta registrada en este navegador
+      // 1) Autenticación oficial directa con Supabase Auth (Backend en la nube)
+      if (supaClient) {
         try {
-          const accounts = JSON.parse(localStorage.getItem('bustrack_accounts') || '{}');
-          const savedAccount = accounts[email.toLowerCase()];
-          if (savedAccount && savedAccount.password === password) {
-            completeLogin(savedAccount.user, 'local-token-' + Date.now());
+          const { data, error } = await supaClient.auth.signInWithPassword({
+            email,
+            password
+          });
+
+          if (error) {
+            const msg = error.message || '';
+            if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
+              showError('Correo o contraseña incorrectos en Supabase.');
+            } else if (msg.includes('Email not confirmed')) {
+              showError('Debes confirmar tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.');
+            } else {
+              showError('Error de Supabase: ' + msg);
+            }
+            submitBtn.disabled = false;
+            btnSpinner.style.display = 'none';
+            btnText.textContent = 'Iniciar Sesión';
             return;
           }
-        } catch (_) {}
 
-        // 2. Permitir acceso demo administrativo
-        if ((email === 'demo@bustrack.cr' || email === 'admin@bustrack.cr') && password.length >= 8) {
-          completeLogin({
-            id: 'USR-DEMO',
-            name: email.startsWith('admin') ? 'Administrador Sistema' : 'Usuario Demostración',
-            email: email,
-            role: email.startsWith('admin') ? 'admin' : 'passenger',
-            avatarUrl: 'https://ui-avatars.com/api/?name=Demo&background=6366f1&color=fff'
-          }, 'demo-token');
+          const supaUser = data.user;
+          const name = supaUser?.user_metadata?.full_name || supaUser?.user_metadata?.name || email.split('@')[0];
+          const userObj = {
+            id: supaUser.id,
+            name: name,
+            email: supaUser.email,
+            role: supaUser.user_metadata?.role || 'passenger',
+            avatarUrl: supaUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=5b6ef5&color=fff`
+          };
+
+          completeLogin(userObj, data.session?.access_token);
           return;
-        }
 
-        showError('Correo o contraseña inválidos, intentelo de nuevo');
-        submitBtn.disabled = false;
-        btnSpinner.style.display = 'none';
-        btnText.textContent = 'Iniciar Sesión';
+        } catch (supaErr) {
+          console.warn('[Supabase Direct Login Exception]', supaErr);
+        }
       }
+
+      // 2) Fallback secundario si Supabase no responde
+      showError('Correo o contraseña inválidos, intentelo de nuevo');
+      submitBtn.disabled = false;
+      btnSpinner.style.display = 'none';
+      btnText.textContent = 'Iniciar Sesión';
     });
   </script>
 </body>
