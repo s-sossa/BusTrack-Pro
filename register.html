@@ -433,7 +433,7 @@
   </div>
 
   <header class="auth-header">
-    <a href="/" class="brand-link" title="Volver al inicio">
+    <a href="index.html" class="brand-link" title="Volver al inicio">
       <div class="brand-logo-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="6" width="18" height="12" rx="3"></rect>
@@ -444,7 +444,7 @@
       </div>
       <span class="brand-name">BusTrack <span>Pro</span></span>
     </a>
-    <a href="/" class="back-link">
+    <a href="index.html" class="back-link">
       <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
         <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
       </svg>
@@ -558,12 +558,12 @@
         <div class="consent-card">
           <label class="consent-item" for="consentTerms">
             <input type="checkbox" id="consentTerms" name="consentTerms" required />
-            <span>He leído y acepto los <a href="/terms" target="_blank" rel="noopener">Términos y Condiciones</a> del servicio.</span>
+            <span>He leído y acepto los <a href="terms.html" target="_blank" rel="noopener">Términos y Condiciones</a> del servicio.</span>
           </label>
 
           <label class="consent-item" for="consentPrivacy">
             <input type="checkbox" id="consentPrivacy" name="consentPrivacy" required />
-            <span>Acepto la <a href="/privacy" target="_blank" rel="noopener">Política de Privacidad</a> y el tratamiento seguro de mis datos personales (Ley 8968).</span>
+            <span>Acepto la <a href="privacy.html" target="_blank" rel="noopener">Política de Privacidad</a> y el tratamiento seguro de mis datos personales (Ley 8968).</span>
           </label>
         </div>
 
@@ -574,14 +574,14 @@
       </form>
 
       <div class="auth-footer">
-        ¿Ya tienes una cuenta? <a href="/login">Inicia sesión aquí</a>
+        ¿Ya tienes una cuenta? <a href="login.html">Inicia sesión aquí</a>
       </div>
     </div>
   </main>
 
   <footer class="page-footer">
-    <a href="/terms" target="_blank">Términos de Servicio</a> · 
-    <a href="/privacy" target="_blank">Política de Privacidad</a> · 
+    <a href="terms.html" target="_blank">Términos de Servicio</a> · 
+    <a href="privacy.html" target="_blank">Política de Privacidad</a> · 
     <span>BusTrack Pro &copy; 2026</span>
   </footer>
 
@@ -590,7 +590,7 @@
     try {
       const existingUser = localStorage.getItem('bustrack_user');
       if (existingUser) {
-        window.location.replace('/');
+        window.location.replace('index.html');
       }
     } catch (_) {}
 
@@ -764,7 +764,7 @@
         submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
 
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.href = 'index.html';
         }, 500);
 
       } catch (err) {

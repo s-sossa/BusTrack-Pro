@@ -141,7 +141,7 @@
     Parece que este bus tomó un desvío. La página que buscas no existe o fue movida.
   </p>
   <div class="actions">
-    <a href="/" class="btn-primary">
+    <a href="index.html" class="btn-primary">
       <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true">
         <path d="M10.7 2.3a1 1 0 0 0-1.4 0l-7 6.6A1 1 0 0 0 3 10.6V16a2 2 0 0 0 2 2h3v-4.5h4V18h3a2 2 0 0 0 2-2v-5.4a1 1 0 0 0-.3-1.7l-7-6.6Z"/>
       </svg>
@@ -154,6 +154,14 @@
   <p class="countdown">Redirigiendo al panel en <span id="countdownSecs">10</span> segundos…</p>
 
   <script>
+    // Si la ruta solicitada fue /login o /register, redirigir de inmediato al archivo .html
+    const path = window.location.pathname.toLowerCase();
+    if (path.endsWith('/login') || path.endsWith('/login/')) {
+      window.location.replace('login.html');
+    } else if (path.endsWith('/register') || path.endsWith('/register/')) {
+      window.location.replace('register.html');
+    }
+
     let secs = 10;
     const el = document.getElementById('countdownSecs');
     const timer = setInterval(() => {
@@ -161,7 +169,7 @@
       if (el) el.textContent = secs;
       if (secs <= 0) {
         clearInterval(timer);
-        window.location.href = '/';
+        window.location.href = 'index.html';
       }
     }, 1000);
   </script>
