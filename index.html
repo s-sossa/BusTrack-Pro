@@ -342,15 +342,15 @@
           </div>
         </div>
 
-        <div class="db-status-pill real-db" id="dbStatusPill" role="button" tabindex="0" title="Ver diagnóstico y tablas de la Base de Datos Real">
+        <div class="db-status-pill real-db" id="dbStatusPill" role="button" tabindex="0" title="Ver diagnóstico y tablas de la Base de Datos Real" style="display:none !important;">
           <span>🗄️</span>
           <span id="dbStatusLabel">BD: SQLite 3 (100% Real)</span>
         </div>
-        <div class="server-status-pill" id="serverStatusPill" title="Conexión en tiempo real con el backend">
+        <div class="server-status-pill" id="serverStatusPill" title="Conexión en tiempo real con el backend" style="display:none !important;">
           <span class="status-dot"></span>
           <span id="serverStatusLabel">Detectando API...</span>
         </div>
-        <button class="live-indicator" id="liveToggle" title="Pausar o reanudar la actualización automática" aria-pressed="true">
+        <button class="live-indicator" id="liveToggle" title="Pausar o reanudar la actualización automática" aria-pressed="true" style="display:none !important;">
           <span class="pulse-dot" id="livePulse"></span>
           <span id="liveLabel">Actualizando</span>
         </button>
@@ -420,15 +420,8 @@
           </div>
           <div class="map-container">
             <div class="map-bg" style="border-radius: inherit; height: 100%; position: relative;">
-              <!-- Leaflet Map Real para Dashboard -->
+              <!-- Leaflet Map Real para Dashboard (los controles solo se muestran en el Mapa en Vivo) -->
               <div id="dashboardRealMap" class="leaflet-real-map" style="width: 100%; height: 100%; border-radius: inherit;"></div>
-              <div class="map-controls">
-                <button class="map-btn map-btn-geo" id="locateUserBtnMini" data-map="mini" aria-label="Mi Ubicación" title="Centrar en mi ubicación">📍</button>
-                <button class="map-btn" id="dashboardStyleToggleBtn" aria-label="Cambiar estilo de mapa" title="Alternar estilo: Oscuro / Calles / Satelital">🌙</button>
-                <button class="map-btn" data-zoom="in" data-map="mini" aria-label="Acercar">+</button>
-                <button class="map-btn" data-zoom="out" data-map="mini" aria-label="Alejar">−</button>
-                <button class="map-btn" data-zoom="reset" data-map="mini" aria-label="Centrar en Costa Rica">🇨🇷</button>
-              </div>
               <div class="map-legend" id="miniLegend"></div>
             </div>
           </div>
