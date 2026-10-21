@@ -567,6 +567,22 @@
         ? `${window.location.protocol === 'file:' ? 'http:' : window.location.protocol}//${window.location.hostname || 'localhost'}:3000`
         : '';
 
+      function completeLogin(user, token) {
+        localStorage.setItem('bustrack_user', JSON.stringify(user));
+        if (token) {
+          localStorage.setItem('bustrack_auth_token', token);
+        }
+
+        btnText.textContent = '¡Bienvenido! Entrando…';
+        btnSpinner.style.display = 'none';
+        submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+
+        // Redirigir al panel principal
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 500);
+      }
+
       try {
         const response = await fetch(`${API_BASE}/api/v1/auth/login`, {
           method: 'POST',
@@ -579,7 +595,6 @@
         const data = await response.json();
 
         if (!response.ok || data.status !== 'success') {
-          // El usuario solicitó explícitamente este mensaje exacto si no coincide correo o contraseña
           showError('Correo o contraseña inválidos, intentelo de nuevo');
           submitBtn.disabled = false;
           btnSpinner.style.display = 'none';
@@ -587,23 +602,33 @@
           return;
         }
 
-        // Éxito: Guardar sesión
-        localStorage.setItem('bustrack_user', JSON.stringify(data.user));
-        if (data.token) {
-          localStorage.setItem('bustrack_auth_token', data.token);
-        }
-
-        btnText.textContent = '¡Bienvenido! Entrando…';
-        btnSpinner.style.display = 'none';
-        submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-
-        // Redirigir al panel principal
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 500);
+        completeLogin(data.user, data.token);
 
       } catch (err) {
-        console.error('[Login Error]', err);
+        console.warn('[Login Network Warning] Backend no disponible, verificando cuentas locales de GitHub Pages:', err);
+
+        // 1. Verificar si existe la cuenta registrada en este navegador
+        try {
+          const accounts = JSON.parse(localStorage.getItem('bustrack_accounts') || '{}');
+          const savedAccount = accounts[email.toLowerCase()];
+          if (savedAccount && savedAccount.password === password) {
+            completeLogin(savedAccount.user, 'local-token-' + Date.now());
+            return;
+          }
+        } catch (_) {}
+
+        // 2. Permitir acceso demo administrativo
+        if ((email === 'demo@bustrack.cr' || email === 'admin@bustrack.cr') && password.length >= 8) {
+          completeLogin({
+            id: 'USR-DEMO',
+            name: email.startsWith('admin') ? 'Administrador Sistema' : 'Usuario Demostración',
+            email: email,
+            role: email.startsWith('admin') ? 'admin' : 'passenger',
+            avatarUrl: 'https://ui-avatars.com/api/?name=Demo&background=6366f1&color=fff'
+          }, 'demo-token');
+          return;
+        }
+
         showError('Correo o contraseña inválidos, intentelo de nuevo');
         submitBtn.disabled = false;
         btnSpinner.style.display = 'none';

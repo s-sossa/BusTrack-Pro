@@ -720,6 +720,31 @@
         ? `${window.location.protocol === 'file:' ? 'http:' : window.location.protocol}//${window.location.hostname || 'localhost'}:3000`
         : '';
 
+      function completeRegistration(user, token) {
+        localStorage.setItem('bustrack_user', JSON.stringify(user));
+        if (token) {
+          localStorage.setItem('bustrack_auth_token', token);
+        }
+
+        // Guardar credenciales para permitir login posterior en GitHub Pages o sin conexión
+        try {
+          const accounts = JSON.parse(localStorage.getItem('bustrack_accounts') || '{}');
+          accounts[user.email.toLowerCase()] = {
+            password: password,
+            user: user
+          };
+          localStorage.setItem('bustrack_accounts', JSON.stringify(accounts));
+        } catch (_) {}
+
+        btnText.textContent = '¡Cuenta creada! Entrando…';
+        btnSpinner.style.display = 'none';
+        submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 500);
+      }
+
       try {
         const response = await fetch(`${API_BASE}/api/v1/auth/register`, {
           method: 'POST',
@@ -753,26 +778,20 @@
           return;
         }
 
-        // Éxito: Guardar sesión
-        localStorage.setItem('bustrack_user', JSON.stringify(data.user));
-        if (data.token) {
-          localStorage.setItem('bustrack_auth_token', data.token);
-        }
-
-        btnText.textContent = '¡Cuenta creada! Entrando…';
-        btnSpinner.style.display = 'none';
-        submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 500);
+        // Éxito en backend
+        completeRegistration(data.user, data.token);
 
       } catch (err) {
-        console.error('[Register Error]', err);
-        showError('No se pudo conectar con el servidor (' + (API_BASE || window.location.origin) + '). Verifica que esté corriendo en http://localhost:3000');
-        submitBtn.disabled = false;
-        btnSpinner.style.display = 'none';
-        btnText.textContent = 'Crear Cuenta';
+        console.warn('[Register Network Warning] Servidor remoto no disponible. Registrando en modo cliente/GitHub Pages:', err);
+        // Fallback para GitHub Pages (alojamiento estático sin servidor Node backend)
+        const localUser = {
+          id: 'USR-' + Math.floor(1000 + Math.random() * 9000),
+          name: name,
+          email: email,
+          role: 'passenger',
+          avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=6366f1&color=fff'
+        };
+        completeRegistration(localUser, 'local-token-' + Date.now());
       }
     });
   </script>
