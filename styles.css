@@ -2453,6 +2453,47 @@ button, input, select { font-family: inherit; }
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
 }
 
+/* Barra de búsqueda de Horarios — ícono y contenedor */
+.schedules-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 200px;
+  max-width: 480px;
+}
+
+.schedules-search-icon {
+  position: absolute;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.schedules-search-input {
+  width: 100%;
+  padding: 9px 14px 9px 36px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  color: #f1f5f9;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.schedules-search-input:focus {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.schedules-search-input::placeholder {
+  color: #475569;
+}
+
 /* Grid de tarjetas de Horarios */
 .schedules-grid {
   display: grid;
@@ -2901,4 +2942,63 @@ button, input, select { font-family: inherit; }
 }
 
 
+/* ==========================================================================
+   PILL FLOTANTE EN MAPA — Ruta enfocada desde Horarios
+   ========================================================================== */
 
+.map-route-focus-pill {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: rgba(10, 15, 30, 0.93);
+  border: 1px solid rgba(59, 130, 246, 0.55);
+  border-radius: 9999px;
+  color: #93c5fd;
+  font-size: 12.5px;
+  font-weight: 600;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(59, 130, 246, 0.15);
+  white-space: nowrap;
+  max-width: calc(100% - 32px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: pillFadeSlideDown 0.3s ease;
+}
+
+.map-route-focus-pill strong {
+  color: #60a5fa;
+}
+
+.map-route-focus-pill button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  border-radius: 9999px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.map-route-focus-pill button:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
+}
+
+@keyframes pillFadeSlideDown {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
