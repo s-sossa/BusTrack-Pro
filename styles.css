@@ -2333,4 +2333,572 @@ button, input, select { font-family: inherit; }
   100% { stroke-opacity: 1; filter: drop-shadow(0 0 6px currentColor); }
 }
 
+/* ==========================================================================
+   ESTILOS DE LA VISTA DE HORARIOS (COSTA RICA) & RESPONSIVE MÓVIL
+   ========================================================================== */
+
+/* Tarjeta cabecera de Horarios */
+.schedules-header-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.85) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg, 16px);
+  margin-bottom: var(--gap, 16px);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  flex-wrap: wrap;
+}
+
+.sched-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(59, 130, 246, 0.16);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.sched-header-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sched-header-desc {
+  font-size: 13px;
+  color: #94a3b8;
+  max-width: 680px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.sched-clock-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  padding: 10px 16px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.sched-clock-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.sched-clock-time {
+  font-family: var(--font-mono, monospace);
+  font-size: 18px;
+  font-weight: 700;
+  color: #38bdf8;
+  letter-spacing: 0.5px;
+}
+
+.sched-clock-date {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Filtros y pestañas de Horarios */
+.sched-day-tabs, .sched-dir-tabs {
+  display: inline-flex;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.sched-day-btn, .sched-dir-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sched-day-btn:hover, .sched-dir-btn:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sched-day-btn.active, .sched-dir-btn.active {
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+/* Grid de tarjetas de Horarios */
+.schedules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.schedule-card {
+  position: relative;
+  background: rgba(22, 28, 45, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-lg, 16px);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.schedule-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(91, 110, 245, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 15px rgba(91, 110, 245, 0.15);
+}
+
+.sched-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sched-route-code {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 3px solid #5b6ef5;
+}
+
+.sched-concession-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.sched-tariff-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.sched-operator-name {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.sched-route-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.35;
+}
+
+/* Flujo de terminales */
+.sched-terminal-flow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.sched-terminal-node {
+  flex: 1;
+  min-width: 0;
+}
+
+.sched-terminal-label {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.sched-terminal-name {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sched-terminal-arrow {
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+/* Métricas clave (primera/última salida, frecuencias) */
+.sched-key-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.sched-metric-box {
+  padding: 7px 8px;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.sched-metric-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.sched-metric-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+/* Panel de salidas programadas (Pills) */
+.sched-departures-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sched-departures-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.sched-next-bus-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: rgba(14, 165, 233, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(14, 165, 233, 0.4);
+}
+
+.sched-pills-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-height: 125px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.sched-pill {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  transition: all 0.15s ease;
+}
+
+.sched-pill.passed {
+  opacity: 0.4;
+  background: rgba(255, 255, 255, 0.02);
+  border-color: transparent;
+  color: #64748b;
+}
+
+.sched-pill.next {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border-color: #60a5fa;
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+  position: relative;
+  animation: nextPulse 2s infinite ease-in-out;
+}
+
+@keyframes nextPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); box-shadow: 0 0 14px rgba(59, 130, 246, 0.85); }
+  100% { transform: scale(1); }
+}
+
+/* Fila de acciones por tarjeta */
+.sched-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sched-action-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 38px;
+  text-decoration: none;
+}
+
+.sched-action-btn.primary {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  color: #93c5fd;
+}
+
+.sched-action-btn.primary:hover {
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+}
+
+.sched-action-btn.secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: #cbd5e1;
+}
+
+.sched-action-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   BARRA DE NAVEGACIÓN INFERIOR PARA MÓVILES (MOBILE BOTTOM NAV)
+   ========================================================================== */
+
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(58px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: rgba(14, 20, 36, 0.94);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 150;
+  align-items: center;
+  justify-content: space-around;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.mobile-tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 6px 4px;
+  transition: color 0.2s ease, transform 0.15s ease;
+  min-height: 48px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-tab-btn svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.2s ease, stroke 0.2s ease;
+}
+
+.mobile-tab-btn span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.mobile-tab-btn:active {
+  transform: scale(0.92);
+}
+
+.mobile-tab-btn.active {
+  color: #3b82f6;
+}
+
+.mobile-tab-btn.active svg {
+  transform: translateY(-1px);
+  stroke: #3b82f6;
+  filter: drop-shadow(0 2px 8px rgba(59, 130, 246, 0.5));
+}
+
+/* ==========================================================================
+   ADAPTACIONES RESPONSIVAS MULTI-DISPOSITIVO (TABLETS, CELULARES COMPACTOS, NOTCH)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Activar navegación inferior móvil */
+  .mobile-bottom-nav {
+    display: flex;
+  }
+
+  /* Padding inferior al contenido principal para no ser tapado por el bottom nav */
+  .main-content {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 16px)) !important;
+  }
+
+  /* Desplazar los mensajes toast sobre la barra de navegación */
+  .toast-stack {
+    bottom: calc(68px + env(safe-area-inset-bottom, 16px)) !important;
+  }
+
+  /* Ajustar controles flotantes del mapa para que no queden bajo el bottom nav */
+  .map-floating-controls,
+  .recenter-user-btn,
+  .map-layer-switcher {
+    bottom: calc(70px + env(safe-area-inset-bottom, 16px)) !important;
+  }
+
+  /* Ajustar cabecera de Horarios */
+  .schedules-header-card {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .sched-clock-box {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .schedules-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .sched-key-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .sched-terminal-flow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .sched-terminal-arrow {
+    transform: rotate(90deg);
+    align-self: center;
+    margin: 2px 0;
+  }
+
+  .sched-action-btn {
+    min-height: 44px; /* Touch target estándar accesible */
+  }
+
+  .sched-day-tabs, .sched-dir-tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+  }
+
+  .sched-day-btn, .sched-dir-btn {
+    flex: 1;
+    text-align: center;
+    padding: 8px 6px;
+    font-size: 11.5px;
+    min-height: 38px;
+  }
+}
+
+@media (max-width: 360px) {
+  .page-title {
+    font-size: 14px;
+  }
+
+  .sched-header-title {
+    font-size: 17px;
+  }
+
+  .sched-pills-wrap {
+    gap: 4px;
+  }
+
+  .sched-pill {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
+
+  .sched-actions-row {
+    flex-direction: column;
+  }
+
+  .sched-action-btn {
+    width: 100%;
+  }
+}
+
+
 

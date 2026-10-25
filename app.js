@@ -697,9 +697,9 @@ function applyPrefs() {
  
 const VIEW_TITLES = {
   dashboard: 'Panel Principal',
-
   map: 'Mapa en Vivo',
-  fleet: 'Gestión de Flota',
+  schedules: 'Horarios de Buses (Costa Rica)',
+  fleet: 'Horarios de Buses (Costa Rica)',
   routes: 'Rutas',
   alerts: 'Centro de Alertas',
   reports: 'Reportes',
@@ -711,21 +711,26 @@ let switchView = function(view) {
 };
 
 function navigate(view) {
+  if (view === 'fleet') view = 'schedules';
   if (!VIEW_TITLES[view]) return;
   $$('.view').forEach(v => v.classList.remove('active'));
   $$('.nav-item').forEach(n => n.classList.remove('active'));
-  $('view-' + view).classList.add('active');
+  const targetView = $('view-' + view);
+  if (targetView) targetView.classList.add('active');
   const navEl = $('nav-' + view);
   if (navEl) navEl.classList.add('active');
- 
+
+  // Sincronizar barra de navegación móvil inferior
+  $$('.mobile-tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === view || (btn.dataset.view === 'schedules' && view === 'fleet'));
+  });
+
   state.view = view;
   $('pageTitle').textContent = VIEW_TITLES[view];
   $('breadcrumbCurrent').textContent = VIEW_TITLES[view];
   document.title = VIEW_TITLES[view] + ' — BusTrack Pro';
- 
-  
 
-  if (view === 'fleet') renderFleet();
+  if (view === 'schedules' || view === 'fleet') renderSchedules();
   if (view === 'routes') renderRoutes();
   if (view === 'alerts') renderAlerts();
   if (view === 'drivers') renderDrivers();
@@ -934,18 +939,755 @@ function sortValue(bus, key) {
   }
 }
  
+/* ==========================================================
+   5. HORARIOS OFICIALES DE BUSES DE COSTA RICA (CTP / ARESEP)
+   ========================================================== */
+
+const CR_BUS_SCHEDULES = [
+  {
+    routeId: 'SJO-201',
+    concession: 'SJO-201',
+    name: 'San José – Alajuela (vía Aeropuerto Juan Santamaría)',
+    operator: 'TUASA (Transportes Unidos Alajuelenses S.A.)',
+    operatorPhone: '+506 2442-6900',
+    province: 'Alajuela',
+    provincesServed: ['San José', 'Alajuela'],
+    color: '#5b6ef5',
+    tariffRegular: '₡720',
+    tariffDirect: '₡890 (Directo Pista)',
+    originTerminal: 'Terminal TUASA San José (Av. 2, Calles 12 y 14, Parque La Merced)',
+    destinationTerminal: 'Terminal TUASA Alajuela (Calle Ancha, Av. 1)',
+    distanceKm: 22,
+    travelTimeEst: '35 - 45 min',
+    stopsCount: 8,
+    weekday: {
+      firstBus: '04:30',
+      lastBus: '23:00',
+      peakFreq: 'Cada 5 a 8 min',
+      offPeakFreq: 'Cada 12 min',
+      outboundDepartures: ['04:30','04:45','05:00','05:08','05:15','05:22','05:30','05:38','05:45','05:52','06:00','06:08','06:15','06:22','06:30','06:45','07:00','07:15','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:15','16:30','16:45','17:00','17:15','17:30','17:45','18:00','18:20','18:40','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30','23:00'],
+      inboundDepartures: ['04:15','04:30','04:45','05:00','05:08','05:15','05:22','05:30','05:40','05:50','06:00','06:10','06:20','06:30','06:45','07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:15','16:30','16:45','17:00','17:15','17:30','17:45','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:45']
+    },
+    saturday: {
+      firstBus: '04:45',
+      lastBus: '22:30',
+      peakFreq: 'Cada 10 min',
+      offPeakFreq: 'Cada 15 min',
+      outboundDepartures: ['04:45','05:00','05:15','05:30','05:45','06:00','06:15','06:30','06:45','07:00','07:20','07:40','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30'],
+      inboundDepartures: ['04:30','04:45','05:00','05:15','05:30','05:45','06:00','06:15','06:30','06:45','07:00','07:20','07:40','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00']
+    },
+    sunday: {
+      firstBus: '05:00',
+      lastBus: '22:30',
+      peakFreq: 'Cada 15 min',
+      offPeakFreq: 'Cada 15 min',
+      outboundDepartures: ['05:00','05:20','05:40','06:00','06:30','07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30'],
+      inboundDepartures: ['04:45','05:10','05:30','06:00','06:30','07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00']
+    }
+  },
+  {
+    routeId: 'SJO-300',
+    concession: 'SJO-300',
+    name: 'San José – Heredia (vía Tibás y Santo Domingo)',
+    operator: 'Transportes Unidos La 400 S.A.',
+    operatorPhone: '+506 2261-0000',
+    province: 'Heredia',
+    provincesServed: ['San José', 'Heredia'],
+    color: '#7c4ddb',
+    tariffRegular: '₡610',
+    tariffDirect: '₡610 (Servicio Único)',
+    originTerminal: 'Terminal San José (Calle 1, Av. 7 y 9, Parque España)',
+    destinationTerminal: 'Terminal La 400 Heredia (Calle 4, Av. 1)',
+    distanceKm: 18,
+    travelTimeEst: '30 - 40 min',
+    stopsCount: 6,
+    weekday: {
+      firstBus: '05:00',
+      lastBus: '23:00',
+      peakFreq: 'Cada 6 a 10 min',
+      offPeakFreq: 'Cada 12 a 15 min',
+      outboundDepartures: ['05:00','05:15','05:30','05:45','06:00','06:10','06:20','06:30','06:40','06:50','07:00','07:15','07:30','07:45','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:15','16:30','16:45','17:00','17:15','17:30','17:45','18:00','18:15','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30','23:00'],
+      inboundDepartures: ['04:45','05:00','05:15','05:30','05:45','06:00','06:10','06:20','06:30','06:45','07:00','07:15','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:15','16:30','16:45','17:00','17:15','17:30','17:45','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30']
+    },
+    saturday: {
+      firstBus: '05:15',
+      lastBus: '22:30',
+      peakFreq: 'Cada 12 min',
+      offPeakFreq: 'Cada 15 min',
+      outboundDepartures: ['05:15','05:30','05:50','06:10','06:30','07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30'],
+      inboundDepartures: ['05:00','05:20','05:40','06:00','06:20','06:45','07:15','07:45','08:15','08:45','09:15','09:45','10:15','10:45','11:15','11:45','12:15','12:45','13:15','13:45','14:15','14:45','15:15','15:45','16:15','16:45','17:15','17:45','18:15','18:45','19:15','19:45','20:15','20:45','21:15','21:45','22:15']
+    },
+    sunday: {
+      firstBus: '05:30',
+      lastBus: '22:00',
+      peakFreq: 'Cada 15 a 20 min',
+      offPeakFreq: 'Cada 20 min',
+      outboundDepartures: ['05:30','06:00','06:30','07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00'],
+      inboundDepartures: ['05:15','05:45','06:15','06:45','07:15','07:45','08:15','08:45','09:15','09:45','10:15','10:45','11:15','11:45','12:15','12:45','13:15','13:45','14:15','14:45','15:15','15:45','16:15','16:45','17:15','17:45','18:15','18:45','19:15','19:45','20:15','20:45','21:15','21:45']
+    }
+  },
+  {
+    routeId: 'SJO-400',
+    concession: 'SJO-400',
+    name: 'San José – Cartago (vía Autopista Florencio del Castillo)',
+    operator: 'Auto Transportes Lumaca S.A.',
+    operatorPhone: '+506 2537-0101',
+    province: 'Cartago',
+    provincesServed: ['San José', 'Cartago'],
+    color: '#2aa3c4',
+    tariffRegular: '₡710 (Pista Ordinario)',
+    tariffDirect: '₡745 (Directo Pista)',
+    originTerminal: 'Terminal Lumaca San José (Calle 11, Av. 18, Sur Plaza González Víquez)',
+    destinationTerminal: 'Terminal Lumaca Cartago (Costado Norte Ruinas de Cartago, Av. 2)',
+    distanceKm: 25,
+    travelTimeEst: '40 - 50 min',
+    stopsCount: 7,
+    weekday: {
+      firstBus: '04:45',
+      lastBus: '23:30',
+      peakFreq: 'Cada 5 min',
+      offPeakFreq: 'Cada 10 a 12 min',
+      outboundDepartures: ['04:45','05:00','05:10','05:20','05:30','05:40','05:50','06:00','06:08','06:15','06:22','06:30','06:40','06:50','07:00','07:15','07:30','07:45','08:00','08:20','08:40','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:10','16:20','16:30','16:40','16:50','17:00','17:10','17:20','17:30','17:40','17:50','18:00','18:15','18:30','18:45','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30','23:00','23:30'],
+      inboundDepartures: ['04:30','04:45','05:00','05:10','05:20','05:30','05:40','05:50','06:00','06:08','06:15','06:25','06:35','06:45','07:00','07:15','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:15','16:30','16:45','17:00','17:15','17:30','17:45','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30','23:00']
+    },
+    saturday: {
+      firstBus: '05:00',
+      lastBus: '23:00',
+      peakFreq: 'Cada 10 min',
+      offPeakFreq: 'Cada 12 min',
+      outboundDepartures: ['05:00','05:15','05:30','05:45','06:00','06:15','06:30','06:45','07:00','07:15','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30','23:00'],
+      inboundDepartures: ['04:45','05:00','05:15','05:30','05:45','06:00','06:15','06:30','06:45','07:00','07:20','07:45','08:15','08:45','09:15','09:45','10:15','10:45','11:15','11:45','12:15','12:45','13:15','13:45','14:15','14:45','15:15','15:45','16:15','16:45','17:15','17:45','18:15','18:45','19:15','19:45','20:15','20:45','21:15','21:45','22:30']
+    },
+    sunday: {
+      firstBus: '05:30',
+      lastBus: '22:30',
+      peakFreq: 'Cada 12 a 15 min',
+      offPeakFreq: 'Cada 15 min',
+      outboundDepartures: ['05:30','06:00','06:20','06:40','07:00','07:20','07:45','08:15','08:45','09:15','09:45','10:15','10:45','11:15','11:45','12:15','12:45','13:15','13:45','14:15','14:45','15:15','15:45','16:15','16:45','17:15','17:45','18:15','18:45','19:15','19:45','20:15','20:45','21:15','21:45','22:30'],
+      inboundDepartures: ['05:15','05:45','06:05','06:25','06:45','07:05','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00']
+    }
+  },
+  {
+    routeId: 'SJO-401',
+    concession: 'SJO-401',
+    name: 'San José – Turrialba (vía Cartago y Paraíso)',
+    operator: 'TRANSTUSA (Transportes Turrialba S.A.)',
+    operatorPhone: '+506 2556-0100',
+    province: 'Cartago',
+    provincesServed: ['San José', 'Cartago'],
+    color: '#2bb885',
+    tariffRegular: '₡1,840',
+    tariffDirect: '₡2,050 (Directo)',
+    originTerminal: 'Terminal TRANSTUSA San José (Calle 13, Av. 6, Antiguo Cine Líbano)',
+    destinationTerminal: 'Terminal TRANSTUSA Turrialba (Calle 2, Av. 2)',
+    distanceKm: 90,
+    travelTimeEst: '1h 45 min',
+    stopsCount: 6,
+    weekday: {
+      firstBus: '05:00',
+      lastBus: '21:00',
+      peakFreq: 'Cada 30-45 min',
+      offPeakFreq: 'Cada 45 min',
+      outboundDepartures: ['05:00','05:45','06:30','07:15','08:00','09:00','10:00','11:00','12:00','12:45','13:30','14:15','15:00','15:45','16:30','17:15','18:00','18:45','19:30','20:15','21:00'],
+      inboundDepartures: ['04:30','05:15','06:00','06:45','07:30','08:15','09:15','10:15','11:15','12:15','13:00','13:45','14:30','15:15','16:00','16:45','17:30','18:15','19:00','20:00']
+    },
+    saturday: {
+      firstBus: '05:30',
+      lastBus: '20:30',
+      peakFreq: 'Cada 45 min',
+      offPeakFreq: 'Cada 60 min',
+      outboundDepartures: ['05:30','06:15','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:30'],
+      inboundDepartures: ['05:00','05:45','06:30','07:30','08:30','09:30','10:30','11:30','12:30','13:30','14:30','15:30','16:30','17:30','18:30','19:30']
+    },
+    sunday: {
+      firstBus: '06:00',
+      lastBus: '20:00',
+      peakFreq: 'Cada 60 min',
+      offPeakFreq: 'Cada 60 min',
+      outboundDepartures: ['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'],
+      inboundDepartures: ['05:30','06:30','07:30','08:30','09:30','10:30','11:30','12:30','13:30','14:30','15:30','16:30','17:30','18:30','19:30']
+    }
+  },
+  {
+    routeId: 'SJO-402',
+    concession: 'SJO-402',
+    name: 'Cartago – San José (Servicio Express Ciudad Jardín)',
+    operator: 'Auto Transportes Lumaca S.A.',
+    operatorPhone: '+506 2537-0101',
+    province: 'Cartago',
+    provincesServed: ['Cartago', 'San José'],
+    color: '#f5a623',
+    tariffRegular: '₡745',
+    tariffDirect: '₡745 (Express)',
+    originTerminal: 'Terminal Ciudad Jardín / Metrocentro Cartago',
+    destinationTerminal: 'Plaza González Víquez San José',
+    distanceKm: 24,
+    travelTimeEst: '35 - 42 min',
+    stopsCount: 5,
+    weekday: {
+      firstBus: '05:30',
+      lastBus: '19:30',
+      peakFreq: 'Cada 10 a 15 min (Pico)',
+      offPeakFreq: 'Servicio exclusivo Horas Pico',
+      outboundDepartures: ['05:30','05:45','06:00','06:15','06:30','06:45','07:00','07:15','07:30','08:00','08:30','16:00','16:20','16:40','17:00','17:20','17:40','18:00','18:30','19:00','19:30'],
+      inboundDepartures: ['06:15','06:30','06:45','07:00','07:15','07:30','07:45','08:15','08:45','16:45','17:05','17:25','17:45','18:05','18:25','18:45','19:15','19:45','20:15']
+    },
+    saturday: {
+      firstBus: '06:00',
+      lastBus: '13:00',
+      peakFreq: 'Cada 20 min',
+      offPeakFreq: 'No opera en la tarde',
+      outboundDepartures: ['06:00','06:20','06:40','07:00','07:30','08:00','08:30','09:00','11:30','12:00','12:30','13:00'],
+      inboundDepartures: ['06:45','07:05','07:25','07:45','08:15','08:45','09:15','09:45','12:15','12:45','13:15','13:45']
+    },
+    sunday: {
+      firstBus: 'Sin servicio',
+      lastBus: 'Sin servicio',
+      peakFreq: 'Usa ruta ordinaria SJO-400',
+      offPeakFreq: 'Usa ruta ordinaria SJO-400',
+      outboundDepartures: ['Consulte servicio ordinario SJO-400 Lumaca'],
+      inboundDepartures: ['Consulte servicio ordinario SJO-400 Lumaca']
+    }
+  },
+  {
+    routeId: 'SJO-600',
+    concession: 'SJO-600',
+    name: 'San José – Desamparados – Aserrí',
+    operator: 'Autotransportes Desamparados S.A.',
+    operatorPhone: '+506 2259-8080',
+    province: 'San José',
+    provincesServed: ['San José'],
+    color: '#e24c6c',
+    tariffRegular: '₡535',
+    tariffDirect: '₡535',
+    originTerminal: 'Terminal San José (Av. 6 y 8, Calles 2 y 4, Costado Parque Central)',
+    destinationTerminal: 'Terminal Aserrí Centro (Frente Iglesia Parroquial)',
+    distanceKm: 20,
+    travelTimeEst: '35 - 50 min',
+    stopsCount: 5,
+    weekday: {
+      firstBus: '04:30',
+      lastBus: '23:00',
+      peakFreq: 'Cada 6 a 10 min',
+      offPeakFreq: 'Cada 12 min',
+      outboundDepartures: ['04:30','04:45','05:00','05:10','05:20','05:30','05:40','05:50','06:00','06:10','06:20','06:30','06:45','07:00','07:15','07:30','07:45','08:00','08:20','08:40','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:15','16:30','16:45','17:00','17:15','17:30','17:45','18:00','18:20','18:40','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30','23:00'],
+      inboundDepartures: ['04:15','04:30','04:45','05:00','05:10','05:20','05:30','05:40','05:50','06:00','06:10','06:20','06:35','06:50','07:05','07:20','07:40','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:15','16:30','16:45','17:00','17:15','17:30','17:45','18:00','18:20','18:50','19:20','19:50','20:20','20:50','21:20','22:00','22:30']
+    },
+    saturday: {
+      firstBus: '04:45',
+      lastBus: '22:30',
+      peakFreq: 'Cada 10 a 12 min',
+      offPeakFreq: 'Cada 15 min',
+      outboundDepartures: ['04:45','05:00','05:20','05:40','06:00','06:20','06:40','07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30'],
+      inboundDepartures: ['04:30','04:45','05:05','05:25','05:45','06:05','06:25','06:45','07:15','07:45','08:15','08:45','09:15','09:45','10:15','10:45','11:15','11:45','12:15','12:45','13:15','13:45','14:15','14:45','15:15','15:45','16:15','16:45','17:15','17:45','18:15','18:45','19:15','19:45','20:15','20:45','21:15','21:45','22:15']
+    },
+    sunday: {
+      firstBus: '05:00',
+      lastBus: '22:00',
+      peakFreq: 'Cada 15 min',
+      offPeakFreq: 'Cada 20 min',
+      outboundDepartures: ['05:00','05:30','06:00','06:30','07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00'],
+      inboundDepartures: ['04:45','05:15','05:45','06:15','06:45','07:15','07:45','08:15','08:45','09:15','09:45','10:15','10:45','11:15','11:45','12:15','12:45','13:15','13:45','14:15','14:45','15:15','15:45','16:15','16:45','17:15','17:45','18:15','18:45','19:15','19:45','20:15','20:45','21:15','21:45']
+    }
+  },
+  {
+    routeId: 'SJO-601',
+    concession: 'SJO-601',
+    name: 'San José – San Isidro de El General (Pérez Zeledón)',
+    operator: 'MUSOC (Empresa de Transportes M.U.S.O.C. S.A.)',
+    operatorPhone: '+506 2222-2422',
+    province: 'San José',
+    provincesServed: ['San José', 'Puntarenas'],
+    color: '#ff7043',
+    tariffRegular: '₡4,250',
+    tariffDirect: '₡4,250 (Servicio Regular Cerro de la Muerte)',
+    originTerminal: 'Terminal MUSOC San José (Calle 16, Av. 22)',
+    destinationTerminal: 'Terminal MUSOC San Isidro de El General (Calle Central)',
+    distanceKm: 120,
+    travelTimeEst: '3h 15 min',
+    stopsCount: 5,
+    weekday: {
+      firstBus: '05:30',
+      lastBus: '18:30',
+      peakFreq: 'Salidas cada hora',
+      offPeakFreq: 'Cada 60 min',
+      outboundDepartures: ['05:30','06:30','07:30','08:30','09:30','10:30','11:30','12:30','13:30','14:30','15:30','16:30','17:30','18:30'],
+      inboundDepartures: ['05:30','06:30','07:30','08:30','09:30','10:30','11:30','12:30','13:30','14:30','15:30','16:30','17:30','18:30']
+    },
+    saturday: {
+      firstBus: '05:30',
+      lastBus: '18:30',
+      peakFreq: 'Salidas cada hora',
+      offPeakFreq: 'Cada 60 min',
+      outboundDepartures: ['05:30','06:30','07:30','08:30','09:30','10:30','11:30','12:30','13:30','14:30','15:30','16:30','17:30','18:30'],
+      inboundDepartures: ['05:30','06:30','07:30','08:30','09:30','10:30','11:30','12:30','13:30','14:30','15:30','16:30','17:30','18:30']
+    },
+    sunday: {
+      firstBus: '05:30',
+      lastBus: '18:30',
+      peakFreq: 'Salidas cada hora',
+      offPeakFreq: 'Cada 60 min',
+      outboundDepartures: ['05:30','06:30','07:30','08:30','09:30','10:30','11:30','12:30','13:30','14:30','15:30','16:30','17:30','18:30'],
+      inboundDepartures: ['05:30','06:30','07:30','08:30','09:30','10:30','11:30','12:30','13:30','14:30','15:30','16:30','17:30','18:30']
+    }
+  },
+  {
+    routeId: 'PAC-327',
+    concession: 'PAC-327',
+    name: 'San José – Puntarenas (vía Esparza e Interamericana)',
+    operator: 'Empresarios Unidos de Puntarenas S.A.',
+    operatorPhone: '+506 2222-0064',
+    province: 'Puntarenas',
+    provincesServed: ['San José', 'Alajuela', 'Puntarenas'],
+    color: '#26c6da',
+    tariffRegular: '₡3,100 (Colectivo)',
+    tariffDirect: '₡3,420 (Directo)',
+    originTerminal: 'Terminal 7-10 San José (Av. 7, Calles 8 y 10, Paso de la Vaca)',
+    destinationTerminal: 'Terminal Puntarenas (Paseo de los Turistas, Costado Muelle)',
+    distanceKm: 110,
+    travelTimeEst: '2h 15 min',
+    stopsCount: 5,
+    weekday: {
+      firstBus: '06:00',
+      lastBus: '19:30',
+      peakFreq: 'Cada 40 a 50 min',
+      offPeakFreq: 'Cada 50 min',
+      outboundDepartures: ['06:00','06:40','07:30','08:15','09:00','10:00','11:00','12:00','12:45','13:30','14:15','15:00','16:00','16:45','17:30','18:30','19:30'],
+      inboundDepartures: ['05:30','06:15','07:00','07:45','08:30','09:30','10:30','11:30','12:15','13:00','13:45','14:30','15:30','16:15','17:00','18:00','19:00']
+    },
+    saturday: {
+      firstBus: '06:00',
+      lastBus: '19:30',
+      peakFreq: 'Cada 45 min',
+      offPeakFreq: 'Cada 50 min',
+      outboundDepartures: ['06:00','06:45','07:30','08:15','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:30'],
+      inboundDepartures: ['05:30','06:15','07:00','07:45','08:30','09:30','10:30','11:30','12:30','13:30','14:30','15:30','16:30','17:30','19:00']
+    },
+    sunday: {
+      firstBus: '06:30',
+      lastBus: '19:30',
+      peakFreq: 'Cada 45 min (Retorno reforzado)',
+      offPeakFreq: 'Cada 50 min',
+      outboundDepartures: ['06:30','07:15','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:30'],
+      inboundDepartures: ['05:30','06:15','07:00','08:00','09:00','10:00','11:00','12:00','12:40','13:20','14:00','14:40','15:20','16:00','16:40','17:20','18:00','19:00']
+    }
+  },
+  {
+    routeId: 'GUA-900',
+    concession: 'GUA-900',
+    name: 'San José – Liberia (vía Cañas y Bagaces)',
+    operator: 'Pulmitan de Liberia S.A.',
+    operatorPhone: '+506 2222-0610',
+    province: 'Guanacaste',
+    provincesServed: ['San José', 'Alajuela', 'Puntarenas', 'Guanacaste'],
+    color: '#66bb6a',
+    tariffRegular: '₡5,100',
+    tariffDirect: '₡5,100 (Directo Guanacaste)',
+    originTerminal: 'Terminal Pulmitan San José (Calle 14, Av. 1 y 3, Paso de la Vaca)',
+    destinationTerminal: 'Terminal Pulmitan Liberia (Costado Este Parque Central)',
+    distanceKm: 230,
+    travelTimeEst: '4h 15 min',
+    stopsCount: 6,
+    weekday: {
+      firstBus: '06:00',
+      lastBus: '20:00',
+      peakFreq: 'Salidas cada 1 a 2 horas',
+      offPeakFreq: 'Cada 2 horas',
+      outboundDepartures: ['06:00','07:00','09:00','11:00','13:00','15:00','17:00','19:00','20:00'],
+      inboundDepartures: ['05:00','06:00','08:00','10:00','12:00','14:00','16:00','18:00','20:00']
+    },
+    saturday: {
+      firstBus: '06:00',
+      lastBus: '20:00',
+      peakFreq: 'Salidas cada 2 horas',
+      offPeakFreq: 'Cada 2 horas',
+      outboundDepartures: ['06:00','07:00','09:00','11:00','13:00','15:00','17:00','19:00','20:00'],
+      inboundDepartures: ['05:00','06:00','08:00','10:00','12:00','14:00','16:00','18:00','20:00']
+    },
+    sunday: {
+      firstBus: '06:00',
+      lastBus: '20:00',
+      peakFreq: 'Salidas cada 2 horas (Refuerzo)',
+      offPeakFreq: 'Cada 2 horas',
+      outboundDepartures: ['06:00','07:00','09:00','11:00','13:00','15:00','17:00','19:00','20:00'],
+      inboundDepartures: ['05:00','06:00','08:00','10:00','11:30','13:00','14:30','16:00','17:30','19:00','20:00']
+    }
+  },
+  {
+    routeId: 'CAR-32',
+    concession: 'CAR-32',
+    name: 'San José – Puerto Limón (vía Guápiles, Ruta 32)',
+    operator: 'Autotransportes Caribeños S.A.',
+    operatorPhone: '+506 2222-0610',
+    province: 'Limón',
+    provincesServed: ['San José', 'Heredia', 'Limón'],
+    color: '#ab47bc',
+    tariffRegular: '₡4,650',
+    tariffDirect: '₡4,950 (Directo Caribe)',
+    originTerminal: 'Gran Terminal del Caribe San José (Calle Central, Av. 15)',
+    destinationTerminal: 'Terminal Caribeños Limón Centro (Parque Vargas / Av. 2)',
+    distanceKm: 160,
+    travelTimeEst: '3h 30 min',
+    stopsCount: 6,
+    weekday: {
+      firstBus: '05:30',
+      lastBus: '19:00',
+      peakFreq: 'Cada hora',
+      offPeakFreq: 'Cada 60 min',
+      outboundDepartures: ['05:30','06:30','07:30','08:30','09:30','10:30','11:30','12:30','13:30','14:30','15:30','16:30','17:30','19:00'],
+      inboundDepartures: ['05:00','06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:30']
+    },
+    saturday: {
+      firstBus: '05:30',
+      lastBus: '19:00',
+      peakFreq: 'Cada hora',
+      offPeakFreq: 'Cada 60 min',
+      outboundDepartures: ['05:30','06:30','07:30','08:30','09:30','10:30','11:30','12:30','13:30','14:30','15:30','16:30','17:30','19:00'],
+      inboundDepartures: ['05:00','06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:30']
+    },
+    sunday: {
+      firstBus: '05:30',
+      lastBus: '19:00',
+      peakFreq: 'Cada hora',
+      offPeakFreq: 'Cada 60 min',
+      outboundDepartures: ['05:30','06:30','07:30','08:30','09:30','10:30','11:30','12:30','13:30','14:30','15:30','16:30','17:30','19:00'],
+      inboundDepartures: ['05:00','06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:30']
+    }
+  }
+];
+
+const schedulesState = {
+  day: 'weekday',
+  dir: 'outbound',
+  query: '',
+  province: 'all'
+};
+
+function getCostaRicaTime() {
+  const now = new Date();
+  // Costa Rica está en UTC-6 todo el año (no tiene horario de verano)
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  return new Date(utc - (3600000 * 6));
+}
+
+function updateCostaRicaClock() {
+  const clockEl = document.getElementById('crLiveClock');
+  if (!clockEl) return;
+  const crNow = getCostaRicaTime();
+  const h = String(crNow.getHours()).padStart(2, '0');
+  const m = String(crNow.getMinutes()).padStart(2, '0');
+  const s = String(crNow.getSeconds()).padStart(2, '0');
+  clockEl.textContent = `${h}:${m}:${s}`;
+}
+setInterval(updateCostaRicaClock, 1000);
+updateCostaRicaClock();
+
+function findNextDeparture(departures, crNow) {
+  if (!Array.isArray(departures) || !departures.length) return null;
+  const currentMinutes = crNow.getHours() * 60 + crNow.getMinutes();
+  for (const dep of departures) {
+    const parts = dep.split(':');
+    if (parts.length === 2) {
+      const depMinutes = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+      if (depMinutes >= currentMinutes) {
+        return dep;
+      }
+    }
+  }
+  return null; // Ya concluyeron las salidas de hoy
+}
+
+function renderSchedules() {
+  const container = document.getElementById('schedulesContainer');
+  const countEl = document.getElementById('schedulesCount');
+  if (!container) return;
+
+  const crNow = getCostaRicaTime();
+  const q = schedulesState.query.trim().toLowerCase();
+  const dayKey = schedulesState.day; // 'weekday' | 'saturday' | 'sunday'
+  const isOutbound = schedulesState.dir === 'outbound';
+
+  const filtered = CR_BUS_SCHEDULES.filter(s => {
+    const matchProvince = schedulesState.province === 'all' || s.provincesServed.includes(schedulesState.province);
+    const haystack = [s.routeId, s.concession, s.name, s.operator, s.originTerminal, s.destinationTerminal, ...s.provincesServed].join(' ').toLowerCase();
+    const matchQuery = !q || haystack.includes(q);
+    return matchProvince && matchQuery;
+  });
+
+  if (countEl) {
+    const dayLabels = { weekday: 'Lunes a Viernes', saturday: 'Sábados', sunday: 'Domingos y Feriados' };
+    countEl.innerHTML = `Mostrando <strong>${filtered.length}</strong> de ${CR_BUS_SCHEDULES.length} rutas oficiales · Horario <strong>${dayLabels[dayKey]}</strong> · Sentido: <strong>${isOutbound ? 'Ida' : 'Retorno'}</strong>`;
+  }
+
+  if (!filtered.length) {
+    container.innerHTML = `
+      <div class="schedules-empty-card">
+        <span style="font-size:2.4rem">🔍</span>
+        <h3>No se encontraron rutas con los filtros aplicados</h3>
+        <p>Prueba buscando por concesión (ej. <em>SJO-201</em>), provincia o nombre del operador (ej. <em>TUASA</em>, <em>Lumaca</em>).</p>
+        <button class="btn-primary btn-sm" id="schedEmptyResetBtn" style="margin-top:12px">Restablecer filtros</button>
+      </div>
+    `;
+    const emptyBtn = document.getElementById('schedEmptyResetBtn');
+    if (emptyBtn) emptyBtn.addEventListener('click', resetSchedulesFilters);
+    return;
+  }
+
+  container.innerHTML = filtered.map(item => {
+    const dayData = item[dayKey] || item.weekday;
+    const departures = isOutbound ? dayData.outboundDepartures : dayData.inboundDepartures;
+    const nextDep = findNextDeparture(departures, crNow);
+    const origin = isOutbound ? item.originTerminal : item.destinationTerminal;
+    const dest = isOutbound ? item.destinationTerminal : item.originTerminal;
+    const currentMins = crNow.getHours() * 60 + crNow.getMinutes();
+
+    return `
+      <article class="schedule-card" style="--route-accent:${item.color};">
+        <header class="schedule-card-header">
+          <div class="sched-card-top-row">
+            <span class="sched-concession-badge" style="background:${item.color}22; color:${item.color}; border:1px solid ${item.color}55;">
+              CTP ${esc(item.concession)}
+            </span>
+            <span class="sched-province-tag">📍 ${esc(item.province)}</span>
+            <span class="sched-tariff-pill" title="Tarifa aprobada por ARESEP">
+              💵 ${esc(item.tariffRegular)}
+            </span>
+          </div>
+          <h3 class="sched-route-name">${esc(item.name)}</h3>
+          <p class="sched-operator">Empresa: <strong>${esc(item.operator)}</strong> · 📞 ${esc(item.operatorPhone)}</p>
+        </header>
+
+        <div class="sched-terminal-flow">
+          <div class="sched-term-point">
+            <span class="sched-term-bullet origin"></span>
+            <div>
+              <span class="sched-term-role">ORIGEN (${isOutbound ? 'Ida' : 'Retorno'})</span>
+              <p class="sched-term-text">${esc(origin)}</p>
+            </div>
+          </div>
+          <div class="sched-term-arrow">
+            <span>➜</span>
+            <small>${item.distanceKm} km · aprox. ${item.travelTimeEst}</small>
+          </div>
+          <div class="sched-term-point">
+            <span class="sched-term-bullet dest"></span>
+            <div>
+              <span class="sched-term-role">DESTINO</span>
+              <p class="sched-term-text">${esc(dest)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sched-key-metrics-grid">
+          <div class="sched-metric-box">
+            <span class="sched-metric-lbl">Primer bus</span>
+            <strong class="sched-metric-val">${esc(dayData.firstBus)}</strong>
+          </div>
+          <div class="sched-metric-box">
+            <span class="sched-metric-lbl">Último bus</span>
+            <strong class="sched-metric-val">${esc(dayData.lastBus)}</strong>
+          </div>
+          <div class="sched-metric-box">
+            <span class="sched-metric-lbl">Frec. Hora Pico</span>
+            <strong class="sched-metric-val">${esc(dayData.peakFreq)}</strong>
+          </div>
+          <div class="sched-metric-box">
+            <span class="sched-metric-lbl">Frec. Hora Valle</span>
+            <strong class="sched-metric-val">${esc(dayData.offPeakFreq)}</strong>
+          </div>
+        </div>
+
+        <div class="sched-departures-panel">
+          <div class="sched-departures-head">
+            <span class="sched-dep-title">🕒 Salidas programadas (${departures.length})</span>
+            ${nextDep ? `<span class="sched-next-dep-pill">Próxima salida: <strong>${nextDep}</strong></span>` : '<span class="sched-no-more-pill">Servicio finalizado por hoy</span>'}
+          </div>
+          <div class="sched-pills-wrap">
+            ${departures.map(d => {
+              const parts = d.split(':');
+              const dMin = parts.length === 2 ? (parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10)) : -1;
+              const isPassed = dMin !== -1 && dMin < currentMins;
+              const isNext = d === nextDep;
+              const cls = isNext ? 'sched-pill next' : isPassed ? 'sched-pill passed' : 'sched-pill';
+              return `<span class="${cls}" title="${isNext ? 'Próxima salida inmediata' : isPassed ? 'Salida anterior' : 'Próxima salida'}">${d}</span>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <footer class="sched-card-footer">
+          <button class="sched-action-btn primary" data-view-map-route="${item.routeId}">
+            🗺️ Ver paradas en mapa
+          </button>
+          <button class="sched-action-btn" data-copy-schedule="${item.routeId}">
+            📋 Copiar itinerario
+          </button>
+        </footer>
+      </article>
+    `;
+  }).join('');
+
+  // Vincular botones de acciones por tarjeta
+  container.querySelectorAll('[data-view-map-route]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const rid = btn.dataset.viewMapRoute;
+      navigate('map');
+      const provSel = document.getElementById('provinceSelect');
+      const route = ROUTES.find(r => r.id === rid);
+      if (route && realLeafletMap) {
+        toast(`Ruta ${route.id}: ${route.name}`, 'info');
+        focusRouteOnMap(route);
+      }
+    });
+  });
+
+  container.querySelectorAll('[data-copy-schedule]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const rid = btn.dataset.copySchedule;
+      const route = CR_BUS_SCHEDULES.find(r => r.routeId === rid);
+      if (!route) return;
+      const dayData = route[schedulesState.day] || route.weekday;
+      const departures = schedulesState.dir === 'outbound' ? dayData.outboundDepartures : dayData.inboundDepartures;
+      const text = `🚌 Horario Oficial CTP: ${route.concession} - ${route.name}\nOperador: ${route.operator}\nTarifa ARESEP: ${route.tariffRegular}\nOrigen: ${route.originTerminal}\nDestino: ${route.destinationTerminal}\nPrimer bus: ${dayData.firstBus} | Último bus: ${dayData.lastBus}\nFrecuencia: ${dayData.peakFreq}\nSalidas:\n${departures.join(', ')}`;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          toast(`📋 Itinerario de ${route.concession} copiado al portapapeles`, 'ok');
+        }).catch(() => toast('No se pudo copiar el texto', 'warn'));
+      } else {
+        toast(`Ruta ${route.concession}: ${departures.length} salidas programadas`, 'info');
+      }
+    });
+  });
+}
+
+function resetSchedulesFilters() {
+  schedulesState.query = '';
+  schedulesState.province = 'all';
+  schedulesState.day = 'weekday';
+  schedulesState.dir = 'outbound';
+  const searchInput = document.getElementById('schedulesSearch');
+  if (searchInput) searchInput.value = '';
+  const provFilter = document.getElementById('schedulesProvinceFilter');
+  if (provFilter) provFilter.value = 'all';
+  document.querySelectorAll('.sched-day-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.day === 'weekday');
+    btn.setAttribute('aria-selected', String(btn.dataset.day === 'weekday'));
+  });
+  const outBtn = document.getElementById('schedDirOutbound');
+  const inBtn = document.getElementById('schedDirInbound');
+  if (outBtn) outBtn.classList.add('active');
+  if (inBtn) inBtn.classList.remove('active');
+  renderSchedules();
+}
+
+function setupSchedulesEventListeners() {
+  const searchInput = document.getElementById('schedulesSearch');
+  if (searchInput && !searchInput._bound) {
+    searchInput._bound = true;
+    searchInput.addEventListener('input', (e) => {
+      schedulesState.query = e.target.value;
+      renderSchedules();
+    });
+  }
+
+  const provFilter = document.getElementById('schedulesProvinceFilter');
+  if (provFilter && !provFilter._bound) {
+    provFilter._bound = true;
+    provFilter.addEventListener('change', (e) => {
+      schedulesState.province = e.target.value;
+      renderSchedules();
+    });
+  }
+
+  document.querySelectorAll('.sched-day-btn').forEach(btn => {
+    if (!btn._bound) {
+      btn._bound = true;
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.sched-day-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        schedulesState.day = btn.dataset.day;
+        renderSchedules();
+      });
+    }
+  });
+
+  const outBtn = document.getElementById('schedDirOutbound');
+  const inBtn = document.getElementById('schedDirInbound');
+  if (outBtn && !outBtn._bound) {
+    outBtn._bound = true;
+    outBtn.addEventListener('click', () => {
+      outBtn.classList.add('active');
+      if (inBtn) inBtn.classList.remove('active');
+      schedulesState.dir = 'outbound';
+      renderSchedules();
+    });
+  }
+  if (inBtn && !inBtn._bound) {
+    inBtn._bound = true;
+    inBtn.addEventListener('click', () => {
+      inBtn.classList.add('active');
+      if (outBtn) outBtn.classList.remove('active');
+      schedulesState.dir = 'inbound';
+      renderSchedules();
+    });
+  }
+
+  const resetBtn = document.getElementById('schedulesResetBtn');
+  if (resetBtn && !resetBtn._bound) {
+    resetBtn._bound = true;
+    resetBtn.addEventListener('click', () => {
+      resetSchedulesFilters();
+      toast('Filtros de horarios restablecidos', 'info');
+    });
+  }
+
+  const printBtn = document.getElementById('schedulesPrintBtn');
+  if (printBtn && !printBtn._bound) {
+    printBtn._bound = true;
+    printBtn.addEventListener('click', () => {
+      window.print();
+    });
+  }
+
+  // Vincular botones de la barra inferior móvil
+  document.querySelectorAll('.mobile-tab-btn').forEach(btn => {
+    if (!btn._bound) {
+      btn._bound = true;
+      btn.addEventListener('click', () => {
+        navigate(btn.dataset.view);
+        hapticFeedback([10, 20]);
+      });
+    }
+  });
+}
+
+// Inicialización de escuchadores de Horarios
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setupSchedulesEventListeners);
+} else {
+  setupSchedulesEventListeners();
+}
+
+/* ==========================================================
+   COMPATIBILIDAD CON VISTA DE FLOTA PREVIA (SAFE DEGRADATION)
+   ========================================================== */
 function visibleBuses() {
-  const q = $('fleetSearch').value.trim().toLowerCase();
-  const status = $('statusFilter').value;
-  const route = $('routeFilter').value;
- 
+  const searchEl = $('fleetSearch');
+  if (!searchEl) return buses;
+  const q = searchEl.value.trim().toLowerCase();
+  const status = $('statusFilter') ? $('statusFilter').value : '';
+  const route = $('routeFilter') ? $('routeFilter').value : '';
+
   const rows = buses.filter(b => {
     const haystack = [b.id, b.plate, b.driver.name, b.route.name, 'ruta ' + b.route.id].join(' ').toLowerCase();
     return (!q || haystack.includes(q))
       && (!status || b.status === status)
       && (!route || b.route.id === route);
   });
- 
+
   const { key, dir } = state.sort;
   return rows.sort((a, b) => {
     const va = sortValue(a, key), vb = sortValue(b, key);
@@ -954,23 +1696,20 @@ function visibleBuses() {
     return 0;
   });
 }
- 
+
 const ICON_EYE = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 4c-4 0-7.3 2.6-9 6 1.7 3.4 5 6 9 6s7.3-2.6 9-6c-1.7-3.4-5-6-9-6zm0 10a4 4 0 110-8 4 4 0 010 8zm0-2a2 2 0 100-4 2 2 0 000 4z"/></svg>';
 const ICON_PIN = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a5 5 0 00-5 5c0 3.6 4.2 8.3 4.4 8.5a.8.8 0 001.2 0C10.8 15.3 15 10.6 15 7a5 5 0 00-5-5zm0 7a2 2 0 110-4 2 2 0 010 4z"/></svg>';
- 
+
 function renderFleet() {
-  const rows = visibleBuses();
+  renderSchedules();
   const tbody = $('fleetTableBody');
- 
-  $('fleetCount').textContent = rows.length === buses.length
-    ? `${buses.length} buses en la flota`
-    : `${rows.length} de ${buses.length} buses`;
- 
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="9"><p class="empty-state">Ningún bus coincide con los filtros</p></td></tr>';
-    return;
+  if (!tbody) return;
+  const rows = visibleBuses();
+  if ($('fleetCount')) {
+    $('fleetCount').textContent = rows.length === buses.length
+      ? `${buses.length} buses en la flota`
+      : `${rows.length} de ${buses.length} buses`;
   }
- 
   tbody.innerHTML = rows.map(b => {
     const pct = Math.round((b.passengers / b.capacity) * 100);
     const barColor = pct > 85 ? cssVar('--risk') : pct > 60 ? cssVar('--warn') : cssVar('--ok');
@@ -1005,31 +1744,33 @@ function renderFleet() {
     </tr>`;
   }).join('');
 }
- 
-$('fleetSearch').addEventListener('input', renderFleet);
-$('statusFilter').addEventListener('change', renderFleet);
-$('routeFilter').addEventListener('change', renderFleet);
- 
-$('fleetTableBody').addEventListener('change', e => {
-  const sel = e.target.closest('[data-status-select]');
-  if (!sel) return;
-  const bus = buses.find(b => b.id === sel.dataset.statusSelect);
-  if (!bus) return;
-  applyBusStatus(bus, sel.value);
-  refreshAfterStatusChange(bus);
-  toast('Estado de ' + bus.id + ' actualizado a ' + statusLabel(bus.status), 'ok');
-});
- 
-$('resetFiltersBtn').addEventListener('click', () => {
-  $('fleetSearch').value = '';
-  $('statusFilter').value = '';
-  $('routeFilter').value = '';
-  state.sort = { key: 'id', dir: 1 };
-  $$('.fleet-table th').forEach(th => th.classList.remove('sorted', 'desc'));
-  renderFleet();
-  toast('Filtros restablecidos');
-});
- 
+
+// Enlaces seguros para controles de flota si existen
+if ($('fleetSearch')) $('fleetSearch').addEventListener('input', renderFleet);
+if ($('statusFilter')) $('statusFilter').addEventListener('change', renderFleet);
+if ($('routeFilter')) $('routeFilter').addEventListener('change', renderFleet);
+if ($('fleetTableBody')) {
+  $('fleetTableBody').addEventListener('change', e => {
+    const sel = e.target.closest('[data-status-select]');
+    if (!sel) return;
+    const bus = buses.find(b => b.id === sel.dataset.statusSelect);
+    if (!bus) return;
+    applyBusStatus(bus, sel.value);
+    refreshAfterStatusChange(bus);
+    toast('Estado de ' + bus.id + ' actualizado a ' + statusLabel(bus.status), 'ok');
+  });
+}
+if ($('resetFiltersBtn')) {
+  $('resetFiltersBtn').addEventListener('click', () => {
+    if ($('fleetSearch')) $('fleetSearch').value = '';
+    if ($('statusFilter')) $('statusFilter').value = '';
+    if ($('routeFilter')) $('routeFilter').value = '';
+    state.sort = { key: 'id', dir: 1 };
+    $$('.fleet-table th').forEach(th => th.classList.remove('sorted', 'desc'));
+    renderFleet();
+    toast('Filtros restablecidos');
+  });
+}
 $$('.fleet-table th[data-sort]').forEach(th => {
   const apply = () => {
     const key = th.dataset.sort;
@@ -1044,68 +1785,66 @@ $$('.fleet-table th[data-sort]').forEach(th => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); apply(); }
   });
 });
- 
-$('addBusBtn').addEventListener('click', async () => {
-  const n = buses.length + 1;
-  const route = ROUTES[(n - 1) % ROUTES.length];
-  const driver = DRIVERS[(n - 1) % DRIVERS.length];
-
-  if (backendConnected) {
-    try {
-      const newBus = await api.createBus({ routeId: route.id, driverId: driver.id });
-      buses.push(newBus);
-      renderFleet();
-      refreshCounters();
-      toast('Bus ' + newBus.id + ' registrado en backend', 'ok');
-      return;
-    } catch (err) {
-      console.warn('Failed to add bus to backend, falling back to local:', err);
+if ($('addBusBtn')) {
+  $('addBusBtn').addEventListener('click', async () => {
+    const n = buses.length + 1;
+    const route = ROUTES[(n - 1) % ROUTES.length];
+    const driver = DRIVERS[(n - 1) % DRIVERS.length];
+    if (backendConnected) {
+      try {
+        const newBus = await api.createBus({ routeId: route.id, driverId: driver.id });
+        buses.push(newBus);
+        renderFleet();
+        refreshCounters();
+        toast('Bus ' + newBus.id + ' registrado en backend', 'ok');
+        return;
+      } catch (err) {
+        console.warn('Failed to add bus to backend, falling back to local:', err);
+      }
     }
-  }
-
-  buses.push({
-    id: 'BUS-' + String(n).padStart(3, '0'),
-    num: String(n).padStart(3, '0'),
-    plate: 'SJB-' + String(1000 + n),
-    route,
-    driver,
-    status: 'stopped',
-    speed: 0, passengers: 0, capacity: 52, fuel: 100, delay: 0,
-    nextStop: STOPS[0].name, etaMin: 0, updatedAgo: 0,
-    pos: { x: 400, y: 225 }, _t: Math.random(), _step: 0.005, _dir: 1,
+    buses.push({
+      id: 'BUS-' + String(n).padStart(3, '0'),
+      num: String(n).padStart(3, '0'),
+      plate: 'SJB-' + String(1000 + n),
+      route,
+      driver,
+      status: 'stopped',
+      speed: 0, passengers: 0, capacity: 52, fuel: 100, delay: 0,
+      nextStop: STOPS[0].name, etaMin: 0, updatedAgo: 0,
+      pos: { x: 400, y: 225 }, _t: Math.random(), _step: 0.005, _dir: 1,
+    });
+    renderFleet();
+    refreshCounters();
+    toast('Bus ' + buses[buses.length - 1].id + ' agregado a la flota', 'ok');
   });
-  renderFleet();
-  refreshCounters();
-  toast('Bus ' + buses[buses.length - 1].id + ' agregado a la flota', 'ok');
-});
- 
-$('exportCsvBtn').addEventListener('click', () => {
-  const rows = visibleBuses();
-  const head = ['Bus', 'Placa', 'Ruta', 'Conductor', 'Velocidad (km/h)', 'Pasajeros', 'Capacidad', 'Estado', 'Combustible (%)', 'Retraso (min)'];
-  const body = rows.map(b => [
-    b.id, b.plate, 'Ruta ' + b.route.id, b.driver.name,
-    b.speed, b.passengers, b.capacity, statusLabel(b.status), b.fuel, b.delay,
-  ]);
-  const csv = [head, ...body]
-    .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';'))
-    .join('\r\n');
- 
-  if (typeof URL === 'undefined' || !URL.createObjectURL) {
-    toast('Este navegador no permite descargar el archivo', 'warn');
-    return;
-  }
-  // BOM para que Excel en español abra bien los acentos
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'flota-' + new Date().toISOString().slice(0, 10) + '.csv';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  toast(rows.length + ' filas exportadas a CSV', 'ok');
-});
+}
+if ($('exportCsvBtn')) {
+  $('exportCsvBtn').addEventListener('click', () => {
+    const rows = visibleBuses();
+    const head = ['Bus', 'Placa', 'Ruta', 'Conductor', 'Velocidad (km/h)', 'Pasajeros', 'Capacidad', 'Estado', 'Combustible (%)', 'Retraso (min)'];
+    const body = rows.map(b => [
+      b.id, b.plate, 'Ruta ' + b.route.id, b.driver.name,
+      b.speed, b.passengers, b.capacity, statusLabel(b.status), b.fuel, b.delay,
+    ]);
+    const csv = [head, ...body]
+      .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';'))
+      .join('\r\n');
+    if (typeof URL === 'undefined' || !URL.createObjectURL) {
+      toast('Este navegador no permite descargar el archivo', 'warn');
+      return;
+    }
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'flota-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Archivo CSV generado y descargado', 'ok');
+  });
+}
  
 /* ==========================================================
    6. MAPAS — LEAFLET REAL INTERACTIVE MAP (COBERTURA NACIONAL)
@@ -1879,6 +2618,47 @@ function focusBus(busId) {
   toast('Siguiendo ' + busId + ' · Ruta ' + ((bus.route && bus.route.id) || ''), 'info');
 }
 
+function focusRouteOnMap(route) {
+  if (!route) return;
+  navigate('map');
+  if (!realLeafletMap) {
+    setTimeout(() => focusRouteOnMap(route), 150);
+    return;
+  }
+
+  const stopPoints = [];
+  if (Array.isArray(route.stopIds)) {
+    route.stopIds.forEach(sid => {
+      const stop = STOPS.find(s => s.id === sid);
+      if (stop && typeof stop.lat === 'number' && typeof stop.lon === 'number') {
+        stopPoints.push([stop.lat, stop.lon]);
+      }
+    });
+  }
+
+  if (stopPoints.length > 0 && typeof L !== 'undefined' && L.latLngBounds) {
+    try {
+      const bounds = L.latLngBounds(stopPoints);
+      realLeafletMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+    } catch (e) {
+      console.warn('fitBounds error:', e);
+    }
+  }
+
+  if (leafletMarkers && leafletMarkers.routes) {
+    Object.entries(leafletMarkers.routes).forEach(([rid, poly]) => {
+      if (poly && poly.setStyle) {
+        if (rid === route.id) {
+          poly.setStyle({ opacity: 1.0, weight: 6 });
+          if (poly.bringToFront) poly.bringToFront();
+        } else {
+          poly.setStyle({ opacity: 0.25, weight: 2 });
+        }
+      }
+    });
+  }
+}
+
 let animId = null;
 let lastTick = 0;
 
@@ -2023,10 +2803,12 @@ function handlePositionUpdate(position, isInitial = false) {
   userLocationState.nearestStop = nearest.stop;
   userLocationState.distanceToStop = nearest.distance;
   updateUserLocationUI();
-  centerMapOnUser(isInitial);
+  // NOTA: No se centra automáticamente el mapa por requerimiento expreso del usuario,
+  // preservando el encuadre y zoom que el usuario esté consultando.
+  // El centrado queda disponible exclusivamente bajo demanda con el botón "Centrar en mi ubicación".
   const distStr = nearest.distance < 1000 ? nearest.distance + ' m' : (nearest.distance / 1000).toFixed(1) + ' km';
   if (isInitial) {
-    toast('📍 GPS en vivo: a ' + distStr + ' de ' + nearest.stop.name, 'ok');
+    toast('📍 Ubicación detectada: a ' + distStr + ' de ' + nearest.stop.name, 'ok');
   }
   localStorage.setItem('bustrack_geolocate', 'true');
   const geoSwitch = document.getElementById('geoSwitch');
@@ -4039,4 +4821,4 @@ if (document.readyState === 'loading') {
   init();
 }
 
- 
+
