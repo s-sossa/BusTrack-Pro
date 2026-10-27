@@ -27,29 +27,34 @@ function cssVar(name, fallback) {
   return v || fallback;
 }
 
-/* ==========================================================
-   BACKEND API & WEBSOCKET CLIENT
-   ========================================================== */
+const $ = id => document.getElementById(id);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
 
-const API_BASE = window.location.protocol.startsWith('http')
-  ? `${window.location.protocol}//${window.location.host}`
-  : 'http://localhost:3000';
-const WS_BASE = window.location.protocol === 'https:'
-  ? `wss://${window.location.host}/ws/telemetry`
-  : `ws://${window.location.host || 'localhost:3000'}/ws/telemetry`;
-
-let backendConnected = false;
-let wsInstance = null;
-
-function updateBackendStatusBadge(status, text) {
-  const pill = $('serverStatusPill');
-  const label = $('serverStatusLabel');
-  if (!pill || !label) return;
-  pill.className = 'server-status-pill ' + status;
-  label.textContent = text;
+// Helper seguro de registro de eventos (evita errores si el elemento no existe en DOM)
+function on(target, event, handler) {
+  const el = typeof target === 'string' ? $(target) : target;
+  if (el && typeof el.addEventListener === 'function') {
+    el.addEventListener(event, handler);
+  }
 }
 
-// Helper: escapa caracteres HTML para evitar XSS al usar innerHTML (ítem #35)
+// Función háptica a nivel global (accesible desde todas las vistas y componentes)
+function hapticFeedback(pattern = 10) {
+  if ('vibrate' in navigator) {
+    try { navigator.vibrate(pattern); } catch (_) {}
+  }
+}
+
+/* ==========================================================
+   SUPABASE CLIENT (SINGLETON DIRECT CONNECTION)
+   ========================================================== */
+const SUPABASE_URL = 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
+const supabaseClient = (typeof supabase !== 'undefined' && supabase.createClient)
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+// Helper: escapa caracteres HTML para evitar XSS al usar innerHTML
 function esc(str) {
   if (str == null) return '';
   return String(str)
@@ -60,295 +65,6 @@ function esc(str) {
     .replace(/'/g, '&#39;');
 }
 
-// Helper: obtiene el token JWT del almacenamiento local
-function getAuthToken() {
-  try {
-    return localStorage.getItem('bustrack_auth_token') || null;
-  } catch { return null; }
-}
-
-const api = {
-  async checkHealth() {
-    try {
-      const res = await fetch(`${API_BASE}/api/v1/health`, { signal: AbortSignal.timeout(2500) });
-      return res.ok;
-    } catch {
-      return false;
-    }
-  },
-  async getBuses() {
-    const res = await fetch(`${API_BASE}/api/v1/buses`);
-    if (!res.ok) throw new Error(`Error ${res.status} al obtener buses`);
-    return res.json();
-  },
-  async getAlerts() {
-    const res = await fetch(`${API_BASE}/api/v1/alerts`);
-    if (!res.ok) throw new Error(`Error ${res.status} al obtener alertas`);
-    return res.json();
-  },
-  async updateBusStatus(id, status) {
-    const token = getAuthToken();
-    const res = await fetch(`${API_BASE}/api/v1/buses/${id}/status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ status }),
-    });
-    if (!res.ok) throw new Error(`Error ${res.status} al actualizar estado del bus`);
-    return res.json();
-  },
-  async createBus(payload) {
-    const token = getAuthToken();
-    const res = await fetch(`${API_BASE}/api/v1/buses`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error(`Error ${res.status} al crear bus`);
-    return res.json();
-  },
-  async createAlert(payload) {
-    const token = getAuthToken();
-    const res = await fetch(`${API_BASE}/api/v1/alerts`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error(`Error ${res.status} al crear alerta`);
-    return res.json();
-  },
-  async markAllAlertsRead() {
-    const token = getAuthToken();
-    const res = await fetch(`${API_BASE}/api/v1/alerts/read-all`, {
-      method: 'PATCH',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-    });
-    if (!res.ok) throw new Error(`Error ${res.status} al marcar alertas`);
-    return res.json();
-  },
-  async login(email, password) {
-    const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.detail || 'Error al iniciar sesión');
-    }
-    return res.json();
-  },
-  async register(payload) {
-    const res = await fetch(`${API_BASE}/api/v1/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.detail || 'Error al registrarse');
-    }
-    return res.json();
-  },
-  // loginGoogle y loginApple eliminados — se usa Supabase JS SDK en el cliente
-  async getMe(token) {
-    const res = await fetch(`${API_BASE}/api/v1/auth/me`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
-    return res.json();
-  },
-  async getDatabaseStatus() {
-    try {
-      const token = getAuthToken();
-      const res = await fetch(`${API_BASE}/api/v1/database/status`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-      });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch (err) {
-      console.warn('Error fetching DB status:', err);
-      return null;
-    }
-  }
-};
-
-async function fetchAndUpdateDbStatus() {
-  const data = await api.getDatabaseStatus();
-  const pillLabel = $('dbStatusLabel');
-  const pill = $('dbStatusPill');
-
-  if (!data) {
-    if (pillLabel) pillLabel.textContent = 'BD: Sin conexión';
-    if (pill) pill.className = 'db-status-pill';
-    return;
-  }
-
-  // Update status pill label and style
-  if (pillLabel) {
-    const dialectName = data.dialect === 'sqlite' ? 'SQLite 3' : (data.dialect === 'postgres' ? 'PostgreSQL 16' : 'En Memoria');
-    pillLabel.textContent = `BD: ${dialectName} (100% Real)`;
-  }
-  if (pill) {
-    pill.className = 'db-status-pill real-db';
-  }
-
-  // Update modal contents if modal elements exist
-  const modalEngine = $('dbModalEngine');
-  const modalStorage = $('dbModalStorage');
-  const modalSize = $('dbModalSize');
-  const modalTotalRows = $('dbModalTotalRows');
-  const modalPath = $('dbModalPath');
-  const modalTableList = $('dbModalTableList');
-
-  if (modalEngine) modalEngine.textContent = data.engine || 'SQLite 3 (ACID Relational File DB)';
-  if (modalStorage) {
-    modalStorage.textContent = data.storage === 'persistent_file' ? 'Archivo en Disco (WAL)' : 'En Memoria';
-  }
-  if (modalSize) modalSize.textContent = data.fileSizeFormatted || (data.fileSizeBytes ? `${(data.fileSizeBytes / 1024).toFixed(1)} KB` : 'N/A');
-  if (modalTotalRows) modalTotalRows.textContent = `${data.totalRows || 0} filas`;
-  if (modalPath) modalPath.textContent = data.filePath || 'RAM (In-Memory)';
-
-  if (modalTableList && Array.isArray(data.tables)) {
-    modalTableList.innerHTML = data.tables.map(t => `
-      <div class="db-table-row">
-        <span class="db-table-name">📋 ${esc(t.name)}</span>
-        <span class="db-table-count">${fmt(t.count)} registros</span>
-      </div>
-    `).join('');
-  }
-}
-
-
-function handleServerEvent(msg) {
-  if (!msg || !msg.event) return;
-  if (msg.event === 'snapshot') {
-    if (msg.data && msg.data.buses) {
-      buses = msg.data.buses;
-      refreshCounters();
-      renderBusList();
-      if (state.view === 'fleet') renderFleet();
-      if (state.view === 'map') renderMapBusList();
-      drawMapMarkers(true);
-    }
-    if (msg.data && msg.data.alerts) {
-      alerts = msg.data.alerts;
-      renderAlerts();
-    }
-  } else if (msg.event === 'telemetry_tick') {
-    const updates = msg.data;
-    if (Array.isArray(updates)) {
-      updates.forEach(u => {
-        const b = buses.find(x => x.id === u.id);
-        if (b) {
-          b.speed = u.speed;
-          b.passengers = u.passengers;
-          b.fuel = u.fuel;
-          b.delay = u.delay;
-          b.nextStop = u.nextStop;
-          b.etaMin = u.etaMin;
-          b.pos = u.pos;
-          b.updatedAgo = u.updatedAgo;
-          if (u._t !== undefined) b._t = u._t;
-        }
-      });
-      refreshCounters();
-      drawMapMarkers();
-      if (state.view === 'dashboard') renderBusList();
-      if (state.view === 'map') renderMapBusList();
-      if (state.view === 'fleet') renderFleet();
-    }
-  } else if (msg.event === 'bus_status_changed') {
-    const updated = msg.data;
-    const b = buses.find(x => x.id === updated.id);
-    if (b) {
-      Object.assign(b, updated);
-      refreshAfterStatusChange(b);
-    }
-  } else if (msg.event === 'bus_created') {
-    const exists = buses.find(x => x.id === msg.data.id);
-    if (!exists) {
-      buses.push(msg.data);
-      refreshCounters();
-      renderBusList();
-      if (state.view === 'fleet') renderFleet();
-    }
-  } else if (msg.event === 'alert_created') {
-    const exists = alerts.find(x => x.id === msg.data.id);
-    if (!exists) {
-      alerts.unshift(msg.data);
-      renderAlerts();
-      // ítem #35: esc() para datos del servidor antes de insertar en DOM
-      addNotification(msg.data.icon, `<strong>${esc(msg.data.title)}:</strong> ${esc(msg.data.bus)}`);
-    }
-  } else if (msg.event === 'alerts_read_all') {
-    alerts.forEach(a => { a.read = true; });
-    renderAlerts();
-  }
-}
-
-// ítem #34: Reconexión WebSocket con backoff exponencial
-let wsRetryDelay = 1000;
-const WS_MAX_DELAY = 30000;
-
-function connectWebSocket() {
-  try {
-    wsInstance = new WebSocket(WS_BASE);
-    wsInstance.onopen = () => {
-      backendConnected = true;
-      wsRetryDelay = 1000; // reset backoff
-      updateBackendStatusBadge('online', 'API Online (WS)');
-    };
-    wsInstance.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        handleServerEvent(data);
-      } catch (err) {
-        console.warn('WS JSON parse error:', err);
-      }
-    };
-    wsInstance.onclose = () => {
-      backendConnected = false;
-      updateBackendStatusBadge('offline', 'Modo Local');
-      // Reintentar con backoff
-      setTimeout(() => {
-        wsRetryDelay = Math.min(wsRetryDelay * 2, WS_MAX_DELAY);
-        connectWebSocket();
-      }, wsRetryDelay);
-    };
-    wsInstance.onerror = () => {
-      // onclose se disparará tras onerror; el backoff lo maneja
-      backendConnected = false;
-      updateBackendStatusBadge('offline', 'Modo Local');
-    };
-  } catch (err) {
-    console.warn('WebSocket init failed:', err);
-  }
-}
-
-function initBackendConnection() {
-  api.checkHealth().then(ok => {
-    if (ok) {
-      backendConnected = true;
-      updateBackendStatusBadge('online', 'API Online');
-      connectWebSocket();
-    } else {
-      backendConnected = false;
-      updateBackendStatusBadge('offline', 'Modo Local');
-    }
-  }).catch(() => {
-    backendConnected = false;
-    updateBackendStatusBadge('offline', 'Modo Local');
-  });
-}
 
  
 const ROUTES = [
@@ -586,9 +302,6 @@ function refreshAfterStatusChange(bus) {
   }
 }
  
-const $ = id => document.getElementById(id);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
- 
 const randInt = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 const fmt = n => Number(n).toLocaleString('es-CR');
@@ -704,10 +417,6 @@ const VIEW_TITLES = {
   alerts: 'Centro de Alertas',
   reports: 'Reportes',
   drivers: 'Conductores',
-};
-
-let switchView = function(view) {
-  return navigate(view);
 };
 
 function navigate(view) {
@@ -846,15 +555,15 @@ function renderBusList() {
     return;
   }
   el.innerHTML = data.map(b => `
-    <div class="bus-item" data-bus="${b.id}" role="button" tabindex="0">
-      <span class="bus-item-icon" style="background:${b.route.color}22;color:${b.route.color}">${b.num}</span>
+    <div class="bus-item" data-bus="${esc(b.id)}" role="button" tabindex="0">
+      <span class="bus-item-icon" style="background:${esc(b.route.color)}22;color:${esc(b.route.color)}">${esc(b.num)}</span>
       <span class="bus-item-info">
-        <span class="bus-item-id">${b.id}</span>
-        <span class="bus-item-route">Ruta ${b.route.id} · ${esc(b.driver.name.split(' ')[0])}</span>
+        <span class="bus-item-id">${esc(b.id)}</span>
+        <span class="bus-item-route">Ruta ${esc(b.route.id)} · ${esc(b.driver.name.split(' ')[0])}</span>
       </span>
       <span class="bus-item-meta">
-        <span class="bus-item-speed">${b.speed} km/h</span>
-        <span class="status-badge status-${b.status}">${statusLabel(b.status)}</span>
+        <span class="bus-item-speed">${esc(b.speed)} km/h</span>
+        <span class="status-badge status-${esc(b.status)}">${esc(statusLabel(b.status))}</span>
       </span>
     </div>`).join('');
 }
@@ -1530,11 +1239,9 @@ function renderSchedules() {
   container.querySelectorAll('[data-view-map-route]').forEach(btn => {
     btn.addEventListener('click', () => {
       const rid = btn.dataset.viewMapRoute;
-      navigate('map');
-      const provSel = document.getElementById('provinceSelect');
       const route = ROUTES.find(r => r.id === rid);
-      if (route && realLeafletMap) {
-        toast(`Ruta ${route.id}: ${route.name}`, 'info');
+      if (route) {
+        toast(`Ruta ${route.concession || route.id}: ${route.name}`, 'info');
         focusRouteOnMap(route);
       }
     });
@@ -1715,30 +1422,30 @@ function renderFleet() {
     const barColor = pct > 85 ? cssVar('--risk') : pct > 60 ? cssVar('--warn') : cssVar('--ok');
     return `
     <tr>
-      <td>${b.id}</td>
-      <td class="mono">${b.plate}</td>
-      <td><span class="route-pill" style="background:${b.route.color}22;color:${b.route.color}">Ruta ${b.route.id}</span></td>
+      <td>${esc(b.id)}</td>
+      <td class="mono">${esc(b.plate)}</td>
+      <td><span class="route-pill" style="background:${esc(b.route.color)}22;color:${esc(b.route.color)}">Ruta ${esc(b.route.id)}</span></td>
       <td>${esc(b.driver.name)}</td>
-      <td class="mono">${b.speed} km/h</td>
+      <td class="mono">${esc(b.speed)} km/h</td>
       <td>
         <span style="display:inline-flex;align-items:center;gap:7px">
           <span class="mini-bar"><span style="width:${pct}%;background:${barColor}"></span></span>
-          ${b.passengers}/${b.capacity}
+          ${esc(b.passengers)}/${esc(b.capacity)}
         </span>
       </td>
       <td>
-        <select class="status-select status-${b.status}" data-status-select="${b.id}" aria-label="Cambiar el estado de ${b.id}">
+        <select class="status-select status-${esc(b.status)}" data-status-select="${esc(b.id)}" aria-label="Cambiar el estado de ${esc(b.id)}">
           <option value="active" ${b.status === 'active' ? 'selected' : ''}>En servicio</option>
           <option value="delayed" ${b.status === 'delayed' ? 'selected' : ''}>Retrasado</option>
           <option value="stopped" ${b.status === 'stopped' ? 'selected' : ''}>Detenido</option>
           <option value="maintenance" ${b.status === 'maintenance' ? 'selected' : ''}>Mantenimiento</option>
         </select>
       </td>
-      <td style="color:var(--text-soft)">hace ${b.updatedAgo} min</td>
+      <td style="color:var(--text-soft)">hace ${esc(b.updatedAgo)} min</td>
       <td>
         <span class="table-actions">
-          <button class="table-btn" data-bus="${b.id}" title="Ver detalle" aria-label="Ver detalle de ${b.id}">${ICON_EYE}</button>
-          <button class="table-btn" data-track="${b.id}" title="Ver en el mapa" aria-label="Ver ${b.id} en el mapa">${ICON_PIN}</button>
+          <button class="table-btn" data-bus="${esc(b.id)}" title="Ver detalle" aria-label="Ver detalle de ${esc(b.id)}">${ICON_EYE}</button>
+          <button class="table-btn" data-track="${esc(b.id)}" title="Ver en el mapa" aria-label="Ver ${esc(b.id)} en el mapa">${ICON_PIN}</button>
         </span>
       </td>
     </tr>`;
@@ -1785,39 +1492,6 @@ $$('.fleet-table th[data-sort]').forEach(th => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); apply(); }
   });
 });
-if ($('addBusBtn')) {
-  $('addBusBtn').addEventListener('click', async () => {
-    const n = buses.length + 1;
-    const route = ROUTES[(n - 1) % ROUTES.length];
-    const driver = DRIVERS[(n - 1) % DRIVERS.length];
-    if (backendConnected) {
-      try {
-        const newBus = await api.createBus({ routeId: route.id, driverId: driver.id });
-        buses.push(newBus);
-        renderFleet();
-        refreshCounters();
-        toast('Bus ' + newBus.id + ' registrado en backend', 'ok');
-        return;
-      } catch (err) {
-        console.warn('Failed to add bus to backend, falling back to local:', err);
-      }
-    }
-    buses.push({
-      id: 'BUS-' + String(n).padStart(3, '0'),
-      num: String(n).padStart(3, '0'),
-      plate: 'SJB-' + String(1000 + n),
-      route,
-      driver,
-      status: 'stopped',
-      speed: 0, passengers: 0, capacity: 52, fuel: 100, delay: 0,
-      nextStop: STOPS[0].name, etaMin: 0, updatedAgo: 0,
-      pos: { x: 400, y: 225 }, _t: Math.random(), _step: 0.005, _dir: 1,
-    });
-    renderFleet();
-    refreshCounters();
-    toast('Bus ' + buses[buses.length - 1].id + ' agregado a la flota', 'ok');
-  });
-}
 if ($('exportCsvBtn')) {
   $('exportCsvBtn').addEventListener('click', () => {
     const rows = visibleBuses();
@@ -2027,12 +1701,6 @@ const ROUTE_GPS_PATHS = {
   ],
 };
 
-// Aliases para compatibilidad
-ROUTE_GPS_PATHS.A = ROUTE_GPS_PATHS['SJO-201'];
-ROUTE_GPS_PATHS.B = ROUTE_GPS_PATHS['SJO-300'];
-ROUTE_GPS_PATHS.C = ROUTE_GPS_PATHS['SJO-400'];
-ROUTE_GPS_PATHS.D = ROUTE_GPS_PATHS['CAR-32'];
-
 // Tabla de distancias acumuladas por longitud de arco para avance realista
 const ROUTE_DISTANCES = {};
 function initRouteDistances() {
@@ -2052,8 +1720,6 @@ function initRouteDistances() {
   }
 }
 initRouteDistances();
-
-let activeTrackedRouteLayer = null;
 
 let realLeafletMap = null;
 let leafletMarkers = {
@@ -2137,6 +1803,7 @@ function initRealLeafletMap() {
   const provSelect = document.getElementById('provinceSelect');
   if (provSelect) {
     provSelect.addEventListener('change', (e) => {
+      resetMapRouteHighlight();
       const p = CR_PROVINCES[e.target.value] || CR_PROVINCES.all;
       realLeafletMap.flyTo(p.center, p.zoom, { duration: 1.5 });
       toast('🇨🇷 Enfocando región: ' + p.name, 'info');
@@ -2232,7 +1899,7 @@ function paintLayerRoutesAndStops(mapInstance, markersStore, isMini) {
         opacity: 0.85,
         dashArray: '8, 8'
       }).addTo(mapInstance);
-      poly.bindTooltip('<b>' + (r.concession || r.id) + '</b> ' + r.name + (r.operator ? '<br><small style="opacity:.8">' + r.operator + '</small>' : ''), { sticky: true, className: 'route-tooltip' });
+      poly.bindTooltip('<b>' + esc(r.concession || r.id) + '</b> ' + esc(r.name) + (r.operator ? '<br><small style="opacity:.8">' + esc(r.operator) + '</small>' : ''), { sticky: true, className: 'route-tooltip' });
       markersStore.routes[r.id] = poly;
     }
   });
@@ -2251,7 +1918,7 @@ function paintLayerRoutesAndStops(mapInstance, markersStore, isMini) {
       '<div style="font-family:Inter, sans-serif;">' +
         '<strong style="color:var(--text-strong); font-size:12.5px;">🚏 ' + esc(s.name) + '</strong>' +
         '<p style="margin:4px 0 0; color:var(--text-soft); font-size:11px;">' + esc(s.subtext || s.province || 'Parada oficial') + '</p>' +
-        (isMini ? '' : '<span class="badge" style="margin-top:6px; display:inline-block; font-size:10px;">' + (s.province || 'Costa Rica') + '</span>') +
+        (isMini ? '' : '<span class="badge" style="margin-top:6px; display:inline-block; font-size:10px;">' + esc(s.province || 'Costa Rica') + '</span>') +
       '</div>'
     );
     markersStore.stops[s.id || s.name] = marker;
@@ -2322,6 +1989,7 @@ function setupDashboardMapControls() {
 
 // Interpola posición GPS para un bus según su progreso _t [0..1] sobre las calles reales
 function getBusGpsPosition(bus) {
+  if (bus && bus._gpsOverride) return bus._gpsOverride;
   const routeId = (bus && bus.route && bus.route.id) || 'SJO-201';
   const coords = ROUTE_GPS_PATHS[routeId] || ROUTE_GPS_PATHS['SJO-201'];
   if (!coords || !coords.length) return [9.9333, -84.0833];
@@ -2378,8 +2046,8 @@ function drawMapMarkers(force) {
         const marker = L.marker([lat, lon], { icon: busIcon }).addTo(realLeafletMap);
         marker.on('click', () => focusBus(b.id));
         marker.bindTooltip(
-          '<strong>' + b.id + '</strong> · Ruta ' + b.route.id + '<br/>' +
-          b.speed + ' km/h · ' + b.passengers + ' pas.',
+          '<strong>' + esc(b.id) + '</strong> · Ruta ' + esc(b.route.id) + '<br/>' +
+          esc(String(b.speed)) + ' km/h · ' + esc(String(b.passengers)) + ' pas.',
           { direction: 'top', offset: [0, -14] }
         );
 
@@ -2402,7 +2070,7 @@ function drawMapMarkers(force) {
           html:
             '<div class="real-bus-icon-inner" style="background:' + color + '; width:26px; height:26px; font-size:10px;' + (isTracked ? 'border-color:#38bdf8;' : '') + '">' +
               (isTracked || isDelayed ? '<div class="real-bus-pulse" style="background:' + color + '; width:34px; height:34px; left:-4px; top:-4px;"></div>' : '') +
-              '<span>' + (b.num || b.id.replace('BUS-', '')) + '</span>' +
+              '<span>' + esc(String(b.num || b.id.replace('BUS-', ''))) + '</span>' +
             '</div>',
           iconSize: [26, 26],
           iconAnchor: [13, 13]
@@ -2414,8 +2082,8 @@ function drawMapMarkers(force) {
           setTimeout(() => focusBus(b.id), 200);
         });
         miniMarker.bindTooltip(
-          '<strong>' + b.id + '</strong> · Ruta ' + b.route.id + '<br/>' +
-          b.speed + ' km/h',
+          '<strong>' + esc(b.id) + '</strong> · Ruta ' + esc(b.route.id) + '<br/>' +
+          esc(String(b.speed)) + ' km/h',
           { direction: 'top', offset: [0, -10] }
         );
 
@@ -2434,13 +2102,13 @@ function renderMapBusList() {
   const container = document.getElementById('mapBusList');
   if (!container) return;
   container.innerHTML = buses.map(b =>
-    '<div class="map-bus-item ' + (state.highlightBus === b.id ? 'highlight' : '') + '" data-bus="' + b.id + '" role="button" tabindex="0">' +
+    '<div class="map-bus-item ' + (state.highlightBus === b.id ? 'highlight' : '') + '" data-bus="' + esc(b.id) + '" role="button" tabindex="0">' +
       '<span class="map-bus-dot" style="background:' + b.route.color + '"></span>' +
       '<span class="map-bus-info">' +
-        '<span class="map-bus-id">' + b.id + '</span>' +
-        '<span class="map-bus-route">Ruta ' + b.route.id + ' · ' + b.speed + ' km/h</span>' +
+        '<span class="map-bus-id">' + esc(b.id) + '</span>' +
+        '<span class="map-bus-route">Ruta ' + esc(b.route.id) + ' · ' + esc(String(b.speed)) + ' km/h</span>' +
       '</span>' +
-      '<span class="status-badge status-' + b.status + '">' + statusLabel(b.status) + '</span>' +
+      '<span class="status-badge status-' + esc(b.status) + '">' + esc(statusLabel(b.status)) + '</span>' +
     '</div>'
   ).join('');
 }
@@ -2468,18 +2136,6 @@ function updateTrackingBanner() {
   }
 }
 
-function resolveRouteId(route) {
-  if (!route) return 'SJO-201';
-  const id = String(route.id || route);
-  const aliasMap = {
-    'A': 'SJO-201',
-    'B': 'SJO-300',
-    'C': 'SJO-400',
-    'D': 'CAR-32',
-  };
-  return aliasMap[id] || id;
-}
-
 // Resalta la calle/recorrido en el mapa con el color oficial de la ruta del bus
 function applyRouteHighlightToMap(mapInstance, markersStore, bus, isMini) {
   if (!mapInstance || !markersStore) {
@@ -2487,11 +2143,10 @@ function applyRouteHighlightToMap(mapInstance, markersStore, bus, isMini) {
     return;
   }
 
-  const rawRouteId = bus.route ? (bus.route.id || 'SJO-201') : 'SJO-201';
-  const canonicalRouteId = resolveRouteId(bus.route);
-  const coords = ROUTE_GPS_PATHS[canonicalRouteId] || ROUTE_GPS_PATHS[rawRouteId] || ROUTE_GPS_PATHS['SJO-201'];
+  const routeId = (bus.route && (bus.route.id || bus.route)) || 'SJO-201';
+  const coords = ROUTE_GPS_PATHS[routeId] || ROUTE_GPS_PATHS['SJO-201'];
   if (!coords || coords.length < 2) {
-    console.warn('⚠️ applyRouteHighlight: no coords for route', { canonical: canonicalRouteId, raw: rawRouteId });
+    console.warn('⚠️ applyRouteHighlight: no coords for route', { routeId });
     return;
   }
 
@@ -2501,7 +2156,7 @@ function applyRouteHighlightToMap(mapInstance, markersStore, bus, isMini) {
   if (markersStore.routes) {
     Object.entries(markersStore.routes).forEach(([id, poly]) => {
       if (poly && poly.setStyle) {
-        const isThisRoute = id === canonicalRouteId || id === rawRouteId;
+        const isThisRoute = id === routeId;
         poly.setStyle({
           opacity: isThisRoute ? 0.2 : 0.08,
           weight: isMini ? 2 : 3
@@ -2621,40 +2276,162 @@ function focusBus(busId) {
 function focusRouteOnMap(route) {
   if (!route) return;
   navigate('map');
-  if (!realLeafletMap) {
-    setTimeout(() => focusRouteOnMap(route), 150);
+
+  // Si el mapa o las capas aún no están listos, diferir
+  if (!realLeafletMap || !leafletMarkers || !leafletMarkers.routes || Object.keys(leafletMarkers.routes).length === 0) {
+    setTimeout(() => focusRouteOnMap(route), 120);
     return;
   }
 
-  const stopPoints = [];
-  if (Array.isArray(route.stopIds)) {
-    route.stopIds.forEach(sid => {
-      const stop = STOPS.find(s => s.id === sid);
-      if (stop && typeof stop.lat === 'number' && typeof stop.lon === 'number') {
-        stopPoints.push([stop.lat, stop.lon]);
+  const rid = route.id;
+  const routeStopIds = new Set(route.stopIds || []);
+
+  // 1. Resaltar la ruta seleccionada y atenuar todas las demás
+  if (leafletMarkers.routes) {
+    Object.entries(leafletMarkers.routes).forEach(([id, poly]) => {
+      if (!poly || !poly.setStyle) return;
+      if (id === rid) {
+        poly.setStyle({
+          opacity: 1,
+          weight: 6,
+          dashArray: null,
+          color: route.color || '#3b82f6'
+        });
+        if (poly.bringToFront) poly.bringToFront();
+      } else {
+        poly.setStyle({
+          opacity: 0.08,
+          weight: 2,
+          dashArray: '4, 4'
+        });
       }
     });
   }
 
-  if (stopPoints.length > 0 && typeof L !== 'undefined' && L.latLngBounds) {
+  // 2. Resaltar las paradas de la ruta seleccionada y atenuar todas las demás
+  if (leafletMarkers.stops) {
+    Object.entries(leafletMarkers.stops).forEach(([sid, marker]) => {
+      if (!marker) return;
+      const isStopOfRoute = routeStopIds.has(sid);
+
+      if (typeof marker.setOpacity === 'function') {
+        marker.setOpacity(isStopOfRoute ? 1 : 0.08);
+      }
+
+      const el = marker.getElement ? marker.getElement() : null;
+      if (el) {
+        if (isStopOfRoute) {
+          el.style.opacity = '1';
+          el.style.zIndex = '1000';
+          el.classList.add('stop-route-highlighted');
+        } else {
+          el.style.opacity = '0.08';
+          el.style.zIndex = '1';
+          el.classList.remove('stop-route-highlighted');
+        }
+      }
+
+      if (isStopOfRoute && marker.bringToFront) {
+        marker.bringToFront();
+      }
+    });
+  }
+
+  // 3. Centrar y hacer zoom a la ruta seleccionada
+  const coords = ROUTE_GPS_PATHS[rid] || (route.concession && ROUTE_GPS_PATHS[route.concession]);
+  if (coords && coords.length && typeof L !== 'undefined' && L.latLngBounds) {
     try {
-      const bounds = L.latLngBounds(stopPoints);
+      const bounds = L.latLngBounds(coords);
       realLeafletMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
     } catch (e) {
       console.warn('fitBounds error:', e);
     }
+  } else {
+    const stopPoints = [];
+    if (Array.isArray(route.stopIds)) {
+      route.stopIds.forEach(sid => {
+        const stop = STOPS.find(s => s.id === sid);
+        if (stop && typeof stop.lat === 'number' && typeof stop.lon === 'number') {
+          stopPoints.push([stop.lat, stop.lon]);
+        }
+      });
+    }
+    if (stopPoints.length > 0 && typeof L !== 'undefined' && L.latLngBounds) {
+      try {
+        const bounds = L.latLngBounds(stopPoints);
+        realLeafletMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+      } catch (e) {
+        console.warn('fitBounds stopPoints error:', e);
+      }
+    }
   }
 
-  if (leafletMarkers && leafletMarkers.routes) {
-    Object.entries(leafletMarkers.routes).forEach(([rid, poly]) => {
+  // 4. Mostrar pill flotante con botón para restablecer la vista
+  showMapRouteFocusPill(route);
+}
+
+function resetMapRouteHighlight() {
+  if (!leafletMarkers) return;
+
+  // Restaurar polylines de rutas
+  if (leafletMarkers.routes) {
+    ROUTES.forEach(r => {
+      const poly = leafletMarkers.routes[r.id];
       if (poly && poly.setStyle) {
-        if (rid === route.id) {
-          poly.setStyle({ opacity: 1.0, weight: 6 });
-          if (poly.bringToFront) poly.bringToFront();
-        } else {
-          poly.setStyle({ opacity: 0.25, weight: 2 });
-        }
+        poly.setStyle({
+          color: r.color,
+          weight: 4,
+          opacity: 0.85,
+          dashArray: '8, 8'
+        });
       }
+    });
+  }
+
+  // Restaurar marcadores de paradas
+  if (leafletMarkers.stops) {
+    Object.values(leafletMarkers.stops).forEach(marker => {
+      if (!marker) return;
+      if (typeof marker.setOpacity === 'function') {
+        marker.setOpacity(1);
+      }
+      const el = marker.getElement ? marker.getElement() : null;
+      if (el) {
+        el.style.opacity = '';
+        el.style.zIndex = '';
+        el.classList.remove('stop-route-highlighted');
+      }
+    });
+  }
+
+  // Eliminar pill flotante
+  const pill = document.getElementById('mapRouteFocusPill');
+  if (pill) pill.remove();
+}
+
+function showMapRouteFocusPill(route) {
+  const existing = document.getElementById('mapRouteFocusPill');
+  if (existing) existing.remove();
+
+  const mapBg = document.querySelector('.full-map-bg') || (document.getElementById('realFullMap') && document.getElementById('realFullMap').parentElement);
+  if (!mapBg) return;
+
+  const pill = document.createElement('div');
+  pill.id = 'mapRouteFocusPill';
+  pill.className = 'map-route-focus-pill';
+  pill.innerHTML = `
+    <span>🗺️ <strong>${esc(route.concession || route.id)}</strong> — ${esc(route.name)}</span>
+    <button id="mapRouteFocusClear" title="Mostrar todas las rutas" aria-label="Restablecer vista de todas las rutas">✕</button>
+  `;
+
+  mapBg.appendChild(pill);
+
+  const clearBtn = document.getElementById('mapRouteFocusClear');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetMapRouteHighlight();
+      toast('Mostrando todas las rutas y paradas', 'info');
     });
   }
 }
@@ -2864,6 +2641,7 @@ function setupMapControls() {
       if (action === 'out') realLeafletMap.zoomOut();
       if (action === 'reset') {
         stopTracking('Vista nacional restablecida');
+        resetMapRouteHighlight();
         realLeafletMap.flyTo(CR_PROVINCES.all.center, CR_PROVINCES.all.zoom, { duration: 1.2 });
         const provSelect = document.getElementById('provinceSelect');
         if (provSelect) provSelect.value = 'all';
@@ -2959,7 +2737,7 @@ function renderAlerts() {
   if (!data.length) {
     el.innerHTML = '<p class="empty-state">No hay alertas en esta categoría</p>';
   } else {
-    // ítem #35: escapar title/desc/bus antes de inyectar en innerHTML
+    // Escapar title/desc/bus antes de inyectar en innerHTML
     el.innerHTML = data.map(a => `
       <article class="alert-item ${esc(a.type)} ${a.read ? 'read' : ''}" data-alert="${esc(String(a.id))}">
         <span class="alert-icon-wrap ${esc(a.type)}">${esc(a.icon)}</span>
@@ -2989,11 +2767,14 @@ $('clearAlertsBtn').addEventListener('click', async () => {
   const pend = alerts.filter(a => !a.read).length;
   alerts.forEach(a => { a.read = true; });
   renderAlerts();
-  if (backendConnected) {
+  if (typeof renderNotifDropdown === 'function') renderNotifDropdown();
+  refreshCounters();
+
+  if (typeof supabaseClient !== 'undefined' && supabaseClient) {
     try {
-      await api.markAllAlertsRead();
+      await supabaseClient.from('alerts').update({ read: true }).eq('read', false);
     } catch (e) {
-      console.warn('API mark read error:', e);
+      console.warn('[Supabase] Error al marcar alertas leídas:', e);
     }
   }
   toast(pend ? pend + ' alertas marcadas como leídas' : 'No había alertas pendientes', 'ok');
@@ -3009,30 +2790,42 @@ $('newAlertBtn').addEventListener('click', async () => {
   ];
   const t = pick(plantillas);
 
-  if (backendConnected) {
+  const newAlertItem = {
+    id: 'ALT-' + Date.now(),
+    type: t.type,
+    icon: t.icon,
+    title: t.title,
+    desc: t.desc,
+    bus: bus.id,
+    time: 'ahora mismo',
+    read: false
+  };
+
+  alerts.unshift(newAlertItem);
+  if (alerts.length > 25) alerts.pop();
+  renderAlerts();
+  if (typeof renderNotifDropdown === 'function') renderNotifDropdown();
+  refreshCounters();
+  toast('Nueva alerta: ' + t.title, 'warn');
+
+  if (typeof supabaseClient !== 'undefined' && supabaseClient) {
     try {
-      const created = await api.createAlert({
+      const { data, error } = await supabaseClient.from('alerts').insert([{
         type: t.type,
         icon: t.icon,
         title: t.title,
         desc: t.desc,
         bus: bus.id,
-      });
-      alerts.unshift(created);
-      renderAlerts();
-      addNotification(t.icon, `<strong>${t.title}:</strong> ${bus.id}`);
-      toast('Nueva alerta registrada en backend', 'warn');
-      return;
+        read: false
+      }]).select().maybeSingle();
+
+      if (data && data.id) {
+        newAlertItem.id = data.id;
+      }
     } catch (e) {
-      console.warn('Error creating alert in API:', e);
+      console.warn('[Supabase] Inserción de alerta:', e);
     }
   }
-
-  alerts.unshift({ id: Date.now(), ...t, bus: bus.id, time: 'ahora mismo', read: false });
-  if (alerts.length > 20) alerts.pop();
-  renderAlerts();
-  addNotification(t.icon, `<strong>${t.title}:</strong> ${bus.id}`);
-  toast('Nueva alerta registrada', 'warn');
 });
  
 function renderDrivers() {
@@ -3181,11 +2974,11 @@ $('modalStatusSelect').addEventListener('change', async function () {
   fillBusModal(b);
   refreshAfterStatusChange(b);
 
-  if (backendConnected) {
+  if (typeof supabaseClient !== 'undefined' && supabaseClient) {
     try {
-      await api.updateBusStatus(b.id, newStatus);
+      await supabaseClient.from('bus_positions').update({ status: newStatus }).eq('bus_id', b.id);
     } catch (e) {
-      console.warn('Failed to update status in backend:', e);
+      console.warn('[Supabase] Error actualizando estado de bus:', e);
     }
   }
 
@@ -3196,8 +2989,10 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (busModal.classList.contains('open')) closeModal(busModal);
   if (settingsModal.classList.contains('open')) closeModal(settingsModal);
-  $('notifDropdown').classList.remove('open');
-  $('notifBtn').setAttribute('aria-expanded', 'false');
+  const notifPanel = $('notifDropdownPanel');
+  if (notifPanel) notifPanel.hidden = true;
+  const nBtn = $('notifBtn');
+  if (nBtn) nBtn.setAttribute('aria-expanded', 'false');
   closeSidebar();
 });
  
@@ -3212,14 +3007,15 @@ function buildAccentPicker() {
             title="${a.label}" aria-label="Acento ${a.label}"></button>`).join('');
 }
  
-$('accentPicker').addEventListener('click', e => {
+on('accentPicker', 'click', e => {
   const dot = e.target.closest('[data-accent]');
   if (!dot) return;
   prefs.accent = dot.dataset.accent;
   applyPrefs();
   savePrefs();
   buildAccentPicker();
-  paintStaticMapLayers();
+  if (typeof paintRealStopsAndRoutes === 'function') paintRealStopsAndRoutes();
+  if (typeof paintDashboardStopsAndRoutes === 'function') paintDashboardStopsAndRoutes();
   redrawAll();
   drawMapMarkers(true);
   renderBusList();
@@ -3280,72 +3076,10 @@ $('userProfile').addEventListener('keydown', e => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSettings(); }
 });
  
-/* ==========================================================
-   8. NOTIFICACIONES Y AVISOS
-   ========================================================== */
- 
-const notifs = [
-  { icon: '🚨', msg: '<strong>Crítica:</strong> BUS-011 con temperatura de motor elevada', time: 'hace 3 min', unread: true },
-  { icon: '⚠️', msg: '<strong>Retraso:</strong> BUS-007 va +8 min en Ruta B', time: 'hace 8 min', unread: true },
-  { icon: '⛽', msg: '<strong>Combustible bajo:</strong> BUS-004 al 15%', time: 'hace 15 min', unread: true },
-  { icon: '✅', msg: 'BUS-001 completó la Ruta A con 48 pasajeros', time: 'hace 22 min', unread: false },
-  { icon: '📊', msg: 'Reporte diario generado: 2.847 pasajeros', time: 'hace 32 min', unread: false },
-];
- 
-function renderNotifs() {
-  const list = $('notifList');
-  if (!notifs.length) {
-    list.innerHTML = '<p class="empty-state">Sin notificaciones</p>';
-  } else {
-    list.innerHTML = notifs.map((n, i) => `
-      <div class="notif-item ${n.unread ? 'unread' : ''}" data-notif="${i}">
-        <span class="notif-icon">${n.icon}</span>
-        <span style="flex:1">
-          <span class="notif-msg">${n.msg}</span>
-          <span class="notif-time">${n.time}</span>
-        </span>
-      </div>`).join('');
-  }
-  $('notifDot').classList.toggle('hidden', !notifs.some(n => n.unread));
-}
- 
-function addNotification(icon, msg) {
-  notifs.unshift({ icon, msg, time: 'ahora mismo', unread: true });
-  if (notifs.length > 12) notifs.pop();
-  renderNotifs();
-}
- 
-const notifBtn = $('notifBtn');
-const notifDropdown = $('notifDropdown');
- 
-notifBtn.addEventListener('click', e => {
-  e.stopPropagation();
-  const open = notifDropdown.classList.toggle('open');
-  notifBtn.setAttribute('aria-expanded', String(open));
-});
- 
-notifDropdown.addEventListener('click', e => {
-  const item = e.target.closest('[data-notif]');
-  if (!item) return;
-  notifs[+item.dataset.notif].unread = false;
-  renderNotifs();
-});
- 
-$('clearNotifsBtn').addEventListener('click', e => {
-  e.stopPropagation();
-  notifs.length = 0;
-  renderNotifs();
-  toast('Notificaciones limpiadas', 'ok');
-});
- 
 document.addEventListener('click', e => {
-  if (!notifDropdown.contains(e.target) && !notifBtn.contains(e.target)) {
-    notifDropdown.classList.remove('open');
-    notifBtn.setAttribute('aria-expanded', 'false');
-  }
   const bar = document.querySelector('.search-bar');
-  if (bar.classList.contains('mobile-open')
-      && !bar.contains(e.target) && !$('mobileSearchBtn').contains(e.target)) {
+  if (bar && bar.classList.contains('mobile-open')
+      && !bar.contains(e.target) && !$('mobileSearchBtn')?.contains(e.target)) {
     bar.classList.remove('mobile-open');
   }
 });
@@ -3788,7 +3522,6 @@ $('trackingStopBtn').addEventListener('click', () => stopTracking('Dejaste de se
  
 function updateLiveData() {
   if (!prefs.live) return;
-  if (backendConnected) return;
   buses.forEach(b => {
     if (b.status !== 'active' && b.status !== 'delayed') return;
     b.passengers = Math.max(0, Math.min(b.capacity, b.passengers + randInt(-3, 3)));
@@ -3813,15 +3546,85 @@ window.addEventListener('resize', () => {
   }, 160);
 });
 
+// ==================================================================
+// CONEXIÓN DIRECTA CON SUPABASE (Opción A: paradas, alertas y posiciones)
+// ==================================================================
+async function initSupabaseData() {
+  if (!supabaseClient) return;
+
+  // 1. Cargar paradas oficiales desde Supabase
+  try {
+    const { data: remoteStops, error: stopsErr } = await supabaseClient.from('stops').select('*');
+    if (!stopsErr && remoteStops && remoteStops.length) {
+      remoteStops.forEach(rs => {
+        const existing = STOPS.find(s => s.id === rs.id || s.name === rs.name);
+        if (existing) {
+          Object.assign(existing, rs);
+        } else {
+          STOPS.push(rs);
+        }
+      });
+      if (typeof realLeafletMap !== 'undefined' && realLeafletMap) paintRealStopsAndRoutes();
+      if (typeof dashboardLeafletMap !== 'undefined' && dashboardLeafletMap) paintDashboardStopsAndRoutes();
+    }
+  } catch (err) {
+    console.warn('[Supabase] Paradas remotas no disponibles:', err);
+  }
+
+  // 2. Cargar alertas desde Supabase
+  try {
+    const { data: remoteAlerts, error: alertsErr } = await supabaseClient
+      .from('alerts')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!alertsErr && remoteAlerts && remoteAlerts.length) {
+      alerts = remoteAlerts.map(a => ({
+        id: a.id,
+        type: a.type || 'info',
+        icon: a.icon || 'ℹ️',
+        title: a.title,
+        desc: a.desc,
+        bus: a.bus || 'BUS-001',
+        time: a.created_at ? new Date(a.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'reciente',
+        read: !!(a.is_read || a.read)
+      }));
+      renderAlerts();
+      if (typeof renderNotifDropdown === 'function') renderNotifDropdown();
+      refreshCounters();
+    }
+  } catch (err) {
+    console.warn('[Supabase] Alertas remotas no disponibles:', err);
+  }
+
+  // 3. Suscripción en tiempo real a posiciones de buses
+  try {
+    supabaseClient
+      .channel('realtime_bus_positions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bus_positions' }, payload => {
+        const row = payload.new;
+        if (!row || !row.bus_id) return;
+        const bus = buses.find(b => b.id === row.bus_id);
+        if (bus) {
+          if (row.lat && row.lon) bus._gpsOverride = [row.lat, row.lon];
+          if (row.speed !== undefined) bus.speed = row.speed;
+          if (row.passengers !== undefined) bus.passengers = row.passengers;
+          if (row.status) bus.status = row.status;
+          drawMapMarkers();
+          if (state.view === 'dashboard') renderBusList();
+          if (state.view === 'map') renderMapBusList();
+          if (state.view === 'fleet') renderFleet();
+          refreshCounters();
+        }
+      })
+      .subscribe();
+  } catch (err) {
+    console.warn('[Supabase Realtime] Error en suscripción:', err);
+  }
+}
+
 function init() {
   // ------------------------------------------------------------------
   // HAPTIC FEEDBACK & SHARE HELPERS
-  // ------------------------------------------------------------------
-  function hapticFeedback(pattern = 10) {
-    if ('vibrate' in navigator) {
-      try { navigator.vibrate(pattern); } catch (_) {}
-    }
-  }
 
   // Bind haptics to all buttons
   document.querySelectorAll('button').forEach(btn => {
@@ -3832,7 +3635,8 @@ function init() {
   // DYNAMIC PAGE META TITLES & DESCRIPTIONS
   // ------------------------------------------------------------------
   const pageMetaMap = {
-    dashboard: { title: 'Panel Principal — BusTrack Pro', desc: 'Resumen en tiempo real del estado de la flota, mapa interactivo y métricas.' },    map: { title: 'Mapa en Vivo — BusTrack Pro', desc: 'Seguimiento satelital y mapa esquemático de todas las unidades en circulación.' },
+    dashboard: { title: 'Panel Principal — BusTrack Pro', desc: 'Resumen en tiempo real del estado de la flota, mapa interactivo y métricas.' },
+    map: { title: 'Mapa en Vivo — BusTrack Pro', desc: 'Seguimiento satelital y mapa esquemático de todas las unidades en circulación.' },
     fleet: { title: 'Gestión de Flota — BusTrack Pro', desc: 'Tabla completa de unidades, conductores asignados, estados y exportación CSV.' },
     routes: { title: 'Rutas Operativas — BusTrack Pro', desc: 'Detalle de trazados, paradas e indicadores por recorrido.' },
     alerts: { title: 'Centro de Alertas — BusTrack Pro', desc: 'Alertas críticas, advertencias y avisos del sistema en tiempo real.' },
@@ -3849,20 +3653,10 @@ function init() {
       if (metaDesc) metaDesc.content = pageMetaMap[viewName].desc;
     }
   };
-  switchView = function(viewName) {
-    return navigate(viewName);
-  };
 
   // ------------------------------------------------------------------
   // AUTHENTICATION & LANDING GATE LOGIC (Email, Google, Apple via Supabase)
   // ------------------------------------------------------------------
-
-  // ── Supabase client (singleton) ──────────────────────────────────────
-  const SUPABASE_URL      = 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
-  const supabaseClient = (typeof supabase !== 'undefined' && supabase.createClient)
-    ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-    : null;
 
   // ── Session state ────────────────────────────────────────────────────
   let currentUser    = null;
@@ -3871,7 +3665,14 @@ function init() {
   // Restore persisted session from localStorage on cold start
   try {
     const saved = localStorage.getItem('bustrack_user');
-    if (saved) currentUser = JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // El rol se obtiene de public.users en Supabase; por defecto pasajero en cold start
+      currentUser = {
+        ...parsed,
+        role: 'passenger'
+      };
+    }
     if (sessionStorage.getItem('bustrack_guest') === 'true') isGuestSession = true;
   } catch (_) {}
 
@@ -3899,7 +3700,7 @@ function init() {
         .split(' ').map(n => n[0] || '').join('').slice(0, 2).toUpperCase();
       if (avatarSlot) avatarSlot.textContent = initials;
       if (nameSlot)   nameSlot.textContent   = currentUser.name || 'Usuario';
-      if (roleSlot)   roleSlot.textContent   = currentUser.role === 'admin' ? 'Administrador' : 'Operador';
+      if (roleSlot)   roleSlot.textContent   = currentUser.role === 'admin' ? 'Administrador' : 'Pasajero';
 
       if (activeBox) {
         activeBox.hidden = false;
@@ -3912,7 +3713,8 @@ function init() {
         if (activeName)  activeName.textContent  = currentUser.name || '';
         if (activeEmail) activeEmail.textContent = currentUser.email || '';
         const providerLabel = (currentUser.provider || 'email').toUpperCase();
-        if (activeBadge) activeBadge.textContent = `Cuenta ${providerLabel} · ${currentUser.role || 'admin'}`;
+        const rolEspanol = currentUser.role === 'admin' ? 'Administrador' : 'Pasajero';
+        if (activeBadge) activeBadge.textContent = `Cuenta ${providerLabel} · ${rolEspanol}`;
       }
 
       if (loginFormEl)  loginFormEl.hidden = true;
@@ -4001,7 +3803,48 @@ function init() {
   }
 
   // ── Supabase session helpers ─────────────────────────────────────────
-  /** Build a local currentUser object from a Supabase Auth user record */
+  /** Carga el perfil del usuario autenticado directamente desde la tabla public.users de Supabase */
+  async function loadUserProfile(supaUser) {
+    if (!supaUser || !supabaseClient) return null;
+    try {
+      const { data, error } = await supabaseClient
+        .from('users')
+        .select('full_name, role, avatar_url')
+        .eq('id', supaUser.id)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('[loadUserProfile] Error consultando perfil en Supabase:', error.message);
+      }
+
+      const role = (data && data.role === 'admin') ? 'admin' : 'passenger';
+      const name = data?.full_name || supaUser.user_metadata?.full_name || supaUser.user_metadata?.name || (supaUser.email ? supaUser.email.split('@')[0] : 'Usuario');
+      const avatarUrl = data?.avatar_url || supaUser.user_metadata?.avatar_url || supaUser.user_metadata?.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`;
+      const provider = supaUser.app_metadata?.provider || supaUser.app_metadata?.providers?.[0] || 'email';
+
+      return {
+        id: supaUser.id,
+        email: supaUser.email,
+        name,
+        avatarUrl,
+        role,
+        provider
+      };
+    } catch (err) {
+      console.warn('[loadUserProfile] Fallo de red/excepción:', err);
+      const name = supaUser.user_metadata?.full_name || (supaUser.email ? supaUser.email.split('@')[0] : 'Usuario');
+      return {
+        id: supaUser.id,
+        email: supaUser.email,
+        name,
+        avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`,
+        role: 'passenger',
+        provider: supaUser.app_metadata?.provider || 'email'
+      };
+    }
+  }
+
+  /** Build a local currentUser fallback object from a Supabase Auth user record */
   function buildUserFromSupabase(supaUser, extraName) {
     const name = extraName
       || supaUser.user_metadata?.full_name
@@ -4020,66 +3863,48 @@ function init() {
     };
   }
 
-  /** Persist user & token, update UI, close modal */
-  function finalizeLogin(user, token) {
+  /** Persist user display info, update UI, close modal */
+  function finalizeLogin(user) {
     currentUser    = user;
     isGuestSession = false;
-    localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-    if (token) localStorage.setItem('bustrack_auth_token', token);
+    // Guardar únicamente información cosmética; el rol se resuelve en el servidor/DB
+    localStorage.setItem('bustrack_user', JSON.stringify({
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+      provider: user.provider
+    }));
     updateAuthUserUI();
     hideHome();
     navigate('dashboard');
     if (authModal) authModal.classList.remove('active');
   }
 
-  /** Canjear access_token de Supabase con backend para obtener JWT local firmado */
-  async function canjearSesionSupabase(accessToken) {
-    const res = await fetch(`${API_BASE}/api/v1/auth/oauth-callback`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
-    });
-    if (!res.ok) throw new Error('No se pudo validar la sesión en el backend');
-    return res.json(); // { status: 'success', user, token }
-  }
-
-  /**
-   * Called after a successful Supabase OAuth redirect / popup.
-   * Tries to sync with our backend; falls back to pure client-side session.
-   */
+  /** Called after a successful Supabase OAuth redirect or session retrieval */
   async function handleSupabaseSession(supaUser) {
-    const session = (await supabaseClient?.auth.getSession())?.data?.session;
-    if (!session?.access_token) return;
-
-    try {
-      const data = await canjearSesionSupabase(session.access_token);
-      if (data.status === 'success' || data.token) {
-        toast(`¡Bienvenido, ${data.user.name}! 🎉`, 'ok');
-        finalizeLogin(data.user, data.token);
-        return;
-      }
-    } catch (err) {
-      console.warn('[Supabase OAuth Exchange]', err);
+    if (!supaUser) return;
+    const userProfile = await loadUserProfile(supaUser);
+    if (userProfile) {
+      finalizeLogin(userProfile);
     }
-
-    const user = buildUserFromSupabase(supaUser);
-    toast(`¡Bienvenido, ${user.name}! 🎉`, 'ok');
-    finalizeLogin(user, session.access_token);
   }
 
-  // Listen for OAuth redirect callback (runs on page load after redirect)
+  // Listen for Supabase Auth state changes
   if (supabaseClient) {
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user && !currentUser) {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
         await handleSupabaseSession(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        isGuestSession = false;
+        localStorage.removeItem('bustrack_user');
+        updateAuthUserUI();
       }
     });
 
     // Restore an existing active Supabase session (e.g. after browser refresh)
     supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user && !currentUser) {
+      if (session?.user) {
         await handleSupabaseSession(session.user);
       }
     });
@@ -4203,44 +4028,15 @@ function init() {
             return;
           }
 
-          if (supaAuth?.user && supaAuth?.session?.access_token) {
-            try {
-              const data = await canjearSesionSupabase(supaAuth.session.access_token);
-              toast(`¡Bienvenido de nuevo, ${data.user.name}! 👋`, 'ok');
-              finalizeLogin(data.user, data.token);
-              setBtnLoading('loginSubmitBtn', false, 'Iniciar Sesión', '');
-              return;
-            } catch (exchangeErr) {
-              console.warn('[Supabase Login Exchange Failed]', exchangeErr);
-              let displayName = supaAuth.user.user_metadata?.full_name
-                || supaAuth.user.user_metadata?.name
-                || email.split('@')[0];
-
-              const { data: profile } = await supabaseClient
-                .from('users')
-                .select('full_name, role, avatar_url')
-                .eq('id', supaAuth.user.id)
-                .maybeSingle();
-
-              const user = buildUserFromSupabase(supaAuth.user, profile?.full_name || displayName);
-              user.role = profile?.role || 'passenger';
-              user.avatarUrl = profile?.avatar_url || user.avatarUrl;
-
+          if (supaAuth?.user) {
+            const user = await loadUserProfile(supaAuth.user);
+            if (user) {
               toast(`¡Bienvenido de nuevo, ${user.name}! 👋`, 'ok');
-              finalizeLogin(user, supaAuth.session.access_token);
+              finalizeLogin(user);
               setBtnLoading('loginSubmitBtn', false, 'Iniciar Sesión', '');
               return;
             }
           }
-        }
-
-        // 2) Backend API fallback (when Supabase SDK not available)
-        const res = await api.login(email, password);
-        if (res?.status === 'success') {
-          toast(`¡Bienvenido de nuevo, ${res.user.name}!`, 'ok');
-          finalizeLogin(res.user, res.token);
-        } else {
-          setFieldError($('loginPassword'), res?.detail || 'Credenciales incorrectas.');
         }
       } catch (err) {
         toast('Error de conexión. Verificá tu internet e intentá de nuevo.', 'warn');
@@ -4294,21 +4090,14 @@ function init() {
           }
 
           if (supaReg?.user) {
-            // Supabase may require email confirmation — check if session was immediately created
-            if (supaReg.session?.access_token) {
-              try {
-                const data = await canjearSesionSupabase(supaReg.session.access_token);
-                toast(`¡Cuenta creada! Bienvenido, ${data.user.name} 🚀`, 'ok');
-                finalizeLogin(data.user, data.token);
-              } catch (_) {
-                const user = buildUserFromSupabase(supaReg.user, name);
-                toast(`¡Cuenta creada! Bienvenido, ${user.name} 🚀`, 'ok');
-                finalizeLogin(user, supaReg.session.access_token);
-              }
+            if (supaReg.session?.user) {
+              const user = await loadUserProfile(supaReg.session.user);
+              toast(`¡Cuenta creada! Bienvenido, ${user?.name || name} 🚀`, 'ok');
+              finalizeLogin(user || buildUserFromSupabase(supaReg.user, name));
               setBtnLoading('registerSubmitBtn', false, 'Crear Cuenta', '');
               return;
             } else {
-              // Email confirmation flow
+              // Flujo de confirmación por correo
               toast('¡Cuenta creada! Revisá tu correo para confirmar tu cuenta antes de iniciar sesión. 📧', 'ok');
               activateTab('login');
               $('loginEmail') && ($('loginEmail').value = email);
@@ -4316,15 +4105,6 @@ function init() {
               return;
             }
           }
-        }
-
-        // 2) Backend API fallback
-        const res = await api.register({ name, email, password, consentTerms: true });
-        if (res?.status === 'success') {
-          toast(`¡Cuenta creada! Bienvenido, ${res.user.name} 🚀`, 'ok');
-          finalizeLogin(res.user, res.token);
-        } else {
-          toast(res?.detail || 'Error al crear la cuenta. Intentá de nuevo.', 'warn');
         }
       } catch (err) {
         toast('Error de conexión. Verificá tu internet e intentá de nuevo.', 'warn');
@@ -4392,7 +4172,6 @@ function init() {
     currentUser    = null;
     isGuestSession = false;
     localStorage.removeItem('bustrack_user');
-    localStorage.removeItem('bustrack_auth_token');
     sessionStorage.removeItem('bustrack_guest');
 
     toast(`Hasta pronto, ${name}. Sesión cerrada correctamente. 👋`, 'info');
@@ -4455,13 +4234,16 @@ function init() {
       if (!item) return;
       const action = item.dataset.action;
       closeCommandPalette();
-      if (action === 'go-dashboard') switchView('dashboard');
-      else if (action === 'go-map') switchView('map');
-      else if (action === 'go-fleet') switchView('fleet');
-      else if (action === 'toggle-theme') {
-        const motionBtn = $('motionSwitch');
-        if (motionBtn) motionBtn.click();
-        toast('Preferencia de tema actualizada', 'info');
+      if (action === 'go-dashboard') navigate('dashboard');
+      else if (action === 'go-map') navigate('map');
+      else if (action === 'go-fleet') navigate('fleet');
+      else if (action === 'toggle-map-style' || action === 'toggle-theme') {
+        const styleBtn = $('mapStyleToggleBtn');
+        if (styleBtn) {
+          styleBtn.click();
+        } else {
+          toast('Estilo de mapa alternado', 'info');
+        }
       }
     });
   }
@@ -4534,6 +4316,22 @@ function init() {
       const routeId = $('newBusRoute').value;
       const driverId = $('newBusDriver').value;
       const plate = $('newBusPlate').value.trim().toUpperCase();
+
+      // Validación estricta anti-XSS y formato
+      const busIdRegex = /^BUS-\d{3,4}$/;
+      const plateRegex = /^[A-Z0-9-]{1,10}$/;
+
+      if (!busIdRegex.test(id)) {
+        toast('El ID del bus debe cumplir el formato BUS-000 (ej. BUS-015)', 'warn');
+        $('newBusId')?.focus();
+        return;
+      }
+
+      if (!plateRegex.test(plate)) {
+        toast('La placa solo puede contener letras, números y guion (máx. 10 caracteres)', 'warn');
+        $('newBusPlate')?.focus();
+        return;
+      }
 
       const route = ROUTES.find(r => r.id === routeId) || ROUTES[0];
       const driver = DRIVERS.find(d => d.id === driverId) || DRIVERS[0];
@@ -4634,82 +4432,6 @@ function init() {
   }
 
   // ------------------------------------------------------------------
-  // REPORTS VIEW HANDLERS (Print / Generate)
-  // ------------------------------------------------------------------
-  const printReportBtn = $('printReportBtn');
-  if (printReportBtn) {
-    printReportBtn.addEventListener('click', () => {
-      window.print();
-    });
-  }
-  const generateReportBtn = $('generateReportBtn');
-  if (generateReportBtn) {
-    generateReportBtn.addEventListener('click', () => {
-      toast('Generando reporte operativo consolidado...', 'info');
-      setTimeout(() => {
-        drawReportCharts();
-        toast('Reporte de operaciones generado con éxito', 'ok');
-      }, 500);
-    });
-  }
-
-  // ------------------------------------------------------------------
-  // ALERTS VIEW HANDLERS (Clear All / Simulate New Alert)
-  // ------------------------------------------------------------------
-  const clearAlertsBtn = $('clearAlertsBtn');
-  if (clearAlertsBtn) {
-    clearAlertsBtn.addEventListener('click', () => {
-      alerts.forEach(a => a.read = true);
-      refreshCounters();
-      if (state.view === 'alerts') renderAlerts();
-      toast('Todas las alertas fueron marcadas como leídas', 'ok');
-    });
-  }
-  const newAlertBtn = $('newAlertBtn');
-  if (newAlertBtn) {
-    newAlertBtn.addEventListener('click', () => {
-      const bus = pick(buses);
-      const alertTypes = [
-        { type: 'warning', icon: '⚠️', title: 'Exceso de velocidad leve', desc: `${bus.id} registró ${bus.speed + 15} km/h en zona urbana.` },
-        { type: 'critical', icon: '🚨', title: 'Frenado brusco repentino', desc: `${bus.id} desaceleró bruscamente cerca de ${bus.nextStop}.` },
-        { type: 'info', icon: 'ℹ️', title: 'Apertura prolongada de puertas', desc: `${bus.id} mantuvo puertas abiertas durante más de 3 min.` },
-      ];
-      const newAlert = pick(alertTypes);
-      alerts.unshift({
-        id: 'ALT-' + Math.floor(Math.random() * 9000 + 1000),
-        type: newAlert.type,
-        icon: newAlert.icon,
-        title: newAlert.title,
-        desc: newAlert.desc,
-        time: 'ahora mismo',
-        read: false
-      });
-      refreshCounters();
-      if (state.view === 'alerts') renderAlerts();
-      toast(`Nueva alerta simulada: ${newAlert.title}`, 'warn');
-    });
-  }
-
-  // ------------------------------------------------------------------
-  // SETTINGS MODAL DATA RESET
-  // ------------------------------------------------------------------
-  const resetDataBtn = $('resetDataBtn');
-  if (resetDataBtn) {
-    resetDataBtn.addEventListener('click', () => {
-      buses.forEach(b => {
-        b.speed = randInt(25, 55);
-        b.passengers = randInt(10, 40);
-        b.fuel = randInt(60, 98);
-      });
-      refreshCounters();
-      if (state.view === 'dashboard') renderBusList();
-      if (state.view === 'fleet') renderFleet();
-      drawMapMarkers(true);
-      toast('Datos y métricas de la flota regenerados', 'ok');
-    });
-  }
-
-  // ------------------------------------------------------------------
   // COOKIE CONSENT BANNER LOGIC
   // ------------------------------------------------------------------
   const cookieBanner = $('cookieConsentBanner');
@@ -4752,12 +4474,10 @@ function init() {
   // ------------------------------------------------------------------
   // GEOLOCATION MAP ADAPTATION EVENT LISTENERS
   // ------------------------------------------------------------------
-  const miniLocBtn = $('locateUserBtnMini');
   const fullLocBtn = $('locateUserBtnFull');
   const recenterBtn = $('recenterUserBtn');
   const geoSwitchBtn = $('geoSwitch');
 
-  if (miniLocBtn) miniLocBtn.addEventListener('click', () => requestUserLocation(true));
   if (fullLocBtn) fullLocBtn.addEventListener('click', () => requestUserLocation(true));
   if (recenterBtn) recenterBtn.addEventListener('click', () => centerMapOnUser(true));
 
@@ -4781,16 +4501,6 @@ function init() {
   if (savedGeoPref) {
     setTimeout(() => requestUserLocation(false), 500);
   }
-  // ------------------------------------------------------------------
-  // MOBILE FLOATING CTA
-  // ------------------------------------------------------------------
-  const mobileCta = $('mobileFloatingCta');
-  if (mobileCta) {
-    mobileCta.addEventListener('click', () => {
-      // passenger view removed
-      hapticFeedback([10, 30, 10]);
-    });
-  }
 
   // ------------------------------------------------------------------
   // SCROLL REVEAL OBSERVER
@@ -4811,6 +4521,7 @@ function init() {
   }
 
   // ------------------------------------------------------------------
+  initSupabaseData();
   setInterval(updateLiveData, 3000);
   setInterval(pushActivity, 9000);
 }

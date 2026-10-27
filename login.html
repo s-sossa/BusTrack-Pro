@@ -571,11 +571,12 @@
       btnSpinner.style.display = 'inline-block';
       btnText.textContent = 'Iniciando sesión con Supabase…';
 
-      function completeLogin(user, token) {
-        localStorage.setItem('bustrack_user', JSON.stringify(user));
-        if (token) {
-          localStorage.setItem('bustrack_auth_token', token);
-        }
+      function completeLogin(user) {
+        localStorage.setItem('bustrack_user', JSON.stringify({
+          name: user.name,
+          email: user.email,
+          avatarUrl: user.avatarUrl
+        }));
 
         btnText.textContent = '¡Bienvenido! Entrando…';
         btnSpinner.style.display = 'none';
@@ -616,11 +617,10 @@
             id: supaUser.id,
             name: name,
             email: supaUser.email,
-            role: supaUser.user_metadata?.role || 'passenger',
             avatarUrl: supaUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=5b6ef5&color=fff`
           };
 
-          completeLogin(userObj, data.session?.access_token);
+          completeLogin(userObj);
           return;
 
         } catch (supaErr) {

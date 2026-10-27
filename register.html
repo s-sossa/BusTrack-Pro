@@ -722,11 +722,12 @@
       btnSpinner.style.display = 'inline-block';
       btnText.textContent = 'Registrando en Supabase…';
 
-      function completeRegistration(user, token) {
-        localStorage.setItem('bustrack_user', JSON.stringify(user));
-        if (token) {
-          localStorage.setItem('bustrack_auth_token', token);
-        }
+      function completeRegistration(user) {
+        localStorage.setItem('bustrack_user', JSON.stringify({
+          name: user.name,
+          email: user.email,
+          avatarUrl: user.avatarUrl
+        }));
 
         btnText.textContent = '¡Cuenta creada! Entrando…';
         btnSpinner.style.display = 'none';
@@ -771,18 +772,21 @@
             id: supaUser?.id || ('USR-' + Date.now()),
             name: name,
             email: email,
-            role: 'passenger',
             avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff'
           };
 
           // Si Supabase no requiere confirmación previa de email, entra de una vez
           if (data.session?.access_token) {
-            completeRegistration(userObj, data.session.access_token);
+            completeRegistration(userObj);
             return;
           }
 
           // Si Supabase requiere confirmación por correo:
-          localStorage.setItem('bustrack_user', JSON.stringify(userObj));
+          localStorage.setItem('bustrack_user', JSON.stringify({
+            name: userObj.name,
+            email: userObj.email,
+            avatarUrl: userObj.avatarUrl
+          }));
           btnText.textContent = '¡Cuenta Registrada!';
           btnSpinner.style.display = 'none';
           submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
