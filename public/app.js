@@ -463,6 +463,7 @@ function navigate(view) {
     drawMapMarkers(true);
   }
   if (view === 'dashboard') {
+    animateDashboardCounters();
     requestAnimationFrame(() => { 
       drawMainChart(); 
       drawSparklines(); 
@@ -2904,8 +2905,11 @@ function openModal(el) {
   if (btn) btn.focus();
 }
 function closeModal(el) {
-  el.classList.remove('open');
-  if (lastFocus && lastFocus.focus) lastFocus.focus();
+  el.classList.add('closing');
+  setTimeout(() => {
+    el.classList.remove('open', 'closing');
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }, 190);
 }
  
 function fillBusModal(b) {
@@ -3482,6 +3486,28 @@ $('logoHome').addEventListener('keydown', e => {
    9. CICLO DE VIDA
    ========================================================== */
  
+function animateNumber(el, target, duration = 800) {
+  if (!el || isNaN(target)) return;
+  const start = performance.now();
+  const initial = 0;
+  function tick(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(initial + (target - initial) * ease);
+    el.textContent = current.toLocaleString("es-CR");
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function animateDashboardCounters() {
+  const circulando = buses.filter(b => b.status === "active" || b.status === "delayed").length;
+  animateNumber($("activeCount"), circulando, 700);
+  animateNumber($("routeCount"), ROUTES.length, 600);
+  animateNumber($("passengersToday"), 2847, 900);
+}
+
 function refreshCounters() {
   const circulando = buses.filter(b => b.status === 'active' || b.status === 'delayed').length;
   $('activeCount').textContent = circulando;

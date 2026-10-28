@@ -103,8 +103,14 @@ button, input, select { font-family: inherit; }
  
 ::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #1d283f; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #2c3a5a; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #1d283f, #2c3a5a);
+  border-radius: 4px;
+  transition: background 0.25s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #2c3a5a, var(--brand-500));
+}
  
 /* El degradado del logo toma el color de marca actual */
 #logoGrad stop:first-child { stop-color: var(--brand-500); }
@@ -189,7 +195,7 @@ button, input, select { font-family: inherit; }
   transition: background var(--t), color var(--t), border-color var(--t), transform var(--t);
 }
 .sidebar-toggle:hover { background: rgba(255,255,255,0.06); color: var(--text-strong); }
-.sidebar-toggle svg { width: 18px; height: 18px; transition: transform var(--t); }
+.sidebar-toggle svg { width: 18px; height: 18px; transition: transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1); }
  
 .sidebar-nav { flex: 1; padding: 14px 8px; overflow-y: auto; }
 .nav-section + .nav-section { margin-top: 20px; }
@@ -212,15 +218,30 @@ button, input, select { font-family: inherit; }
   background: color-mix(in srgb, var(--brand-500) 16%, transparent);
   color: var(--brand-300); font-weight: 600;
 }
+.nav-item::before {
+  content: ''; position: absolute; left: 0; top: 50%; bottom: auto;
+  width: 3px; height: 0; border-radius: 0 3px 3px 0; background: var(--brand-500);
+  opacity: 0; transform: translateY(-50%);
+  transition: height var(--t), opacity var(--t);
+}
+.nav-item:hover::before {
+  height: 16px; opacity: 0.45;
+}
 .nav-item.active::before {
-  content: ''; position: absolute; left: 0; top: 5px; bottom: 5px;
-  width: 3px; border-radius: 0 3px 3px 0; background: var(--brand-500);
+  height: 24px; opacity: 1; top: 50%;
 }
 .nav-count {
   font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 20px;
   background: rgba(255,255,255,0.08); color: var(--text);
 }
-.nav-count.alert-badge { background: color-mix(in srgb, var(--risk) 22%, transparent); color: #f09aa8; }
+.nav-count.alert-badge {
+  background: color-mix(in srgb, var(--risk) 22%, transparent); color: #f09aa8;
+  animation: badgeBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes badgeBounce {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
 .nav-count.live-pulse {
   background: color-mix(in srgb, var(--ok) 20%, transparent); color: #6fd7b2;
   font-size: 9px; letter-spacing: 0.5px; animation: badgeFade 2.4s ease-in-out infinite;
@@ -475,7 +496,9 @@ button, input, select { font-family: inherit; }
 /* ============ VISTAS ============ */
 .view { display: none; flex: 1; min-width: 0; flex-direction: column; gap: var(--gap); padding: var(--pad-view); }
 .view.active { display: flex; animation: viewIn 0.25s ease; }
-@keyframes viewIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes viewIn { from { opacity: 0; transform: translateY(10px) scale(0.995); } to { opacity: 1; transform: none; } }
+.view.leaving { animation: viewOut 0.18s ease forwards; pointer-events: none; }
+@keyframes viewOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-8px) scale(0.995); } }
  
 /* ============ TARJETAS DE RESUMEN ============ */
 .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); }
@@ -486,7 +509,16 @@ button, input, select { font-family: inherit; }
   padding: 16px 18px;
   background: var(--bg-card); border: 1px solid var(--line);
   border-radius: var(--radius);
-  transition: border-color var(--t), transform var(--t), box-shadow var(--t);
+  transition: border-color var(--t), transform var(--t), box-shadow var(--t), background var(--t);
+  animation: cardFadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stat-card:nth-child(1) { animation-delay: 0.05s; }
+.stat-card:nth-child(2) { animation-delay: 0.10s; }
+.stat-card:nth-child(3) { animation-delay: 0.15s; }
+.stat-card:nth-child(4) { animation-delay: 0.20s; }
+@keyframes cardFadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
 }
 .stat-card:hover { border-color: var(--line-brand); transform: translateY(-2px); box-shadow: var(--shadow); }
  
@@ -542,11 +574,31 @@ button, input, select { font-family: inherit; }
 }
 .btn-primary {
   border: none; color: #fff;
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(135deg, var(--brand-500), var(--brand-alt));
   box-shadow: 0 2px 12px color-mix(in srgb, var(--brand-500) 35%, transparent);
 }
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px color-mix(in srgb, var(--brand-500) 45%, transparent); }
-.btn-primary:active { transform: translateY(0); }
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.24) 50%, transparent 65%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+.btn-primary:hover::after {
+  transform: translateX(100%);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px color-mix(in srgb, var(--brand-500) 50%, transparent);
+}
+.btn-primary:active, .btn-ghost:active {
+  transform: scale(0.97);
+  transition: transform 0.08s ease;
+}
 .btn-ghost {
   background: transparent; color: var(--text);
   border: 1px solid var(--line); font-weight: 500;
@@ -946,7 +998,11 @@ button, input, select { font-family: inherit; }
   background: rgba(4, 8, 16, 0.75); backdrop-filter: blur(6px);
   display: none; align-items: center; justify-content: center;
 }
-.modal-overlay.open { display: flex; animation: fade 0.18s ease; }
+.modal-overlay.open { display: flex; animation: fade 0.2s ease; }
+.modal-overlay.closing { display: flex; animation: fadeOut 0.2s ease forwards; }
+.modal-overlay.closing .modal { animation: modalOut 0.2s cubic-bezier(0.36, 0, 0.66, -0.56) forwards; }
+@keyframes fadeOut { to { opacity: 0; } }
+@keyframes modalOut { from { opacity: 1; transform: scale(1) translateY(0); } to { opacity: 0; transform: scale(0.95) translateY(10px); } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 .modal {
   width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto;
@@ -1047,12 +1103,32 @@ button, input, select { font-family: inherit; }
   display: flex; flex-direction: column; gap: 8px; pointer-events: none;
 }
 .toast {
+  position: relative;
+  overflow: hidden;
   display: flex; align-items: center; gap: 9px;
-  padding: 11px 15px; border-radius: var(--radius-sm);
+  padding: 12px 16px 15px;
+  border-radius: var(--radius-sm);
   background: var(--bg-raised); border: 1px solid var(--line-brand);
-  box-shadow: var(--shadow); font-size: 12.5px; color: var(--text-strong);
-  animation: toastIn 0.22s ease;
+  box-shadow: var(--shadow);
+  font-size: 12.5px; color: var(--text-strong);
+  animation: toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   max-width: min(340px, calc(100vw - 36px));
+}
+.toast::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 3px;
+  width: 100%;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  background: var(--brand-500);
+  animation: toastProgress 3s linear forwards;
+}
+.toast.ok::after   { background: var(--ok); }
+.toast.warn::after { background: var(--warn); }
+@keyframes toastProgress {
+  from { width: 100%; }
+  to   { width: 0%; }
 }
 .toast::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--brand-500); flex-shrink: 0; }
 .toast.ok::before   { background: var(--ok); }
@@ -1204,6 +1280,15 @@ button, input, select { font-family: inherit; }
   height: 48px;
   margin-bottom: 12px;
   filter: drop-shadow(0 4px 14px rgba(91,110,245,0.35));
+  animation: logoFloat 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both, logoPulseFilter 4s ease-in-out infinite 0.5s;
+}
+@keyframes logoFloat {
+  from { transform: translateY(-10px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+@keyframes logoPulseFilter {
+  0%, 100% { filter: drop-shadow(0 4px 14px rgba(91,110,245,0.35)); }
+  50%       { filter: drop-shadow(0 4px 24px rgba(91,110,245,0.6)); }
 }
 .home-logo svg { width: 100%; height: 100%; display: block; }
 .home-logo #homeGrad stop:first-child { stop-color: var(--brand-500); }
@@ -1285,6 +1370,19 @@ button, input, select { font-family: inherit; }
   height: 2.5px;
   background: var(--tone);
   opacity: 0.85;
+}
+.home-tile::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--tone) 24%, transparent) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+.home-tile:hover::after {
+  opacity: 1;
 }
 .home-tile:hover, .home-tile:focus-visible {
   transform: translateY(-3px);

@@ -144,7 +144,11 @@
       color: #fff;
       background: rgba(255, 255, 255, 0.08);
       border-color: rgba(255, 255, 255, 0.2);
-      transform: translateX(-2px);
+      transform: translateX(-3px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    }
+    .back-link:active {
+      transform: translateX(-1px) scale(0.98);
     }
 
     /* Contenedor central */
@@ -167,10 +171,10 @@
       backdrop-filter: blur(16px);
       padding: 2.5rem 2rem;
       position: relative;
-      animation: cardEntrance 0.35s ease-out;
+      animation: cardEntrance 0.45s cubic-bezier(0.16, 1, 0.3, 1);
     }
     @keyframes cardEntrance {
-      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      from { opacity: 0; transform: translateY(18px) scale(0.97); }
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
@@ -238,7 +242,7 @@
       left: 14px;
       color: var(--text-dim);
       pointer-events: none;
-      transition: color 0.2s;
+      transition: color 0.25s ease, transform 0.25s ease;
     }
     .form-control {
       width: 100%;
@@ -260,6 +264,7 @@
     .form-control:focus + .input-icon,
     .form-control:focus ~ .input-icon {
       color: var(--brand);
+      transform: scale(1.1);
     }
     .form-control.input-error {
       border-color: var(--danger);
@@ -310,6 +315,8 @@
     /* Botón principal */
     .btn-submit {
       width: 100%;
+      position: relative;
+      overflow: hidden;
       background: linear-gradient(135deg, var(--brand) 0%, #4f46e5 100%);
       color: #fff;
       border: none;
@@ -324,15 +331,28 @@
       align-items: center;
       justify-content: center;
       gap: 0.6rem;
-      transition: all 0.2s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+    .btn-submit::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.25) 50%, transparent 65%);
+      transform: translateX(-100%);
+      transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+    .btn-submit:hover:not(:disabled)::after {
+      transform: translateX(100%);
     }
     .btn-submit:hover:not(:disabled) {
       background: linear-gradient(135deg, var(--brand-hover) 0%, #4338ca 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 8px 24px -2px rgba(91, 110, 245, 0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px -2px rgba(91, 110, 245, 0.55);
     }
     .btn-submit:active:not(:disabled) {
-      transform: translateY(0);
+      transform: scale(0.98);
+      transition: transform 0.08s ease;
     }
     .btn-submit:disabled {
       opacity: 0.7;
