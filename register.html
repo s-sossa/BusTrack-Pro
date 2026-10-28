@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
-  <!-- Supabase JS Client para autenticación directa en la nube -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <!-- Supabase JS Client Local -->
+  <script src="/vendor/supabase/supabase.js"></script>
   <style>
     :root {
       --bg: #0a0f1c;
@@ -556,7 +556,7 @@
           </div>
         </div>
 
-        <!-- 2 Casillas de confirmación requeridas -->
+        <!-- Casillas de confirmación requeridas -->
         <div class="consent-card">
           <label class="consent-item" for="consentTerms">
             <input type="checkbox" id="consentTerms" name="consentTerms" required />
@@ -566,6 +566,11 @@
           <label class="consent-item" for="consentPrivacy">
             <input type="checkbox" id="consentPrivacy" name="consentPrivacy" required />
             <span>Acepto la <a href="privacy.html" target="_blank" rel="noopener">Política de Privacidad</a> y el tratamiento seguro de mis datos personales (Ley 8968).</span>
+          </label>
+
+          <label class="consent-item" for="consentAge">
+            <input type="checkbox" id="consentAge" name="consentAge" required />
+            <span>Declaro bajo fe de juramento que soy mayor de 18 años.</span>
           </label>
         </div>
 
@@ -588,11 +593,17 @@
   </footer>
 
   <script>
-    // Si ya existe sesión activa, redirigir al panel principal
+    // Validar sesión activa en Supabase antes de redirigir (evita bypass por localStorage manipulado)
     try {
-      const existingUser = localStorage.getItem('bustrack_user');
-      if (existingUser) {
-        window.location.replace('index.html');
+      if (window.supabase && window.supabase.createClient) {
+        const supaUrl = window.__SUPABASE_URL || 'https://xdfzffyghbcfvjwhfndq.supabase.co';
+        const supaKey = window.__SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkZnpmZnlnaGJjZnZqd2hmbmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDg1MzMsImV4cCI6MjA1NDEyNDUzM30.7Q_S9U0Bsmw9b_k5TfWpA7e6hWkXhF6Q6_g9pUo1-1w';
+        const checkClient = window.supabase.createClient(supaUrl, supaKey);
+        checkClient.auth.getSession().then(({ data }) => {
+          if (data?.session) {
+            window.location.replace('index.html');
+          }
+        });
       }
     } catch (_) {}
 
@@ -603,6 +614,7 @@
     const confirmPasswordInput = document.getElementById('regConfirmPassword');
     const consentTerms = document.getElementById('consentTerms');
     const consentPrivacy = document.getElementById('consentPrivacy');
+    const consentAge = document.getElementById('consentAge');
     const submitBtn = document.getElementById('submitBtn');
     const btnSpinner = document.getElementById('btnSpinner');
     const btnText = document.getElementById('btnText');
@@ -717,6 +729,12 @@
         return;
       }
 
+      if (!consentAge.checked) {
+        showError('Debes confirmar que eres mayor de 18 años para registrarte.');
+        consentAge.focus();
+        return;
+      }
+
       // Estado de carga
       submitBtn.disabled = true;
       btnSpinner.style.display = 'inline-block';
@@ -747,7 +765,10 @@
             options: {
               data: {
                 full_name: name,
-                name: name
+                name: name,
+                consent_terms_at: new Date().toISOString(),
+                consent_privacy_at: new Date().toISOString(),
+                consent_age_verified: true,
               }
             }
           });
@@ -755,11 +776,11 @@
           if (error) {
             const msg = error.message || '';
             if (msg.includes('already registered') || msg.includes('User already registered')) {
-              showError('Ya existe una cuenta con este correo en Supabase. Puedes iniciar sesión.');
+              showError('Si el correo no está registrado recibirás confirmación; de lo contrario inicia sesión.');
             } else if (msg.includes('Password should be')) {
               showError('La contraseña no cumple con los requisitos de seguridad de Supabase.');
             } else {
-              showError('Error de Supabase: ' + msg);
+              showError('Error al registrar cuenta: ' + msg);
             }
             submitBtn.disabled = false;
             btnSpinner.style.display = 'none';
@@ -775,41 +796,35 @@
             avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff'
           };
 
-          // Si Supabase no requiere confirmación previa de email, entra de una vez
+          // Si Supabase devuelve sesión activa inmediatamente (sin confirmación requerida)
           if (data.session?.access_token) {
             completeRegistration(userObj);
             return;
           }
 
-          // Si Supabase requiere confirmación por correo:
-          localStorage.setItem('bustrack_user', JSON.stringify({
-            name: userObj.name,
-            email: userObj.email,
-            avatarUrl: userObj.avatarUrl
-          }));
-          btnText.textContent = '¡Cuenta Registrada!';
+          // Si requiere confirmación previa por correo electrónico:
+          btnText.textContent = '¡Confirmación enviada!';
           btnSpinner.style.display = 'none';
           submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-          showError('¡Cuenta creada con éxito en Supabase! Revisa tu correo electrónico para confirmar la cuenta si tu proyecto lo requiere.');
+          showError('¡Cuenta creada! Revisa tu correo electrónico para confirmar la cuenta antes de iniciar sesión.');
           setTimeout(() => {
-            window.location.href = 'index.html';
-          }, 1800);
+            window.location.href = 'login.html';
+          }, 3000);
           return;
 
         } catch (supaErr) {
-          console.warn('[Supabase Direct Signup Exception]', supaErr);
+          console.error('[Supabase Signup Error]', supaErr);
+          showError('No se pudo conectar con el servicio de autenticación. Intente más tarde.');
+          submitBtn.disabled = false;
+          btnSpinner.style.display = 'none';
+          btnText.textContent = 'Crear Cuenta';
         }
+      } else {
+        showError('El servicio de cuentas no está disponible.');
+        submitBtn.disabled = false;
+        btnSpinner.style.display = 'none';
+        btnText.textContent = 'Crear Cuenta';
       }
-
-      // 2) Fallback de contingencia si Supabase no estuviera accesible
-      const localUser = {
-        id: 'USR-' + Math.floor(1000 + Math.random() * 9000),
-        name: name,
-        email: email,
-        role: 'passenger',
-        avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=6366f1&color=fff'
-      };
-      completeRegistration(localUser, 'local-token-' + Date.now());
     });
   </script>
 </body>

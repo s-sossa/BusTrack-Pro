@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0f1c" />
+  <title>Crear Cuenta — BusTrack Pro</title>
+  <meta name="description" content="Regístrate en BusTrack Pro para comenzar a monitorear y gestionar flotas de transporte en tiempo real." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b6ef5'/><rect x='8' y='7' width='16' height='16' rx='4' fill='none' stroke='white' stroke-width='2'/><path d='M8 15h16' stroke='white' stroke-width='2'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <!-- Supabase JS Client Local -->
+  <script src="/vendor/supabase/supabase.js"></script>
+  <style>
+    :root {
+      --bg: #0a0f1c;
+      --card-bg: rgba(17, 24, 39, 0.88);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --input-bg: rgba(15, 23, 42, 0.7);
+      --input-border: rgba(255, 255, 255, 0.12);
+      --input-focus: #5b6ef5;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --brand: #5b6ef5;
+      --brand-hover: #4a5ee3;
+      --brand-glow: rgba(91, 110, 245, 0.35);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.12);
+      --danger-border: rgba(239, 68, 68, 0.3);
+      --success: #10b981;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* Fondo dinámico con orbes de luz */
+    .bg-decoration {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.22;
+      animation: floatOrb 18s ease-in-out infinite alternate;
+    }
+    .orb-1 {
+      width: 500px;
+      height: 500px;
+      background: #7c4ddb;
+      top: -120px;
+      right: -100px;
+    }
+    .orb-2 {
+      width: 450px;
+      height: 450px;
+      background: #5b6ef5;
+      bottom: -100px;
+      left: -120px;
+      animation-delay: -9s;
+    }
+    @keyframes floatOrb {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 40px) scale(1.1); }
+    }
+
+    /* Header superior */
+    .auth-header {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+    .brand-logo-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #5b6ef5 0%, #7c4ddb 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(91, 110, 245, 0.35);
+    }
+    .brand-logo-icon svg {
+      width: 22px;
+      height: 22px;
+    }
+    .brand-name {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .brand-name span {
+      background: linear-gradient(135deg, #5b6ef5, #a78bfa);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
+    }
+    .back-link:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateX(-2px);
+    }
+
+    /* Contenedor central */
+    .auth-main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 1.25rem 3rem;
+      position: relative;
+      z-index: 10;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(16px);
+      padding: 2.25rem 2rem;
+      position: relative;
+      animation: cardEntrance 0.35s ease-out;
+    }
+    @keyframes cardEntrance {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .auth-title {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.4rem;
+      color: #fff;
+    }
+    .auth-subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Caja de error / alerta */
+    .auth-alert {
+      display: none;
+      align-items: flex-start;
+      gap: 0.75rem;
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      margin-bottom: 1.25rem;
+      color: #fca5a5;
+      font-size: 0.875rem;
+      line-height: 1.45;
+      animation: shake 0.3s ease-in-out;
+    }
+    .auth-alert.visible {
+      display: flex;
+    }
+    .auth-alert-icon {
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-4px); }
+      40%, 80% { transform: translateX(4px); }
+    }
+
+    .form-group {
+      margin-bottom: 1.15rem;
+      text-align: left;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.825rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 0.45rem;
+    }
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--text-dim);
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+    .form-control {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-md);
+      padding: 0.72rem 1rem 0.72rem 2.6rem;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+    .form-control:focus {
+      border-color: var(--input-focus);
+      box-shadow: 0 0 0 3px var(--brand-glow);
+      background: rgba(20, 29, 50, 0.85);
+    }
+    .form-control:focus + .input-icon,
+    .form-control:focus ~ .input-icon {
+      color: var(--brand);
+    }
+    .form-control.input-error {
+      border-color: var(--danger);
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    /* Toggle ojito */
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+    }
+    .toggle-password:hover {
+      color: var(--text);
+    }
+
+    /* Medidor de seguridad de contraseña */
+    .pw-strength-track {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    .pw-strength-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+    .pw-hint {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* Casillas de confirmación independientes */
+    .consent-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      margin: 1.25rem 0 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .consent-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+      line-height: 1.4;
+    }
+    .consent-item input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--brand);
+      border-radius: 4px;
+      margin-top: 2px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .consent-item a {
+      color: #818cf8;
+      text-decoration: underline;
+      font-weight: 500;
+    }
+    .consent-item a:hover {
+      color: #a5b4fc;
+    }
+
+    /* Botón de envío */
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, var(--brand) 0%, #4f46e5 100%);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 6px 20px -4px var(--brand-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: all 0.2s ease;
+    }
+    .btn-submit:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--brand-hover) 0%, #4338ca 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px -2px rgba(91, 110, 245, 0.5);
+    }
+    .btn-submit:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    .btn-submit:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .auth-footer {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--card-border);
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    .auth-footer a {
+      color: var(--brand);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+    .auth-footer a:hover {
+      color: #818cf8;
+      text-decoration: underline;
+    }
+
+    .page-footer {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+    .page-footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+      margin: 0 0.5rem;
+    }
+    .page-footer a:hover {
+      color: var(--text);
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-decoration">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+  </div>
+
+  <header class="auth-header">
+    <a href="index.html" class="brand-link" title="Volver al inicio">
+      <div class="brand-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="6" width="18" height="12" rx="3"></rect>
+          <path d="M3 11h18M7 18v2M17 18v2"></path>
+          <circle cx="7.5" cy="14.5" r="1" fill="white"></circle>
+          <circle cx="16.5" cy="14.5" r="1" fill="white"></circle>
+        </svg>
+      </div>
+      <span class="brand-name">BusTrack <span>Pro</span></span>
+    </a>
+    <a href="index.html" class="back-link">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
+      </svg>
+      Volver al Panel
+    </a>
+  </header>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <h1 class="auth-title">Crear Cuenta</h1>
+      <p class="auth-subtitle">Completa el formulario para registrarte en BusTrack Pro</p>
+
+      <div class="auth-alert" id="authAlert" role="alert" aria-live="assertive">
+        <svg class="auth-alert-icon" width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        </svg>
+        <span id="authAlertText">Hubo un error al registrar tu cuenta</span>
+      </div>
+
+      <form id="registerForm" autocomplete="on" novalidate>
+        <div class="form-group">
+          <label for="regName">Nombre y Apellidos</label>
+          <div class="input-wrapper">
+            <input 
+              type="text" 
+              id="regName" 
+              name="name"
+              class="form-control" 
+              placeholder="Juan Carlos Pérez" 
+              required 
+              autocomplete="name"
+              autofocus
+            />
+            <svg class="input-icon" width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="regEmail">Correo Electrónico</label>
+          <div class="input-wrapper">
+            <input 
+              type="email" 
+              id="regEmail" 
+              name="email"
+              class="form-control" 
+              placeholder="juan.perez@empresa.com" 
+              required 
+              autocomplete="email"
+            />
+            <svg class="input-icon" width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+              <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="regPassword">Contraseña</label>
+          <div class="input-wrapper">
+            <input 
+              type="password" 
+              id="regPassword" 
+              name="password"
+              class="form-control" 
+              placeholder="Mínimo 8 caracteres" 
+              required 
+              minlength="8"
+              autocomplete="new-password"
+            />
+            <svg class="input-icon" width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+            </svg>
+            <button type="button" class="toggle-password" id="toggleRegPwBtn" aria-label="Mostrar contraseña">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+              </svg>
+            </button>
+          </div>
+          <div class="pw-strength-track">
+            <div id="pwStrengthBar" class="pw-strength-bar"></div>
+          </div>
+          <div class="pw-hint">
+            <span>Mínimo 8 caracteres</span>
+            <span id="pwStrengthLabel">Seguridad: —</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="regConfirmPassword">Confirmar Contraseña</label>
+          <div class="input-wrapper">
+            <input 
+              type="password" 
+              id="regConfirmPassword" 
+              name="confirmPassword"
+              class="form-control" 
+              placeholder="Repite tu contraseña" 
+              required 
+              minlength="8"
+              autocomplete="new-password"
+            />
+            <svg class="input-icon" width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Casillas de confirmación requeridas -->
+        <div class="consent-card">
+          <label class="consent-item" for="consentTerms">
+            <input type="checkbox" id="consentTerms" name="consentTerms" required />
+            <span>He leído y acepto los <a href="terms.html" target="_blank" rel="noopener">Términos y Condiciones</a> del servicio.</span>
+          </label>
+
+          <label class="consent-item" for="consentPrivacy">
+            <input type="checkbox" id="consentPrivacy" name="consentPrivacy" required />
+            <span>Acepto la <a href="privacy.html" target="_blank" rel="noopener">Política de Privacidad</a> y el tratamiento seguro de mis datos personales (Ley 8968).</span>
+          </label>
+
+          <label class="consent-item" for="consentAge">
+            <input type="checkbox" id="consentAge" name="consentAge" required />
+            <span>Declaro bajo fe de juramento que soy mayor de 18 años.</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <span class="spinner" id="btnSpinner"></span>
+          <span id="btnText">Crear Cuenta</span>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        ¿Ya tienes una cuenta? <a href="login.html">Inicia sesión aquí</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="page-footer">
+    <a href="terms.html" target="_blank">Términos de Servicio</a> · 
+    <a href="privacy.html" target="_blank">Política de Privacidad</a> · 
+    <span>BusTrack Pro &copy; 2026</span>
+  </footer>
+
+  <script>
+    // Validar sesión activa en Supabase antes de redirigir (evita bypass por localStorage manipulado)
+    try {
+      if (window.supabase && window.supabase.createClient) {
+        const supaUrl = window.__SUPABASE_URL || 'https://xdfzffyghbcfvjwhfndq.supabase.co';
+        const supaKey = window.__SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkZnpmZnlnaGJjZnZqd2hmbmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDg1MzMsImV4cCI6MjA1NDEyNDUzM30.7Q_S9U0Bsmw9b_k5TfWpA7e6hWkXhF6Q6_g9pUo1-1w';
+        const checkClient = window.supabase.createClient(supaUrl, supaKey);
+        checkClient.auth.getSession().then(({ data }) => {
+          if (data?.session) {
+            window.location.replace('index.html');
+          }
+        });
+      }
+    } catch (_) {}
+
+    const form = document.getElementById('registerForm');
+    const nameInput = document.getElementById('regName');
+    const emailInput = document.getElementById('regEmail');
+    const passwordInput = document.getElementById('regPassword');
+    const confirmPasswordInput = document.getElementById('regConfirmPassword');
+    const consentTerms = document.getElementById('consentTerms');
+    const consentPrivacy = document.getElementById('consentPrivacy');
+    const consentAge = document.getElementById('consentAge');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const btnText = document.getElementById('btnText');
+    const authAlert = document.getElementById('authAlert');
+    const authAlertText = document.getElementById('authAlertText');
+    const toggleRegPwBtn = document.getElementById('toggleRegPwBtn');
+    const pwStrengthBar = document.getElementById('pwStrengthBar');
+    const pwStrengthLabel = document.getElementById('pwStrengthLabel');
+
+    // Toggle password visibility
+    toggleRegPwBtn.addEventListener('click', () => {
+      const isPw = passwordInput.getAttribute('type') === 'password';
+      passwordInput.setAttribute('type', isPw ? 'text' : 'password');
+      confirmPasswordInput.setAttribute('type', isPw ? 'text' : 'password');
+      toggleRegPwBtn.innerHTML = isPw 
+        ? '<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/><path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>';
+    });
+
+    // Medidor de fuerza de contraseña
+    function evaluatePassword(pw) {
+      let score = 0;
+      if (pw.length >= 8) score++;
+      if (pw.length >= 12) score++;
+      if (/[A-Z]/.test(pw)) score++;
+      if (/[0-9]/.test(pw)) score++;
+      if (/[^A-Za-z0-9]/.test(pw)) score++;
+      return score;
+    }
+
+    passwordInput.addEventListener('input', () => {
+      const val = passwordInput.value;
+      if (!val) {
+        pwStrengthBar.style.width = '0%';
+        pwStrengthLabel.textContent = 'Seguridad: —';
+        return;
+      }
+      const score = evaluatePassword(val);
+      const percent = Math.min(100, (score / 5) * 100);
+      const labels = ['', 'Muy débil', 'Débil', 'Media', 'Fuerte', 'Excelente'];
+      const colors = ['', '#ef4444', '#f97316', '#eab308', '#10b981', '#059669'];
+
+      pwStrengthBar.style.width = `${percent}%`;
+      pwStrengthBar.style.background = colors[score] || '#ef4444';
+      pwStrengthLabel.textContent = `Seguridad: ${labels[score] || 'Muy débil'}`;
+    });
+
+    function showError(message, focusEl) {
+      authAlertText.textContent = message;
+      authAlert.classList.add('visible');
+      if (focusEl) {
+        focusEl.classList.add('input-error');
+        focusEl.focus();
+      }
+    }
+
+    function clearError() {
+      authAlert.classList.remove('visible');
+      [nameInput, emailInput, passwordInput, confirmPasswordInput].forEach(el => el.classList.remove('input-error'));
+    }
+
+    [nameInput, emailInput, passwordInput, confirmPasswordInput, consentTerms, consentPrivacy].forEach(el => {
+      el.addEventListener('input', clearError);
+      el.addEventListener('change', clearError);
+    });
+
+    // Inicialización del cliente Supabase en el navegador
+    const SUPABASE_URL = 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
+    const supaClient = (typeof supabase !== 'undefined' && supabase.createClient)
+      ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError();
+
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
+
+      if (!name) {
+        showError('Por favor ingresa tu nombre y apellidos.', nameInput);
+        return;
+      }
+
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showError('Por favor ingresa un correo electrónico válido.', emailInput);
+        return;
+      }
+
+      if (!password || password.length < 8) {
+        showError('La contraseña debe tener al menos 8 caracteres.', passwordInput);
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showError('Las contraseñas no coinciden. Verifícalas e inténtalo de nuevo.', confirmPasswordInput);
+        return;
+      }
+
+      if (!consentTerms.checked) {
+        showError('Debes aceptar los Términos y Condiciones para registrarte.');
+        consentTerms.focus();
+        return;
+      }
+
+      if (!consentPrivacy.checked) {
+        showError('Debes aceptar la Política de Privacidad para registrarte.');
+        consentPrivacy.focus();
+        return;
+      }
+
+      if (!consentAge.checked) {
+        showError('Debes confirmar que eres mayor de 18 años para registrarte.');
+        consentAge.focus();
+        return;
+      }
+
+      // Estado de carga
+      submitBtn.disabled = true;
+      btnSpinner.style.display = 'inline-block';
+      btnText.textContent = 'Registrando en Supabase…';
+
+      function completeRegistration(user) {
+        localStorage.setItem('bustrack_user', JSON.stringify({
+          name: user.name,
+          email: user.email,
+          avatarUrl: user.avatarUrl
+        }));
+
+        btnText.textContent = '¡Cuenta creada! Entrando…';
+        btnSpinner.style.display = 'none';
+        submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 600);
+      }
+
+      // 1) Registro oficial directo con Supabase Auth (Backend en la nube)
+      if (supaClient) {
+        try {
+          const { data, error } = await supaClient.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                full_name: name,
+                name: name,
+                consent_terms_at: new Date().toISOString(),
+                consent_privacy_at: new Date().toISOString(),
+                consent_age_verified: true,
+              }
+            }
+          });
+
+          if (error) {
+            const msg = error.message || '';
+            if (msg.includes('already registered') || msg.includes('User already registered')) {
+              showError('Si el correo no está registrado recibirás confirmación; de lo contrario inicia sesión.');
+            } else if (msg.includes('Password should be')) {
+              showError('La contraseña no cumple con los requisitos de seguridad de Supabase.');
+            } else {
+              showError('Error al registrar cuenta: ' + msg);
+            }
+            submitBtn.disabled = false;
+            btnSpinner.style.display = 'none';
+            btnText.textContent = 'Crear Cuenta';
+            return;
+          }
+
+          const supaUser = data.user;
+          const userObj = {
+            id: supaUser?.id || ('USR-' + Date.now()),
+            name: name,
+            email: email,
+            avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff'
+          };
+
+          // Si Supabase devuelve sesión activa inmediatamente (sin confirmación requerida)
+          if (data.session?.access_token) {
+            completeRegistration(userObj);
+            return;
+          }
+
+          // Si requiere confirmación previa por correo electrónico:
+          btnText.textContent = '¡Confirmación enviada!';
+          btnSpinner.style.display = 'none';
+          submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+          showError('¡Cuenta creada! Revisa tu correo electrónico para confirmar la cuenta antes de iniciar sesión.');
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 3000);
+          return;
+
+        } catch (supaErr) {
+          console.error('[Supabase Signup Error]', supaErr);
+          showError('No se pudo conectar con el servicio de autenticación. Intente más tarde.');
+          submitBtn.disabled = false;
+          btnSpinner.style.display = 'none';
+          btnText.textContent = 'Crear Cuenta';
+        }
+      } else {
+        showError('El servicio de cuentas no está disponible.');
+        submitBtn.disabled = false;
+        btnSpinner.style.display = 'none';
+        btnText.textContent = 'Crear Cuenta';
+      }
+    });
+  </script>
+</body>
+</html>

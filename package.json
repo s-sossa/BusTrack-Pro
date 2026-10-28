@@ -18,7 +18,7 @@
     "express"
   ],
   "author": "BusTrack Architecture Team",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",

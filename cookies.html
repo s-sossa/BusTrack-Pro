@@ -3,101 +3,147 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="noindex, follow" />
-  <title>Política de Cookies — BusTrack Pro</title>
-  <meta name="description" content="Información sobre el uso de cookies y almacenamiento local en BusTrack Pro." />
+  <title>Política de Cookies y Almacenamiento Local — BusTrack Pro</title>
+  <meta name="description" content="Información transparente sobre el uso de almacenamiento local (localStorage/sessionStorage) y cookies técnicas en BusTrack Pro." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b6ef5'/><rect x='8' y='7' width='16' height='16' rx='4' fill='none' stroke='white' stroke-width='2'/><path d='M8 15h16' stroke='white' stroke-width='2'/></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    :root { --bg: #0a0f1c; --surface: #111827; --border: rgba(255,255,255,0.08); --text: #e5e7eb; --text-muted: #9ca3af; --brand: #5b6ef5; --brand-light: #818cf8; }
-    @media (prefers-color-scheme: light) { :root { --bg: #f9fafb; --surface: #fff; --border: rgba(0,0,0,0.08); --text: #111827; --text-muted: #6b7280; } }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; font-size: 1rem; }
-    .legal-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; }
-    .legal-header a { color: var(--brand-light); text-decoration: none; font-size: 0.875rem; }
-    .legal-header a:hover { text-decoration: underline; }
-    .legal-logo { font-weight: 700; color: var(--brand); font-size: 1.1rem; }
-    .legal-sep { color: var(--text-muted); }
-    main { max-width: 760px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
-    .legal-badge { display: inline-block; background: rgba(91,110,245,0.15); color: var(--brand-light); border: 1px solid rgba(91,110,245,0.3); border-radius: 99px; padding: 0.2rem 0.75rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 1rem; }
-    h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.5rem; }
-    .last-updated { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 2.5rem; padding-bottom: 2.5rem; border-bottom: 1px solid var(--border); }
-    h2 { font-size: 1.2rem; font-weight: 600; margin: 2.5rem 0 0.75rem; color: var(--brand-light); }
-    p { margin-bottom: 1rem; }
-    ul { margin: 0.5rem 0 1rem 1.5rem; }
-    li { margin-bottom: 0.4rem; }
-    .info-box { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--brand); border-radius: 8px; padding: 1.25rem 1.5rem; margin: 2rem 0; }
-    table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
-    th, td { text-align: left; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
-    th { background: var(--surface); color: var(--brand-light); }
-    footer { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.8rem; border-top: 1px solid var(--border); }
-    footer a { color: var(--brand-light); text-decoration: none; }
-    a { color: var(--brand-light); }
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --primary: #5b6ef5;
+      --primary-light: #7988f7;
+      --code-bg: #21262d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2.5rem;
+    }
+    h1 { font-size: 2rem; margin-bottom: 0.5rem; color: #fff; }
+    .legal-badge {
+      display: inline-block; font-size: 0.75rem; font-weight: 700; color: var(--primary);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem;
+    }
+    .last-updated {
+      font-size: 0.85rem; color: var(--text-muted); margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border); padding-bottom: 1rem;
+    }
+    h2 {
+      font-size: 1.25rem; color: #fff; margin-top: 2rem; margin-bottom: 0.75rem;
+      border-left: 3px solid var(--primary); padding-left: 0.75rem;
+    }
+    p, table { margin-bottom: 1rem; color: #c9d1d9; }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border); padding: 0.75rem; text-align: left;
+    }
+    th { background: var(--code-bg); color: #fff; font-weight: 600; }
+    code {
+      background: var(--code-bg); padding: 0.2em 0.4em; border-radius: 4px;
+      font-size: 0.85em; color: var(--primary-light);
+    }
+    a { color: var(--primary-light); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    footer {
+      text-align: center; margin-top: 2rem; font-size: 0.85rem; color: var(--text-muted);
+    }
   </style>
 </head>
 <body>
-  <header class="legal-header">
-    <span class="legal-logo">BusTrack Pro</span>
-    <span class="legal-sep">›</span>
-    <a href="index.html">← Volver al panel</a>
-  </header>
-
   <main>
-    <span class="legal-badge">Privacidad & Cookies</span>
-    <h1>Política de Cookies y Almacenamiento</h1>
-    <p class="last-updated">Última actualización: 24 de septiembre de 2026</p>
+    <span class="legal-badge">Transparencia y Privacidad</span>
+    <h1>Política de Cookies y Almacenamiento Local</h1>
+    <p class="last-updated">Última actualización: 28 de octubre de 2026</p>
 
-    <div class="info-box">
-      <p><strong>Cero Rastreo Publicitario:</strong> BusTrack Pro respeta la privacidad de los usuarios. No utilizamos cookies de rastreo publicitario ni vendemos datos a terceros. Toda la información almacenada en su navegador es técnica y necesaria para recordar sus preferencias.</p>
-    </div>
+    <p>BusTrack Pro no utiliza cookies de rastreo publicitario ni comparte hábitos de navegación con redes de publicidad de terceros. En su lugar, utilizamos tecnologías de almacenamiento local de HTML5 (<code>localStorage</code> y <code>sessionStorage</code>) estrictamente necesarias para la autenticación, seguridad y preferencias de la interfaz.</p>
 
-    <h2>1. ¿Qué datos se almacenan en su navegador?</h2>
-    <p>Utilizamos tecnologías de almacenamiento local de HTML5 (<code>localStorage</code> y <code>sessionStorage</code>) y tokens de sesión estrictamente necesarios para ofrecer la funcionalidad esperada.</p>
-
+    <h2>1. Claves reales de almacenamiento utilizadas</h2>
     <table>
       <thead>
         <tr>
-          <th>Clave de Almacenamiento</th>
-          <th>Propósito</th>
-          <th>Duración</th>
-          <th>Tipo</th>
+          <th>Clave</th>
+          <th>Tecnología</th>
+          <th>Datos almacenados y Propósito</th>
+          <th>Persistencia</th>
+          <th>Categoría</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td><code>bustrack_theme</code></td>
-          <td>Guarda si prefiere el tema oscuro o claro</td>
-          <td>Persistente</td>
-          <td>Técnica (Necesaria)</td>
+          <td><code>bustrack_user</code></td>
+          <td>localStorage</td>
+          <td>Almacena nombre, correo y avatar de la sesión activa para renderizar la barra superior y perfil.</td>
+          <td>Persistente (hasta logout)</td>
+          <td>Autenticación / Sesión</td>
         </tr>
         <tr>
-          <td><code>bustrack_user_prefs</code></td>
-          <td>Guarda opciones de vista (densidad compacta, color de acento)</td>
+          <td><code>bustrack:prefs</code></td>
+          <td>localStorage</td>
+          <td>Guarda preferencias de interfaz (vista inicial activa, filtros seleccionados en flota).</td>
           <td>Persistente</td>
           <td>Preferencias</td>
         </tr>
         <tr>
-          <td><code>bustrack_auth_token</code></td>
-          <td>Token JWT de sesión para mantener la sesión abierta</td>
-          <td>7 días</td>
-          <td>Seguridad / Sesión</td>
+          <td><code>bustrack_geolocate</code></td>
+          <td>localStorage</td>
+          <td>Almacena el estado de autorización voluntaria de geolocalización GPS (<code>'true'</code> / <code>'false'</code>).</td>
+          <td>Persistente</td>
+          <td>Funcionalidad voluntaria</td>
+        </tr>
+        <tr>
+          <td><code>bustrack_sidebar_collapsed</code></td>
+          <td>localStorage</td>
+          <td>Recuerda si la barra lateral izquierda está colapsada o expandida.</td>
+          <td>Persistente</td>
+          <td>Interfaz de usuario</td>
         </tr>
         <tr>
           <td><code>bustrack_cookie_consent</code></td>
-          <td>Guarda su elección de consentimiento de almacenamiento</td>
+          <td>localStorage</td>
+          <td>Registra la decisión del usuario en el banner de cookies (<code>'accepted'</code> o <code>'essential_only'</code>).</td>
           <td>1 año</td>
+          <td>Técnica / Cumplimiento</td>
+        </tr>
+        <tr>
+          <td><code>bustrack_guest</code></td>
+          <td>sessionStorage</td>
+          <td>Identifica temporalmente la sesión en modo visitante sin registro. Se destruye al cerrar la pestaña.</td>
+          <td>Sesión de pestaña</td>
           <td>Técnica</td>
         </tr>
       </tbody>
     </table>
 
-    <h2>2. ¿Cómo administrar o borrar su almacenamiento local?</h2>
-    <p>Puede eliminar las preferencias de BusTrack Pro en cualquier momento desde las opciones de configuración de su navegador, seleccionando "Borrar datos de navegación" o desactivando el almacenamiento local.</p>
+    <h2>2. ¿Cómo gestionar o eliminar estos datos?</h2>
+    <p>El usuario tiene control total sobre estos datos. Puede eliminarlos en cualquier momento:</p>
+    <ul>
+      <li>Presionando <strong>"Cerrar Sesión"</strong> desde el panel de perfil en la aplicación, lo que purga inmediatamente los datos de cuenta locales.</li>
+      <li>Desde la configuración de su navegador en la sección <em>Privacidad y Seguridad → Cookies y datos de sitios</em>.</li>
+      <li>Mediante el botón <em>"Eliminar cuenta y datos personales"</em> disponible en el perfil para purgar tanto los datos en el servidor como en el cliente.</li>
+    </ul>
   </main>
 
   <footer>
-    <p>© 2026 BusTrack Pro | <a href="privacy.html">Privacidad</a> · <a href="terms.html">Términos</a> · <a href="cookies.html">Cookies</a></p>
+    <p>© 2026 BusTrack Pro Costa Rica. | <a href="privacy.html">Privacidad</a> · <a href="terms.html">Términos</a> · <a href="cookies.html">Cookies</a> · <a href="index.html">Panel</a></p>
   </footer>
 </body>
 </html>

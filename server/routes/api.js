@@ -121,7 +121,7 @@ apiRouter.patch('/buses/:id/status', authenticateToken, requireRole('admin'), wr
 });
 
 // --- 5. ALERTS & INCIDENTS ---
-apiRouter.get('/alerts', (req, res) => {
+apiRouter.get('/alerts', authenticateToken, (req, res) => {
   const { severity } = req.query;
   const alerts = AlertService.getAlerts(severity);
   res.json(alerts);
@@ -145,17 +145,17 @@ apiRouter.patch('/alerts/read-all', authenticateToken, requireRole('admin'), wri
 });
 
 // --- 6. ACTIVITIES ---
-apiRouter.get('/activities', (req, res) => {
+apiRouter.get('/activities', authenticateToken, requireRole('admin'), (req, res) => {
   res.json(db.getActivities());
 });
 
 // --- 7. REPORTS & ANALYTICS ---
-apiRouter.get('/reports/summary', (req, res) => {
+apiRouter.get('/reports/summary', authenticateToken, requireRole('admin'), (req, res) => {
   const summary = FleetService.getOperationalSummary();
   res.json(summary);
 });
 
-apiRouter.get('/reports/export-csv', (req, res) => {
+apiRouter.get('/reports/export-csv', authenticateToken, requireRole('admin'), (req, res) => {
   const csv = FleetService.generateFleetCsv();
   const filename = `flota-${new Date().toISOString().slice(0, 10)}.csv`;
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');

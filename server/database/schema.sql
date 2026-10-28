@@ -93,6 +93,23 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 8. COMPATIBILITY VIEW FOR REALTIME BUS POSITIONS
+CREATE OR REPLACE VIEW bus_positions AS
+SELECT 
+    id as bus_id,
+    id,
+    bus_number,
+    license_plate,
+    route_id,
+    driver_id,
+    status,
+    speed_kmh,
+    passengers_count,
+    pos_x,
+    pos_y,
+    updated_at
+FROM buses;
+
 -- ==============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ==============================================================================
@@ -103,42 +120,58 @@ ALTER TABLE buses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE alerts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
 
--- Public Read Policies
+-- Routes: Public Read
 DO $$ BEGIN
+    DROP POLICY IF EXISTS routes_public_read ON routes;
     CREATE POLICY routes_public_read ON routes FOR SELECT USING (true);
-EXCEPTION WHEN duplicate_object THEN null;
+EXCEPTION WHEN undefined_object THEN null;
 END $$;
 
+-- Buses: Public Read for General Transit (Positions & Status)
 DO $$ BEGIN
+    DROP POLICY IF EXISTS buses_public_read ON buses;
     CREATE POLICY buses_public_read ON buses FOR SELECT USING (true);
-EXCEPTION WHEN duplicate_object THEN null;
+EXCEPTION WHEN undefined_object THEN null;
+END $$;
+
+-- ⛔ Drivers: Solo personal autorizado (admin / dispatcher) puede leer información de choferes
+DO $$ BEGIN
+    DROP POLICY IF EXISTS drivers_public_read ON drivers;
+    DROP POLICY IF EXISTS drivers_admin_read ON drivers;
+    CREATE POLICY drivers_admin_read ON drivers FOR SELECT TO authenticated
+        USING (EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role IN ('admin', 'dispatcher')));
+EXCEPTION WHEN undefined_object THEN null;
+END $$;
+
+-- ⛔ Alerts: Solo usuarios autenticados pueden consultar alertas operativas
+DO $$ BEGIN
+    DROP POLICY IF EXISTS alerts_public_read ON alerts;
+    DROP POLICY IF EXISTS alerts_authenticated_read ON alerts;
+    CREATE POLICY alerts_authenticated_read ON alerts FOR SELECT TO authenticated
+        USING (true);
+EXCEPTION WHEN undefined_object THEN null;
+END $$;
+
+-- Admin / Dispatcher Write Policies (con verificación estricta contra public.users y WITH CHECK)
+DO $$ BEGIN
+    DROP POLICY IF EXISTS buses_admin_write ON buses;
+    CREATE POLICY buses_admin_write ON buses FOR ALL TO authenticated
+        USING (EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role IN ('admin', 'dispatcher')))
+        WITH CHECK (EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role IN ('admin', 'dispatcher')));
+EXCEPTION WHEN undefined_object THEN null;
 END $$;
 
 DO $$ BEGIN
-    CREATE POLICY drivers_public_read ON drivers FOR SELECT USING (true);
-EXCEPTION WHEN duplicate_object THEN null;
+    DROP POLICY IF EXISTS alerts_admin_write ON alerts;
+    CREATE POLICY alerts_admin_write ON alerts FOR ALL TO authenticated
+        USING (EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role IN ('admin', 'dispatcher')))
+        WITH CHECK (EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role IN ('admin', 'dispatcher')));
+EXCEPTION WHEN undefined_object THEN null;
 END $$;
 
 DO $$ BEGIN
-    CREATE POLICY alerts_public_read ON alerts FOR SELECT USING (true);
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
-
--- Admin / Dispatcher Write Policies
-DO $$ BEGIN
-    CREATE POLICY buses_admin_write ON buses FOR ALL
-        USING (current_setting('request.jwt.claims', true)::json->>'role' IN ('admin', 'dispatcher'));
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE POLICY alerts_admin_write ON alerts FOR ALL
-        USING (current_setting('request.jwt.claims', true)::json->>'role' IN ('admin', 'dispatcher'));
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE POLICY activity_logs_admin_read ON activity_logs FOR SELECT
-        USING (current_setting('request.jwt.claims', true)::json->>'role' IN ('admin', 'dispatcher'));
-EXCEPTION WHEN duplicate_object THEN null;
+    DROP POLICY IF EXISTS activity_logs_admin_read ON activity_logs;
+    CREATE POLICY activity_logs_admin_read ON activity_logs FOR SELECT TO authenticated
+        USING (EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role IN ('admin', 'dispatcher')));
+EXCEPTION WHEN undefined_object THEN null;
 END $$;

@@ -5,22 +5,24 @@
 import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { existsSync } from 'fs'; // ✅ ESM-safe
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import jwt from 'jsonwebtoken';
 import { WebSocketServer } from 'ws';
 import { config } from './config.js';
 import { correlationMiddleware, requestLogger } from './middleware/logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { generalLimiter, writeLimiter } from './middleware/rateLimiter.js';
 import { sanitizeInputs } from './middleware/sanitizer.js';
+import { authenticateToken, requireRole, JWT_SECRET } from './middleware/auth.js';
 import { apiRouter } from './routes/api.js';
 import { telemetryEngine } from './services/telemetrySimulator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
+const publicDir = path.join(rootDir, 'public');
 
 const app = express();
 const server = http.createServer(app);
@@ -28,7 +30,6 @@ const server = http.createServer(app);
 const isProd = config.nodeEnv === 'production';
 
 // ─── 0. Trust Proxy (requerido detrás de Nginx / Supabase Edge) ──────────────
-// Habilita req.ip correcto y rate-limiter por IP real.
 app.set('trust proxy', 1);
 
 // ─── 1. Security Headers (Helmet) ────────────────────────────────────────────
@@ -38,7 +39,6 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: [
         "'self'",
-        "'unsafe-inline'",
         'https://unpkg.com',
         'https://cdn.jsdelivr.net',
         'https://cdnjs.cloudflare.com',
@@ -90,18 +90,23 @@ app.use(helmet({
 }));
 
 // ─── 2. CORS ──────────────────────────────────────────────────────────────────
-// ⛔ Nunca usar '*' con credentials:true. Se exige una whitelist explícita o dominios locales en dev.
+// ⛔ Nunca usar '*' con credentials:true ni permitir origin 'null'. Se exige whitelist explícita.
 const rawOrigins = (config.corsOrigin || '').split(',').map(o => o.trim()).filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir peticiones sin origin o null (curl, Postman, SSR server-side, file:///)
-    if (!origin || origin === 'null') return callback(null, true);
+    // Permitir llamadas sin cabecera origin (curl, Postman, llamadas internas de servidor)
+    if (!origin) return callback(null, true);
+    // ⛔ Nunca permitir origin 'null' con credentials:true (evita ataques sandbox/data URI)
+    if (origin === 'null') return callback(new Error('CORS: Origen null no permitido'));
     // En desarrollo: permitir localhost y 127.0.0.1 en cualquier puerto
     if (!isProd && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
       return callback(null, true);
     }
-    if (rawOrigins.includes('*') || rawOrigins.includes(origin)) {
+    if (rawOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    if (!isProd && rawOrigins.includes('*')) {
       return callback(null, true);
     }
     callback(new Error(`Origen no permitido por CORS: ${origin}`));
@@ -121,8 +126,6 @@ app.use(requestLogger);
 app.use(sanitizeInputs);
 
 // ─── 5. Block debug/admin/sensitive endpoints ──────────────────────────────────
-// ⛔ Bloquear rutas sensibles antes de cualquier handler o servicio estático.
-// Se compara contra el path URL-decodificado para evitar bypass con %73erver/ etc.
 const blockedPaths = [
   '/admin', '/debug', '/phpinfo', '/wp-admin', '/wp-login',
   '/.env', '/.git', '/server', '/config', '/package.json',
@@ -156,43 +159,36 @@ app.use('/api/', generalLimiter);
 app.use('/api/v1', apiRouter);
 
 // ─── 8. Legal & Auth Pages ────────────────────────────────────────────────────
-// Serve auth pages as named routes
 app.get('/login', (_req, res) => {
-  res.sendFile(path.join(rootDir, 'login.html'));
+  res.sendFile(path.join(publicDir, 'login.html'));
 });
 app.get('/register', (_req, res) => {
-  res.sendFile(path.join(rootDir, 'register.html'));
+  res.sendFile(path.join(publicDir, 'register.html'));
 });
 
 // Serve legal pages as named routes
 app.get('/privacy', (_req, res) => {
-  res.sendFile(path.join(rootDir, 'privacy.html'));
+  res.sendFile(path.join(publicDir, 'privacy.html'));
 });
 app.get('/terms', (_req, res) => {
-  res.sendFile(path.join(rootDir, 'terms.html'));
+  res.sendFile(path.join(publicDir, 'terms.html'));
 });
 app.get('/cookies', (_req, res) => {
-  res.sendFile(path.join(rootDir, 'cookies.html'));
+  res.sendFile(path.join(publicDir, 'cookies.html'));
 });
 app.get('/refunds', (_req, res) => {
-  res.sendFile(path.join(rootDir, 'refunds.html'));
+  res.sendFile(path.join(publicDir, 'refunds.html'));
 });
 app.get('/thanks', (_req, res) => {
-  res.sendFile(path.join(rootDir, 'thanks.html'));
+  res.sendFile(path.join(publicDir, 'thanks.html'));
 });
 
 // ─── 9. Static Client Serving ─────────────────────────────────────────────────
 // ✅ Servir SOLO la carpeta public/ — nunca la raíz del repositorio.
-// Esto evita exponer .sqlite, docker-compose.yml, repomix-output.xml, etc.
 app.use('/vendor/leaflet', express.static(path.join(rootDir, 'node_modules', 'leaflet', 'dist')));
+app.use('/vendor/supabase', express.static(path.join(rootDir, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd')));
 
-// Servir archivos estáticos del cliente desde la carpeta public/ solamente.
-// Si no existe public/, se sirven los archivos HTML/CSS/JS de la raíz como fallback
-// solo para compatibilidad durante la migración (ver ítem #2 del plan).
-const publicDir = path.join(rootDir, 'public');
-const clientDir = existsSync(publicDir) ? publicDir : rootDir;
-
-app.use(express.static(clientDir, {
+app.use(express.static(publicDir, {
   index: 'index.html',
   maxAge: isProd ? '1d' : 0,
   dotfiles: 'deny',
@@ -200,27 +196,25 @@ app.use(express.static(clientDir, {
 
 // ─── 10. Custom 404 ───────────────────────────────────────────────────────────
 app.use((_req, res) => {
-  res.status(404).sendFile(path.join(rootDir, '404.html'));
+  res.status(404).sendFile(path.join(publicDir, '404.html'));
 });
 
 // ─── 11. Centralized Error Handling ──────────────────────────────────────────
 app.use(errorHandler);
 
 // ─── 12. Real-Time WebSocket Telemetry Gateway ────────────────────────────────
-// ítem #9: maxPayload limita mensajes a 64 KB; origin check rechaza conexiones externas.
 const wss = new WebSocketServer({
   server,
   path: '/ws/telemetry',
-  maxPayload: 64 * 1024, // ✅ 64 KB — previene payloads gigantes
+  maxPayload: 64 * 1024, // 64 KB — previene payloads gigantes
   verifyClient: ({ origin }, done) => {
-    // Permitir conexiones sin origin (herramientas locales, tests) solo en desarrollo
     if (!origin) return done(!isProd);
     if (rawOrigins.includes('*') || rawOrigins.includes(origin)) return done(true);
     done(false, 403, 'Origin not allowed');
   },
 });
 
-// ✅ Heartbeat: cierra sockets muertos cada 30 segundos
+// Heartbeat: cierra sockets muertos cada 30 segundos
 const wsHeartbeat = setInterval(() => {
   wss.clients.forEach((ws) => {
     if (ws.isAlive === false) {
@@ -237,11 +231,24 @@ wss.on('close', () => clearInterval(wsHeartbeat));
 const wsMessageCounts = new WeakMap();
 
 wss.on('connection', (ws, req) => {
-  ws.isAlive = true; // ✅ para heartbeat
+  ws.isAlive = true;
   ws.on('pong', () => { ws.isAlive = true; });
 
-  const clientIp = req.socket.remoteAddress;
-  telemetryEngine.registerClient(ws);
+  let isAdmin = false;
+  try {
+    const urlObj = new URL(req.url, 'http://localhost');
+    const token = urlObj.searchParams.get('token');
+    if (token) {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded && (decoded.role === 'admin' || decoded.role === 'dispatcher')) {
+        isAdmin = true;
+      }
+    }
+  } catch {
+    isAdmin = false;
+  }
+
+  telemetryEngine.registerClient(ws, isAdmin);
   wsMessageCounts.set(ws, { count: 0, resetAt: Date.now() + 60_000 });
 
   ws.on('message', (message) => {
@@ -263,6 +270,19 @@ wss.on('connection', (ws, req) => {
       const parsed = JSON.parse(message.toString());
       if (parsed.action === 'ping') {
         ws.send(JSON.stringify({ event: 'pong', timestamp: new Date().toISOString() }));
+      } else if (parsed.action === 'authenticate' && parsed.token) {
+        try {
+          const decoded = jwt.verify(parsed.token, JWT_SECRET);
+          if (decoded && (decoded.role === 'admin' || decoded.role === 'dispatcher')) {
+            ws.isAdmin = true;
+            telemetryEngine.sendSnapshot(ws);
+            ws.send(JSON.stringify({ event: 'authenticated', role: decoded.role }));
+          } else {
+            ws.send(JSON.stringify({ event: 'error', detail: 'Permisos insuficientes' }));
+          }
+        } catch {
+          ws.send(JSON.stringify({ event: 'error', detail: 'Token inválido' }));
+        }
       }
     } catch {
       // Ignore unparseable frames
@@ -321,6 +341,25 @@ if (isMain) {
     }
     const dbStatus = typeof db.getDbStatus === 'function' ? db.getDbStatus() : null;
     telemetryEngine.start();
+
+    // ─── Telemetry / Activity Retention (Ley 8968 — minimización de datos) ──────
+    // Elimina registros de actividad con más de 30 días al arrancar y cada 24 h.
+    const RETENTION_DAYS = 30;
+    const pruneActivities = () => {
+      try {
+        const deleted = typeof db.pruneOldActivities === 'function'
+          ? db.pruneOldActivities(RETENTION_DAYS)
+          : 0;
+        if (deleted > 0) {
+          console.log(`[RETENTION] Eliminados ${deleted} registros de actividad con más de ${RETENTION_DAYS} días.`);
+        }
+      } catch (err) {
+        console.error('[RETENTION] Error al podar actividades:', err.message);
+      }
+    };
+    pruneActivities(); // Ejecución inmediata al arrancar
+    setInterval(pruneActivities, 24 * 60 * 60 * 1000).unref(); // Cada 24 horas
+
     console.log('============================================================');
     console.log(`  🚍 BusTrack Pro Backend & Telemetry Server Online`);
     console.log(`  🗄️ Database:   ${dbStatus ? `${dbStatus.engine} (${dbStatus.storage}: ${dbStatus.filePath || 'memory'})` : 'Active'}`);
@@ -335,24 +374,18 @@ if (isMain) {
     console.log(`  📄 Terms:      http://localhost:${config.port}/terms`);
     console.log('============================================================');
 
-    // Probando conexión a Supabase en el backend
     if (!isSupabaseConfigured) {
-      console.log('⚠️ Supabase no configurado: SUPABASE_URL y SUPABASE_ANON_KEY en el archivo .env están vacíos.');
-      console.log('👉 Agrega tus credenciales en el archivo .env para conectar con tu proyecto Supabase real.');
+      console.log('⚠️ Supabase no configurado: credenciales vacías en .env');
     } else {
       try {
         const { data, error } = await supabase.from('buses').select('*');
         if (error) {
           console.error('Error conectando a Supabase ❌:', error.message);
         } else {
-          console.log('¡Conexión exitosa a Supabase! ✅ Datos de los buses:', data);
+          console.log('¡Conexión exitosa a Supabase! ✅');
         }
       } catch (err) {
-        if (err.message && err.message.includes('fetch failed')) {
-          console.error('Error conectando a Supabase ❌: No se pudo resolver la URL del proyecto. Verifica la URL en tu .env.');
-        } else {
-          console.error('Error conectando a Supabase ❌:', err.message);
-        }
+        console.error('Error conectando a Supabase ❌:', err.message);
       }
     }
   });

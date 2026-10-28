@@ -30,12 +30,12 @@ export const SEED_ROUTES = [
 ];
 
 export const SEED_DRIVERS = [
-  { id: 'D001', name: 'Carlos Mendoza', initials: 'CM', license: 'CR-2-0456-0891', trips: 1248, rating: 4.9, hours: 8.5 },
-  { id: 'D002', name: 'Ana García',     initials: 'AG', license: 'CR-1-0782-0334', trips: 987,  rating: 4.8, hours: 7.2 },
-  { id: 'D003', name: 'Roberto López',  initials: 'RL', license: 'CR-3-0219-0645', trips: 1567, rating: 4.7, hours: 6.8 },
-  { id: 'D004', name: 'María Flores',   initials: 'MF', license: 'CR-1-1043-0277', trips: 732,  rating: 5.0, hours: 9.0 },
-  { id: 'D005', name: 'Jorge Ramírez',  initials: 'JR', license: 'CR-4-0388-0912', trips: 2103, rating: 4.6, hours: 5.5 },
-  { id: 'D006', name: 'Lucía Castro',   initials: 'LC', license: 'CR-2-0955-0158', trips: 891,  rating: 4.9, hours: 8.0 },
+  { id: 'D001', name: 'Operador 1', initials: 'OP1', license: 'OP-001-SIM', trips: 1248, rating: 4.9, hours: 8.5 },
+  { id: 'D002', name: 'Operador 2', initials: 'OP2', license: 'OP-002-SIM', trips: 987,  rating: 4.8, hours: 7.2 },
+  { id: 'D003', name: 'Operador 3', initials: 'OP3', license: 'OP-003-SIM', trips: 1567, rating: 4.7, hours: 6.8 },
+  { id: 'D004', name: 'Operador 4', initials: 'OP4', license: 'OP-004-SIM', trips: 732,  rating: 5.0, hours: 9.0 },
+  { id: 'D005', name: 'Operador 5', initials: 'OP5', license: 'OP-005-SIM', trips: 2103, rating: 4.6, hours: 5.5 },
+  { id: 'D006', name: 'Operador 6', initials: 'OP6', license: 'OP-006-SIM', trips: 891,  rating: 4.9, hours: 8.0 },
 ];
 
 export const SEED_STOPS = [
@@ -969,6 +969,20 @@ export class Database {
         postgresCompatible: true,
       },
     };
+  }
+
+  pruneOldActivities(days = 30) {
+    try {
+      const stmt = this.sqlite.prepare(`
+        DELETE FROM activity_logs 
+        WHERE datetime(created_at) < datetime('now', '-' || ? || ' days')
+      `);
+      const info = stmt.run(days);
+      return { prunedCount: info.changes };
+    } catch (e) {
+      console.warn('[DB] Error pruning old activities:', e.message);
+      return { prunedCount: 0 };
+    }
   }
 
   close() {

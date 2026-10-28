@@ -3,16 +3,13 @@
    Protects against XSS, injection, and malformed payloads.
    ============================================================================== */
 
-/** Strip dangerous characters from a string value */
+/** Strip dangerous control characters and enforce length guard without corrupting valid text */
 function sanitizeString(value) {
   if (typeof value !== 'string') return value;
   return value
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '') // strip script tags
-    .replace(/<[^>]+>/g, '')                              // strip HTML tags
-    // ✅ ítem #7: NO quitamos comillas ni punto y coma — eso rompe contraseñas.
-    // La protección contra SQL injection es responsabilidad de prepared statements.
+    .replace(/\0/g, '') // strip null bytes
     .trim()
-    .slice(0, 2000); // max length guard aumentado para campos largos
+    .slice(0, 2000); // max length guard
 }
 
 /** Recursively sanitize all string values in an object, preserving password fields */

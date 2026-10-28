@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0f1c" />
+  <title>BusTrack Pro — Rastreo de flotas en tiempo real</title>
+  <meta name="description" content="Panel de rastreo de flotas de buses: mapa en vivo, estado de la flota, rutas, alertas y reportes." />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https://unpkg.com https://*.arcgisonline.com https://*.tile.openstreetmap.org https://api.dicebear.com https://images.unsplash.com; connect-src 'self' https://jhuvaqrdhkzxqmvcrlws.supabase.co wss://jhuvaqrdhkzxqmvcrlws.supabase.co;" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b6ef5'/><rect x='8' y='7' width='16' height='16' rx='4' fill='none' stroke='white' stroke-width='2'/><path d='M8 15h16' stroke='white' stroke-width='2'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Leaflet CSS para Mapas Reales a escala Nacional y Mundial -->
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" onerror="this.onerror=null;this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';" />
+  <!-- Supabase JS SDK Local -->
+  <script src="/vendor/supabase/supabase.js"></script>
+  <!-- Leaflet JS Library (Local con respaldo CDN e Integrity) -->
+  <script src="/vendor/leaflet/leaflet.js"></script>
+  <script>
+    if (typeof L === 'undefined') {
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      s.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+      s.crossOrigin = 'anonymous';
+      document.head.appendChild(s);
+    }
+  </script>
+</head>
+<body>
+
+
+  <!-- ============ MENÚ PRINCIPAL (pantalla de entrada) ============ -->
+  <div class="home-screen" id="homeScreen">
+    <div class="home-inner">
+      <header class="home-head">
+        <span class="home-logo" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="9" fill="url(#homeGrad)"/>
+            <path d="M8 11.5C8 10 9.2 8.8 10.7 8.8h10.6c1.5 0 2.7 1.2 2.7 2.7v8c0 1.5-1.2 2.7-2.7 2.7H10.7C9.2 22.2 8 21 8 19.5v-8Z" stroke="white" stroke-width="1.4"/>
+            <path d="M11 22.2v1.8M21 22.2v1.8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M8 15.4h16" stroke="white" stroke-width="1.4"/>
+            <circle cx="11.6" cy="19" r="1.3" fill="white"/><circle cx="20.4" cy="19" r="1.3" fill="white"/>
+            <path d="M11.8 12.2h8.4" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+            <defs><linearGradient id="homeGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#5b6ef5"/><stop offset="1" stop-color="#7c4ddb"/></linearGradient></defs>
+          </svg>
+        </span>
+        <h1 class="home-title">BusTrack <span>Pro</span></h1>
+        <p class="home-sub">Elegí por dónde querés empezar</p>
+        <p class="home-status"><span class="pulse-dot small"></span><span id="homeStatus">Cargando flota…</span></p>
+      </header>
+ 
+      <nav class="home-grid" aria-label="Menú principal">
+        <button class="home-tile" data-go="dashboard" style="--tone:var(--route-a)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="13" rx="3"/><path d="M3 10.5h18M7 18v2M17 18v2"/>
+              <circle cx="7.6" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="16.4" cy="14.5" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Panel Principal</span>
+            <span class="home-tile-desc">Resumen del día y estado general</span>
+          </span>
+          <span class="home-chip" id="chipDashboard">—</span>
+        </button>
+
+
+ 
+        <button class="home-tile" data-go="map" style="--tone:var(--route-c)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 4 3 6.4v13.2L9 17.2l6 2.4 6-2.4V4l-6 2.4L9 4Z"/><path d="M9 4v13.2M15 6.4v13.2"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Mapa en Vivo</span>
+            <span class="home-tile-desc">Posición de cada unidad en ruta</span>
+          </span>
+          <span class="home-chip live" id="chipMap">VIVO</span>
+        </button>
+ 
+        <button class="home-tile" data-go="schedules" style="--tone:var(--brand-alt)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Horarios</span>
+            <span class="home-tile-desc">Horarios de referencia, frecuencias y tarifas</span>
+          </span>
+          <span class="home-chip" id="chipSchedules">10 Rutas</span>
+        </button>
+ 
+        <button class="home-tile" data-go="routes" style="--tone:var(--route-d)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="5.5" cy="5.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+              <path d="M5.5 8v4.5A3.5 3.5 0 0 0 9 16h6"/><path d="M18.5 16v-4.5A3.5 3.5 0 0 0 15 8H9"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Rutas</span>
+            <span class="home-tile-desc">Cobertura y paradas por recorrido</span>
+          </span>
+          <span class="home-chip" id="chipRoutes">—</span>
+        </button>
+ 
+        <button class="home-tile" data-go="alerts" style="--tone:var(--warn)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8.6a6 6 0 1 0-12 0v4.2L4.6 15a.9.9 0 0 0 .7 1.4h13.4a.9.9 0 0 0 .7-1.4L18 12.8V8.6Z"/>
+              <path d="M9.8 19.4a2.4 2.4 0 0 0 4.4 0"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Alertas</span>
+            <span class="home-tile-desc">Avisos críticos y advertencias</span>
+          </span>
+          <span class="home-chip" id="chipAlerts">—</span>
+        </button>
+ 
+        <button class="home-tile" data-go="reports" style="--tone:var(--brand-500)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 3.5h7.2L19 9v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 20V5a1.5 1.5 0 0 1 1-1.5Z"/>
+              <path d="M13 3.6V9h5.4M9 17v-2.5M12 17v-5M15 17v-3.5"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Reportes</span>
+            <span class="home-tile-desc">Gráficos, resumen e impresión</span>
+          </span>
+          <span class="home-chip" id="chipReports">—</span>
+        </button>
+ 
+        <button class="home-tile" data-go="drivers" style="--tone:var(--ok)">
+          <span class="home-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"/>
+              <path d="M16 5.2a3.2 3.2 0 0 1 0 5.6M17 14.6a5.5 5.5 0 0 1 3.5 4.9"/>
+            </svg>
+          </span>
+          <span class="home-tile-text">
+            <span class="home-tile-name">Conductores</span>
+            <span class="home-tile-desc">Turnos, viajes y calificación</span>
+          </span>
+          <span class="home-chip" id="chipDrivers">—</span>
+        </button>
+      </nav>
+ 
+      <p class="home-foot">Base de Datos SQL 100% Real (SQLite / PostgreSQL) · Cuentas Seguras con JWT · Persistencia ACID</p>
+    </div>
+  </div>
+ 
+ 
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo" id="logoHome" role="button" tabindex="0" title="Volver al menú principal">
+        <span class="logo-icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="url(#logoGrad)"/>
+            <path d="M7 11C7 9.34 8.34 8 10 8h12c1.66 0 3 1.34 3 3v9c0 1.66-1.34 3-3 3H10c-1.66 0-3-1.34-3-3v-9Z" stroke="white" stroke-width="1.5"/>
+            <path d="M10 23v2M22 23v2" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <path d="M7 15h18" stroke="white" stroke-width="1.5"/>
+            <circle cx="11" cy="19" r="1.5" fill="white"/>
+            <circle cx="21" cy="19" r="1.5" fill="white"/>
+            <path d="M11 12h10" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                <stop stop-color="var(--brand-500, #5b6ef5)"/>
+                <stop offset="1" stop-color="var(--brand-700, #7c4ddb)"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </span>
+        <span class="logo-text">
+          <span class="logo-name">BusTrack</span>
+          <span class="logo-badge">PRO</span>
+        </span>
+      </div>
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Contraer o expandir barra lateral" title="Contraer barra lateral" aria-expanded="true">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="13 16 7 10 13 4"></polyline>
+        </svg>
+      </button>
+    </div>
+ 
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+      <div class="nav-section">
+        <span class="nav-label">Principal</span>
+        <ul class="nav-list">
+          <li class="nav-item" id="nav-home" data-home="1" role="button" tabindex="0" title="Menú principal">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.7 2.3a1 1 0 0 0-1.4 0l-7 6.6A1 1 0 0 0 3 10.6V16a2 2 0 0 0 2 2h3v-4.5h4V18h3a2 2 0 0 0 2-2v-5.4a1 1 0 0 0-.3-1.7l-7-6.6Z"/></svg>
+            <span>Inicio</span>
+          </li>
+          <li class="nav-item active" id="nav-dashboard" data-view="dashboard" role="button" tabindex="0" title="Panel Principal">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm11-1a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
+            <span>Panel Principal</span>
+          </li>
+
+          <li class="nav-item" id="nav-map" data-view="map" role="button" tabindex="0" title="Mapa en Vivo">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zm10.586 0L12 5.586v12.828l2.293 2.293A1 1 0 0016 20V4a1 1 0 00-1.293-.707z" clip-rule="evenodd"/></svg>
+            <span>Mapa en Vivo</span>
+            <span class="nav-count live-pulse">VIVO</span>
+          </li>
+          <li class="nav-item" id="nav-schedules" data-view="schedules" role="button" tabindex="0" title="Horarios de Buses">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+            <span>Horarios</span>
+            <span class="nav-count" id="schedulesCountBadge">10 Rutas</span>
+          </li>
+          <li class="nav-item" id="nav-routes" data-view="routes" role="button" tabindex="0" title="Rutas">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M4 3a2 2 0 100 4 2 2 0 000-4zm12 10a2 2 0 100 4 2 2 0 000-4zM4 8.5v3a3.5 3.5 0 003.5 3.5h5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M16 11.5v-3A3.5 3.5 0 0012.5 5h-5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+            <span>Rutas</span>
+          </li>
+          <li class="nav-item" id="nav-alerts" data-view="alerts" role="button" tabindex="0" title="Alertas">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+            <span>Alertas</span>
+            <span class="nav-count alert-badge" id="alertsCountBadge">3</span>
+          </li>
+        </ul>
+      </div>
+      <div class="nav-section">
+        <span class="nav-label">Análisis</span>
+        <ul class="nav-list">
+          <li class="nav-item" id="nav-reports" data-view="reports" role="button" tabindex="0" title="Reportes">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v7a1 1 0 102 0V8z" clip-rule="evenodd"/></svg>
+            <span>Reportes</span>
+          </li>
+          <li class="nav-item" id="nav-drivers" data-view="drivers" role="button" tabindex="0" title="Conductores">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+            <span>Conductores</span>
+          </li>
+        </ul>
+      </div>
+    </nav>
+ 
+    <div class="sidebar-footer">
+      <!-- Botones de Acceso (visibles cuando NO hay sesión iniciada) -->
+      <div class="sidebar-auth-box" id="sidebarAuthBox">
+        <a
+          href="login.html"
+          class="sidebar-auth-btn btn-auth-login"
+          id="sidebarLoginBtn"
+          title="Iniciar Sesión"
+          aria-label="Iniciar Sesión"
+        >
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11 16l4-4-4-4M15 12H3M7 4h9a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7"/>
+          </svg>
+          <span>Iniciar Sesión</span>
+        </a>
+        <a
+          href="register.html"
+          class="sidebar-auth-btn btn-auth-register"
+          id="sidebarRegisterBtn"
+          title="Registrarse"
+          aria-label="Registrarse"
+        >
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M13 17v-1.5a3.5 3.5 0 0 0-3.5-3.5h-4A3.5 3.5 0 0 0 2 15.5V17"/>
+            <circle cx="7.5" cy="6.5" r="3"/>
+            <path d="M15 8v6M12 11h6"/>
+          </svg>
+          <span>Registrarse</span>
+        </a>
+      </div>
+
+      <!-- Perfil de usuario (visible solo cuando SÍ hay sesión activa) -->
+      <div class="sidebar-user-box" id="sidebarUserBox" hidden>
+        <div class="user-profile" id="userProfile" role="button" tabindex="0" title="Ver mi cuenta">
+          <span class="user-avatar" id="userAvatarSlot">GA</span>
+          <span class="user-info">
+            <span class="user-name" id="userNameSlot">Gerente Admin</span>
+            <span class="user-role" id="userRoleSlot">Administrador</span>
+          </span>
+          <button class="user-settings" id="authBtn" aria-label="Ver cuenta" title="Mi Cuenta">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+          </button>
+          <button class="user-settings" id="settingsBtn" aria-label="Abrir preferencias" title="Preferencias">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.53 1.53 0 01-2.29.95c-1.37-.84-2.94.73-2.1 2.1.54.89.06 2.05-.95 2.29-1.56.38-1.56 2.6 0 2.98.89.21 1.49 1.4.95 2.29-.84 1.37.73 2.94 2.1 2.1a1.53 1.53 0 012.29.95c.38 1.56 2.6 1.56 2.98 0a1.53 1.53 0 012.29-.95c1.37.84 2.94-.73 2.1-2.1a1.53 1.53 0 01.95-2.29c1.56-.38 1.56-2.6 0-2.98a1.53 1.53 0 01-.95-2.29c.84-1.37-.73-2.94-2.1-2.1a1.53 1.53 0 01-2.29-.95zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+          </button>
+        </div>
+
+        <!-- Botón de Cerrar Sesión — visible solo cuando hay sesión activa -->
+        <button
+          id="logoutBtn"
+          class="sidebar-logout-btn"
+          aria-label="Cerrar sesión"
+          title="Cerrar sesión"
+        >
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M13 3h4a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-4M9 14l-4-4 4-4M5 10h9"/>
+          </svg>
+          <span>Cerrar Sesión</span>
+        </button>
+      </div>
+
+      <div class="sidebar-legal-links">
+        <a href="privacy.html" target="_blank">Privacidad</a> ·
+        <a href="terms.html" target="_blank">Términos</a> ·
+        <a href="cookies.html" target="_blank">Cookies</a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="main-content" id="mainContent">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú" aria-expanded="false">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="topbar-titles">
+          <h1 class="page-title" id="pageTitle">Panel Principal</h1>
+          <p class="breadcrumb">
+            <span>BusTrack Pro</span>
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.29 14.71a1 1 0 010-1.42L10.59 10 7.29 6.71a1 1 0 111.42-1.42l4 4a1 1 0 010 1.42l-4 4a1 1 0 01-1.42 0z" clip-rule="evenodd"/></svg>
+            <span id="breadcrumbCurrent">Panel Principal</span>
+          </p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="search-bar">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.48l4.82 4.81a1 1 0 01-1.42 1.42l-4.81-4.82A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+          <input type="search" id="globalSearch" placeholder="Buscar bus, placa, ruta o conductor" aria-label="Búsqueda global" autocomplete="off" />
+        </div>
+        <button class="icon-btn only-mobile" id="mobileSearchBtn" aria-label="Buscar">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.48l4.82 4.81a1 1 0 01-1.42 1.42l-4.81-4.82A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+        </button>
+        <div style="position:relative">
+          <button class="icon-btn" id="notifBtn" aria-label="Notificaciones" aria-haspopup="true" aria-expanded="false">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+            <span class="notif-dot" id="notifDot"></span>
+          </button>
+          <div class="notif-dropdown-panel" id="notifDropdownPanel" hidden>
+            <div class="notif-header">
+              <span class="notif-title">🔔 Notificaciones Recientes</span>
+              <button class="btn-sm btn-ghost" id="notifMarkAllReadBtn" style="font-size:11px; padding:2px 6px">Limpiar</button>
+            </div>
+            <div class="notif-list" id="notifList"></div>
+          </div>
+        </div>
+        <button class="live-indicator" id="liveToggle" title="Pausar o reanudar la actualización automática" aria-pressed="true" style="display:none !important;">
+          <span class="pulse-dot" id="livePulse"></span>
+          <span id="liveLabel">Actualizando</span>
+        </button>
+      </div>
+    </header>
+ 
+    <!-- ============ PANEL PRINCIPAL ============ -->
+    <section class="view active" id="view-dashboard">
+      <div class="stats-grid">
+        <article class="stat-card">
+          <span class="stat-icon buses" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 11h18M7 19v2M17 19v2"/><circle cx="7.5" cy="15.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="16.5" cy="15.5" r="1.1" fill="currentColor" stroke="none"/></svg>
+          </span>
+          <div class="stat-content">
+            <p class="stat-value" id="activeCount">0</p>
+            <p class="stat-label">Buses en circulación</p>
+            <p class="stat-change positive">+4 esta semana</p>
+          </div>
+          <canvas class="stat-sparkline" id="sparkline1" width="80" height="40" aria-hidden="true"></canvas>
+        </article>
+ 
+        <article class="stat-card">
+          <span class="stat-icon routes" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
+          </span>
+          <div class="stat-content">
+            <p class="stat-value" id="routeCount">4</p>
+            <p class="stat-label">Rutas operando</p>
+            <p class="stat-change positive">100% operativas</p>
+          </div>
+          <canvas class="stat-sparkline" id="sparkline2" width="80" height="40" aria-hidden="true"></canvas>
+        </article>
+ 
+        <article class="stat-card">
+          <span class="stat-icon passengers" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          </span>
+          <div class="stat-content">
+            <p class="stat-value" id="passengersToday">2.847</p>
+            <p class="stat-label">Pasajeros hoy</p>
+            <p class="stat-change positive">+12,4% vs ayer</p>
+          </div>
+          <canvas class="stat-sparkline" id="sparkline3" width="80" height="40" aria-hidden="true"></canvas>
+        </article>
+ 
+        <article class="stat-card">
+          <span class="stat-icon delay" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2" stroke-linecap="round"/></svg>
+          </span>
+          <div class="stat-content">
+            <p class="stat-value" id="avgDelay">2,3<small>min</small></p>
+            <p class="stat-label">Retraso promedio</p>
+            <p class="stat-change positive">−0,8 min vs ayer</p>
+          </div>
+          <canvas class="stat-sparkline" id="sparkline4" width="80" height="40" aria-hidden="true"></canvas>
+        </article>
+      </div>
+ 
+      <div class="dashboard-grid">
+        <div class="card map-widget">
+          <div class="card-header">
+            <div class="card-title">
+              <h2>Mapa en tiempo real</h2>
+              <span class="live-badge"><span class="pulse-dot small"></span>VIVO</span>
+            </div>
+            <button class="btn-ghost btn-sm" id="expandMapBtn">Expandir</button>
+          </div>
+          <div class="map-container">
+            <div class="map-bg" style="border-radius: inherit; height: 100%; position: relative;">
+              <!-- Leaflet Map Real para Dashboard (los controles solo se muestran en el Mapa en Vivo) -->
+              <div id="dashboardRealMap" class="leaflet-real-map" style="width: 100%; height: 100%; border-radius: inherit;"></div>
+              <div class="map-legend" id="miniLegend"></div>
+            </div>
+          </div>
+        </div>
+ 
+        <div class="card buses-list-card">
+          <div class="card-header">
+            <div class="card-title"><h2>Estado de buses</h2></div>
+            <div class="filter-tabs" role="group" aria-label="Filtrar buses">
+              <button class="filter-tab active" data-filter="all">Todos</button>
+              <button class="filter-tab" data-filter="active">Activos</button>
+              <button class="filter-tab" data-filter="delayed">Retrasados</button>
+            </div>
+          </div>
+          <div class="bus-list" id="busList"></div>
+        </div>
+ 
+        <div class="card activity-card">
+          <div class="card-header">
+            <div class="card-title"><h2>Actividad reciente</h2></div>
+            <button class="btn-ghost btn-sm" id="toggleActivityBtn" aria-expanded="false">Ver todo</button>
+          </div>
+          <div class="activity-feed" id="activityFeed"></div>
+        </div>
+ 
+        <div class="card chart-card">
+          <div class="card-header">
+            <div class="card-title"><h2>Pasajeros</h2></div>
+            <div class="chart-period" role="group" aria-label="Período del gráfico">
+              <button class="period-btn active" data-period="day">Hoy</button>
+              <button class="period-btn" data-period="week">Semana</button>
+              <button class="period-btn" data-period="month">Mes</button>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="mainChart" height="180"></canvas>
+            <p class="chart-caption" id="chartCaption"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- ============ HORARIOS DE BUSES (COSTA RICA) ============ -->
+    <section class="view" id="view-schedules">
+      <div class="schedules-header-card">
+        <div class="schedules-title-row">
+          <div class="schedules-title-text">
+            <div class="schedules-badge-wrap">
+              <span class="cr-flag-pill">🇨🇷 Costa Rica</span>
+              <span class="ctp-badge">Tarifario Referencial</span>
+            </div>
+            <h2 class="schedules-main-title">Horarios y Salidas de Buses</h2>
+            <p class="schedules-main-desc">Itinerarios de referencia pública y tarifas aproximadas para rutas de transporte nacional e interurbano. <em>(Nota: Datos referenciales para fines informativos; consulte directamente a la empresa operadora para confirmaciones en tiempo real)</em>.</p>
+          </div>
+          <div class="schedules-live-clock-card">
+            <div class="live-clock-head">
+              <span class="pulse-dot small"></span>
+              <span>HORA OFICIAL CR</span>
+            </div>
+            <div class="live-clock-time" id="crLiveClock">--:--:--</div>
+            <div class="live-clock-zone">Zona Horaria UTC-6</div>
+          </div>
+        </div>
+
+        <div class="schedules-toolbar">
+          <div class="schedules-search-wrap">
+            <svg viewBox="0 0 20 20" fill="currentColor" class="schedules-search-icon" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+            <input type="search" class="schedules-search-input" id="schedulesSearch" placeholder="Buscar por ruta, operador o terminal (ej. TUASA, Cartago, Limón)..." aria-label="Buscar en horarios" />
+          </div>
+
+          <div class="schedules-filters-wrap">
+            <div class="schedules-day-tabs" role="tablist" aria-label="Día de la semana">
+              <button class="sched-day-btn active" data-day="weekday" role="tab" aria-selected="true">Lunes a Viernes</button>
+              <button class="sched-day-btn" data-day="saturday" role="tab" aria-selected="false">Sábados</button>
+              <button class="sched-day-btn" data-day="sunday" role="tab" aria-selected="false">Domingos y Feriados</button>
+            </div>
+
+            <div class="schedules-direction-toggle" role="group" aria-label="Sentido del recorrido">
+              <button class="sched-dir-btn active" data-dir="outbound" id="schedDirOutbound">Ida</button>
+              <button class="sched-dir-btn" data-dir="inbound" id="schedDirInbound">Retorno</button>
+            </div>
+
+            <select class="filter-select sched-province-select" id="schedulesProvinceFilter" aria-label="Filtrar por provincia">
+              <option value="all">Todas las Provincias</option>
+              <option value="San José">San José</option>
+              <option value="Alajuela">Alajuela</option>
+              <option value="Cartago">Cartago</option>
+              <option value="Heredia">Heredia</option>
+              <option value="Guanacaste">Guanacaste</option>
+              <option value="Puntarenas">Puntarenas</option>
+              <option value="Limón">Limón</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="schedules-meta-bar">
+        <p class="results-note" id="schedulesCount">Cargando rutas y horarios oficiales…</p>
+        <div class="schedules-quick-actions">
+          <button class="btn-ghost btn-sm" id="schedulesPrintBtn" title="Imprimir / Exportar horarios">🖨️ Imprimir / PDF</button>
+          <button class="btn-ghost btn-sm" id="schedulesResetBtn">Limpiar filtros</button>
+        </div>
+      </div>
+
+      <div class="schedules-grid" id="schedulesContainer">
+        <!-- Renderizado dinámico vía JavaScript -->
+      </div>
+    </section>
+ 
+    <!-- ============ ALERTAS ============ -->
+    <section class="view" id="view-alerts">
+      <div class="alerts-container">
+        <div class="alerts-header">
+          <h2>Centro de alertas</h2>
+          <div class="report-actions">
+            <button class="btn-ghost" id="clearAlertsBtn">Marcar todo como leído</button>
+            <button class="btn-primary" id="newAlertBtn">Simular alerta</button>
+          </div>
+        </div>
+        <div class="filter-tabs alerts-filter" role="group" aria-label="Filtrar alertas">
+          <button class="filter-tab active" data-alert-filter="all">Todas</button>
+          <button class="filter-tab" data-alert-filter="critical">Críticas</button>
+          <button class="filter-tab" data-alert-filter="warning">Advertencias</button>
+          <button class="filter-tab" data-alert-filter="info">Informativas</button>
+        </div>
+        <div class="alerts-list" id="alertsList"></div>
+      </div>
+    </section>
+ 
+    <!-- ============ MAPA COMPLETO ============ -->
+    <section class="view" id="view-map">
+      <div class="full-map-container">
+        <div class="map-sidebar-panel">
+          <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>Buses en ruta</h2>
+            <span class="badge" id="mapBusCount">12 activos</span>
+          </div>
+          <!-- Selector Nacional de Provincias -->
+          <div class="map-region-filter" style="margin: 8px 0 12px 0;">
+            <label for="provinceSelect" style="font-size: 11px; font-weight:600; color:var(--text-soft); display:block; margin-bottom:4px;">🇨🇷 COBERTURA NACIONAL:</label>
+            <select id="provinceSelect" class="form-input" style="padding: 7px 10px; font-size:12px; width:100%; border-radius:6px; background:var(--bg-card); color:var(--text); border:1px solid var(--line);">
+              <option value="all">📍 Todo el País (Costa Rica)</option>
+              <option value="San José" selected>🏛️ San José (GAM / Capital)</option>
+              <option value="Alajuela">✈️ Alajuela & San Carlos (SJO / Arenal)</option>
+              <option value="Heredia">🎓 Heredia (UNA / Flores / Belén)</option>
+              <option value="Cartago">⛪ Cartago & Turrialba (Basílica / TEC)</option>
+              <option value="Puntarenas">🌊 Puntarenas, Jacó & Quepos</option>
+              <option value="Guanacaste">🏖️ Guanacaste & Liberia (LIR)</option>
+              <option value="Limón">🌴 Limón & Caribe Sur (Moín / Guápiles)</option>
+            </select>
+          </div>
+          <div class="map-bus-list" id="mapBusList"></div>
+        </div>
+        <div class="full-map">
+          <div class="full-map-bg">
+            <!-- Contenedor Real de Leaflet -->
+            <div id="realFullMap" class="leaflet-real-map" style="width: 100%; height: 100%; border-radius: inherit; z-index: 1;"></div>
+            <div class="tracking-banner" id="trackingBanner" hidden style="z-index: 1000;">
+              <span class="pulse-dot small"></span>
+              <span id="trackingBannerText">Siguiendo</span>
+              <button class="tracking-stop" id="trackingStopBtn" aria-label="Dejar de seguir este bus" title="Dejar de seguir">✕</button>
+            </div>
+            <div class="user-location-bar" id="userLocationBar" hidden style="z-index: 1000;">
+              <span class="user-loc-icon">📍</span>
+              <span id="userLocationText">Adaptando mapa a tu ubicación...</span>
+              <button class="btn-sm btn-ghost" id="recenterUserBtn" style="padding: 2px 8px; font-size:11px;">Centrar</button>
+            </div>
+            <div class="map-controls map-controls-top" style="z-index: 1000;">
+              <button class="map-btn map-btn-geo" id="locateUserBtnFull" data-map="full" aria-label="Mi Ubicación" title="Centrar en mi ubicación GPS">📍</button>
+              <button class="map-btn" id="mapStyleToggleBtn" aria-label="Cambiar estilo de mapa" title="Alternar estilo: Oscuro / Calles / Satelital">🌙</button>
+              <button class="map-btn" data-zoom="in" data-map="full" aria-label="Acercar">+</button>
+              <button class="map-btn" data-zoom="out" data-map="full" aria-label="Alejar">−</button>
+              <button class="map-btn" data-zoom="reset" data-map="full" aria-label="Centrar en Costa Rica">🇨🇷</button>
+            </div>
+            <div class="map-legend" id="fullLegend" style="z-index: 1000;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- ============ RUTAS ============ -->
+    <section class="view" id="view-routes">
+      <div class="routes-grid" id="routesGrid"></div>
+    </section>
+ 
+    <!-- ============ REPORTES ============ -->
+    <section class="view" id="view-reports">
+      <div class="reports-container">
+        <div class="reports-header">
+          <h2>Reportes y analíticas</h2>
+          <div class="report-actions">
+            <button class="btn-ghost" id="printReportBtn">Imprimir / PDF</button>
+            <button class="btn-primary" id="generateReportBtn">Generar reporte</button>
+          </div>
+        </div>
+        <div class="report-summary" id="reportSummary" hidden></div>
+        <div class="reports-grid">
+          <div class="card report-card"><h3>Eficiencia por ruta</h3><canvas id="reportChart1" height="200"></canvas></div>
+          <div class="card report-card"><h3>Pasajeros por ruta</h3><canvas id="reportChart2" height="200"></canvas></div>
+          <div class="card report-card full-width"><h3>Retraso promedio — últimas 4 semanas</h3><canvas id="reportChart3" height="160"></canvas></div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- ============ CONDUCTORES ============ -->
+    <section class="view" id="view-drivers">
+      <div class="drivers-grid" id="driversGrid"></div>
+    </section>
+    <!-- MODO PASAJERO ELIMINADO --></main>
+ 
+  <!-- Detalle de bus -->
+  <div class="modal-overlay" id="busModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalBusTitle">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <span class="modal-bus-icon" id="modalBusIcon"></span>
+          <div>
+            <h2 id="modalBusTitle">Bus</h2>
+            <p id="modalBusSubtitle"></p>
+          </div>
+        </div>
+        <button class="modal-close" id="modalClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-stats-row">
+          <div class="modal-stat"><span class="modal-stat-label">Velocidad</span><span class="modal-stat-value" id="modalSpeed">—</span></div>
+          <div class="modal-stat"><span class="modal-stat-label">Pasajeros</span><span class="modal-stat-value" id="modalPassengers">—</span></div>
+          <div class="modal-stat"><span class="modal-stat-label">Retraso</span><span class="modal-stat-value" id="modalDelay">—</span></div>
+          <div class="modal-stat"><span class="modal-stat-label">Combustible</span><span class="modal-stat-value" id="modalFuel">—</span></div>
+        </div>
+        <div class="modal-status-row">
+          <span class="info-label">Estado del bus</span>
+          <select class="status-select-lg" id="modalStatusSelect" aria-label="Editar el estado del bus">
+            <option value="active">En servicio</option>
+            <option value="delayed">Retrasado</option>
+            <option value="stopped">Detenido</option>
+            <option value="maintenance">Mantenimiento</option>
+          </select>
+        </div>
+        <div class="modal-info-grid">
+          <div class="modal-info-item"><span class="info-label">Conductor</span><span class="info-value" id="modalDriver">—</span></div>
+          <div class="modal-info-item"><span class="info-label">Placa</span><span class="info-value" id="modalPlate">—</span></div>
+          <div class="modal-info-item"><span class="info-label">Próxima parada</span><span class="info-value" id="modalNextStop">—</span></div>
+          <div class="modal-info-item"><span class="info-label">Llegada estimada</span><span class="info-value" id="modalETA">—</span></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-primary" id="trackBusBtn">Rastrear en el mapa</button>
+          <button class="btn-ghost" id="contactDriverBtn">Contactar conductor</button>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- Preferencias -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal modal-narrow" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <div>
+            <h2 id="settingsTitle">Preferencias</h2>
+            <p>Se guardan en este navegador</p>
+          </div>
+        </div>
+        <button class="modal-close" id="settingsClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-row">
+          <div>
+            <p class="setting-name">Color de acento</p>
+            <p class="setting-desc">Define el color base de toda la interfaz</p>
+          </div>
+          <div class="accent-picker" id="accentPicker" role="group" aria-label="Color de acento"></div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <p class="setting-name">Movimiento de los buses</p>
+            <p class="setting-desc">Desactivalo si el equipo va lento</p>
+          </div>
+          <button class="switch" id="motionSwitch" role="switch" aria-checked="true"><span></span></button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <p class="setting-name">Actualización automática</p>
+            <p class="setting-desc">Refresca velocidades y pasajeros cada 3 s</p>
+          </div>
+          <button class="switch" id="liveSwitch" role="switch" aria-checked="true"><span></span></button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <p class="setting-name">Densidad compacta</p>
+            <p class="setting-desc">Menos espacio entre elementos</p>
+          </div>
+          <button class="switch" id="densitySwitch" role="switch" aria-checked="false"><span></span></button>
+        </div>
+        <div class="setting-row">
+          <div>
+            <p class="setting-name">Adaptar mapa a tu ubicación</p>
+            <p class="setting-desc">Geolocalización para centrar automáticamente</p>
+          </div>
+          <button class="switch" id="geoSwitch" role="switch" aria-checked="false"><span></span></button>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-ghost" id="resetDataBtn">Regenerar datos de la flota</button>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- ============ MODAL AUTENTICACIÓN (LOGIN / REGISTRO) ============ -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal modal-narrow" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <h2 id="authTitle">Perfil de Usuario</h2>
+          <p id="authSubtitle">Información de la cuenta activa</p>
+        </div>
+        <button class="modal-close" id="authClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Current User Profile Info (When logged in) -->
+        <div id="userProfileActiveBox">
+          <div class="user-active-card">
+            <img id="userActiveAvatar" src="" alt="Avatar de usuario" class="user-active-img" />
+            <div>
+              <p class="user-active-name" id="userActiveName"></p>
+              <p class="user-active-email" id="userActiveEmail"></p>
+              <span class="user-active-badge" id="userActiveBadge"></span>
+            </div>
+          </div>
+          <div class="user-arco-actions" style="margin-top:1.25rem; display:flex; flex-direction:column; gap:0.5rem;">
+            <button class="btn-ghost full-width" id="exportDataBtn" style="font-size:0.82rem;">
+              📥 Exportar mis datos (Ley 8968)
+            </button>
+            <button class="btn-ghost full-width danger-text" id="deleteAccountBtn" style="font-size:0.82rem; color:#ef4444;">
+              🗑️ Eliminar cuenta y datos personales
+            </button>
+          </div>
+          <button class="btn-ghost full-width danger-text" id="modalLogoutBtn" style="margin-top:1rem">Cerrar Sesión</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL AUTENTICACIÓN GOOGLE / APPLE (OAUTH INTERACTIVO) ============ -->
+  <div class="modal-overlay" id="oauthPromptModal">
+    <div class="modal modal-narrow" role="dialog" aria-modal="true" aria-labelledby="oauthPromptTitle">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <h2 id="oauthPromptTitle">Acceso con Proveedor</h2>
+          <p id="oauthPromptSubtitle">Inicia sesión o regístrate en un clic</p>
+        </div>
+        <button class="modal-close" id="oauthPromptClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body" style="text-align:center">
+        <div id="oauthProviderBadge" style="margin-bottom:16px;"></div>
+        <div class="form-group" style="text-align:left">
+          <label for="oauthNameInput">Nombre Completo</label>
+          <input type="text" id="oauthNameInput" placeholder="Tu nombre" required />
+        </div>
+        <div class="form-group" style="text-align:left">
+          <label for="oauthEmailInput">Correo de la Cuenta</label>
+          <input type="email" id="oauthEmailInput" placeholder="usuario@gmail.com" required />
+        </div>
+        <button type="button" class="btn-primary full-width" id="oauthConfirmSubmitBtn" style="padding:12px; margin-top:10px; font-size:14px;">
+          🚀 Confirmar e Ingresar a BusTrack Pro
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ COMMAND PALETTE (CTRL + K) ============ -->
+  <div class="modal-overlay" id="commandPaletteModal">
+    <div class="command-palette-box" role="dialog" aria-modal="true" aria-label="Búsqueda rápida y comandos">
+      <div class="cmd-header">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.48l4.82 4.81a1 1 0 01-1.42 1.42l-4.81-4.82A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+        <input type="search" id="cmdInput" placeholder="Escribe un comando o busca un bus, ruta, conductor..." autocomplete="off" />
+        <span class="cmd-key">ESC</span>
+      </div>
+      <div class="cmd-results" id="cmdResults">
+        <div class="cmd-section-label">Acciones Rápidas</div>
+        <div class="cmd-item" data-action="go-dashboard"><span class="cmd-icon">📊</span> Panel Principal</div>
+
+        <div class="cmd-item" data-action="go-map"><span class="cmd-icon">🗺️</span> Mapa en Vivo</div>
+        <div class="cmd-item" data-action="go-schedules"><span class="cmd-icon">🕒</span> Ver Horarios de Buses</div>
+        <div class="cmd-item" data-action="toggle-map-style"><span class="cmd-icon">🗺️</span> Alternar Estilo de Mapa (Oscuro / Calles / Satelital)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BANNER DE CONSENTIMIENTO DE COOKIES ============ -->
+  <div class="cookie-banner" id="cookieConsentBanner" hidden role="region" aria-label="Consentimiento de cookies y privacidad">
+    <div class="cookie-content">
+      <p class="cookie-title">🍪 Privacidad y Almacenamiento Local</p>
+      <p class="cookie-text">
+        Usamos <code>localStorage</code> únicamente para guardar tus preferencias (tema, vista activa). No usamos cookies de rastreo ni compartimos datos con terceros. Consulta nuestra <a href="privacy.html" target="_blank">Política de Privacidad</a> y <a href="cookies.html" target="_blank">Política de Cookies</a>.
+      </p>
+    </div>
+    <div class="cookie-actions">
+      <button class="btn-ghost btn-sm" id="cookieRejectBtn">Rechazar Opcionales</button>
+      <button class="btn-primary btn-sm" id="cookieAcceptBtn">Aceptar Todo</button>
+    </div>
+  </div>
+
+  <!-- ============ MODAL AGREGAR BUS ============ -->
+  <div class="modal-overlay" id="addBusModal">
+    <div class="modal modal-narrow" role="dialog" aria-modal="true" aria-labelledby="addBusTitle">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <h2 id="addBusTitle">Agregar Bus a la Flota</h2>
+          <p>Registra una nueva unidad en el sistema de rastreo</p>
+        </div>
+        <button class="modal-close" id="addBusClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="addBusForm" class="auth-form">
+          <div class="form-group">
+            <label for="newBusId">Identificador del Bus</label>
+            <input type="text" id="newBusId" placeholder="ej. BUS-013" required />
+          </div>
+          <div class="form-group">
+            <label for="newBusRoute">Ruta Asignada</label>
+            <select id="newBusRoute" class="status-select-lg" style="width:100%" required>
+              <option value="A">Ruta A — Central</option>
+              <option value="B">Ruta B — Universidad</option>
+              <option value="C">Ruta C — Expresa</option>
+              <option value="D">Ruta D — Periférica</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="newBusDriver">Conductor Asignado</label>
+            <select id="newBusDriver" class="status-select-lg" style="width:100%" required>
+              <option value="D001">Carlos Mendoza</option>
+              <option value="D002">Ana García</option>
+              <option value="D003">Roberto López</option>
+              <option value="D004">María Flores</option>
+              <option value="D005">Jorge Ramírez</option>
+              <option value="D006">Lucía Castro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="newBusPlate">Número de Placa</label>
+            <input type="text" id="newBusPlate" placeholder="ej. SJ-9842" required />
+          </div>
+          <button type="submit" class="btn-primary full-width" style="margin-top:1rem">Registrar e Iniciar Rastreo</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL CONTACTAR CONDUCTOR ============ -->
+  <div class="modal-overlay" id="contactDriverModal">
+    <div class="modal modal-narrow" role="dialog" aria-modal="true" aria-labelledby="contactTitle">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <h2 id="contactTitle">Contactar Conductor</h2>
+          <p id="contactSubtitle">Comunicación directa con la unidad</p>
+        </div>
+        <button class="modal-close" id="contactClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="driver-contact-card">
+          <div class="driver-avatar-lg" id="contactDriverInitials">CM</div>
+          <div style="text-align:center">
+            <h3 id="contactDriverName" style="font-size:16px; font-weight:700">Carlos Mendoza</h3>
+            <p id="contactDriverBus" style="font-size:12px; color:var(--text-soft); margin-top:2px">Asignado a BUS-001 (Ruta A)</p>
+            <span class="status-badge status-active" id="contactDriverStatus" style="margin-top:6px; display:inline-block">En turno activo</span>
+          </div>
+        </div>
+        <div class="contact-actions-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:1rem">
+          <button class="btn-primary" id="callDriverBtn">📞 Llamada Directa</button>
+          <button class="btn-ghost" id="msgDriverBtn">💬 WhatsApp / SMS</button>
+          <button class="btn-ghost full-width" id="dispatchAlertBtn" style="grid-column: span 2; margin-top:4px">📡 Enviar Alerta de Despacho</button>
+        </div>
+      </div>
+    </div>
+  <!-- ============ BARRA DE NAVEGACIÓN MÓVIL (inferior para celulares) ============ -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Navegación principal para celulares">
+    <button class="mobile-tab-btn active" data-view="dashboard" aria-label="Ir al Panel Principal">
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+      <span>Panel</span>
+    </button>
+    <button class="mobile-tab-btn" data-view="map" aria-label="Ir al Mapa en Vivo">
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zm10.586 0L12 5.586v12.828l2.293 2.293A1 1 0 0016 20V4a1 1 0 00-1.293-.707z" clip-rule="evenodd"/></svg>
+      <span>Mapa</span>
+    </button>
+    <button class="mobile-tab-btn" data-view="schedules" aria-label="Ir a Horarios de Buses">
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+      <span>Horarios</span>
+    </button>
+    <button class="mobile-tab-btn" data-view="routes" aria-label="Ir a Rutas">
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M4 3a2 2 0 100 4 2 2 0 000-4zm12 10a2 2 0 100 4 2 2 0 000-4zM4 8.5v3a3.5 3.5 0 003.5 3.5h5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M16 11.5v-3A3.5 3.5 0 0012.5 5h-5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+      <span>Rutas</span>
+    </button>
+    <button class="mobile-tab-btn" data-view="alerts" aria-label="Ir a Alertas">
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+      <span>Alertas</span>
+    </button>
+  </nav>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <script src="app.js?v=20261025_1"></script>
+</body>
+</html>
+ 

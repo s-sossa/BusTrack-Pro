@@ -12,3 +12,5 @@ docker-compose.yml
 data/
 .agents/
 graphify-out/
+.claude/
+skills-lock.json

@@ -3,209 +3,200 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="noindex, follow" />
-  <title>Política de Privacidad — BusTrack Pro</title>
-  <meta name="description" content="Política de privacidad de BusTrack Pro. Conoce cómo tratamos los datos operativos del sistema de rastreo de flotas." />
+  <title>Política de Privacidad — BusTrack Pro Costa Rica</title>
+  <meta name="description" content="Política de privacidad de BusTrack Pro conforme a la Ley N° 8968 de Protección de la Persona frente al tratamiento de sus datos personales de Costa Rica." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b6ef5'/><rect x='8' y='7' width='16' height='16' rx='4' fill='none' stroke='white' stroke-width='2'/><path d='M8 15h16' stroke='white' stroke-width='2'/></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0a0f1c;
-      --surface: #111827;
-      --border: rgba(255,255,255,0.08);
-      --text: #e5e7eb;
-      --text-muted: #9ca3af;
-      --brand: #5b6ef5;
-      --brand-light: #818cf8;
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --primary: #5b6ef5;
+      --primary-light: #7988f7;
+      --code-bg: #21262d;
+      --accent: #2ea043;
     }
-    @media (prefers-color-scheme: light) {
-      :root {
-        --bg: #f9fafb;
-        --surface: #ffffff;
-        --border: rgba(0,0,0,0.08);
-        --text: #111827;
-        --text-muted: #6b7280;
-      }
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.7;
-      font-size: 1rem;
+      line-height: 1.6;
+      padding: 2rem 1rem;
     }
-    .legal-header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 2rem;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    .legal-header a {
-      color: var(--brand-light);
-      text-decoration: none;
-      font-size: 0.875rem;
-    }
-    .legal-header a:hover { text-decoration: underline; }
-    .legal-logo {
-      font-weight: 700;
-      color: var(--brand);
-      font-size: 1.1rem;
-    }
-    .legal-sep { color: var(--text-muted); }
     main {
-      max-width: 760px;
+      max-width: 860px;
       margin: 0 auto;
-      padding: 3rem 1.5rem 5rem;
-    }
-    .legal-badge {
-      display: inline-block;
-      background: rgba(91,110,245,0.15);
-      color: var(--brand-light);
-      border: 1px solid rgba(91,110,245,0.3);
-      border-radius: 99px;
-      padding: 0.2rem 0.75rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      margin-bottom: 1rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2.5rem;
     }
     h1 {
       font-size: 2rem;
-      font-weight: 700;
-      line-height: 1.2;
       margin-bottom: 0.5rem;
+      color: #fff;
+    }
+    .legal-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.75rem;
     }
     .last-updated {
+      font-size: 0.85rem;
       color: var(--text-muted);
-      font-size: 0.875rem;
-      margin-bottom: 2.5rem;
-      padding-bottom: 2.5rem;
+      margin-bottom: 2rem;
       border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
     }
     h2 {
-      font-size: 1.2rem;
-      font-weight: 600;
-      margin: 2.5rem 0 0.75rem;
-      color: var(--brand-light);
-    }
-    p { margin-bottom: 1rem; color: var(--text); }
-    ul { margin: 0.5rem 0 1rem 1.5rem; }
-    li { margin-bottom: 0.4rem; color: var(--text); }
-    .info-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--brand);
-      border-radius: 8px;
-      padding: 1.25rem 1.5rem;
-      margin: 2rem 0;
-    }
-    .info-box strong { color: var(--brand-light); }
-    .contact-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
+      font-size: 1.25rem;
+      color: #fff;
       margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      border-left: 3px solid var(--primary);
+      padding-left: 0.75rem;
     }
-    .contact-card h3 { margin-bottom: 0.75rem; font-size: 1rem; }
-    .contact-card p { margin-bottom: 0.4rem; font-size: 0.9rem; }
+    p, ul {
+      margin-bottom: 1rem;
+      color: #c9d1d9;
+    }
+    ul {
+      padding-left: 1.5rem;
+    }
+    li { margin-bottom: 0.5rem; }
+    .info-box {
+      background: rgba(91, 110, 245, 0.08);
+      border: 1px solid rgba(91, 110, 245, 0.25);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+    }
+    .info-box p { margin-bottom: 0; }
+    code {
+      background: var(--code-bg);
+      padding: 0.2em 0.4em;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: var(--primary-light);
+    }
+    .contact-card {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-top: 1.5rem;
+    }
+    .contact-card h3 {
+      font-size: 1rem;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    a {
+      color: var(--primary-light);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
     footer {
       text-align: center;
-      padding: 2rem;
+      margin-top: 2rem;
+      font-size: 0.85rem;
       color: var(--text-muted);
-      font-size: 0.8rem;
-      border-top: 1px solid var(--border);
     }
-    footer a { color: var(--brand-light); text-decoration: none; }
-    a { color: var(--brand-light); }
-    a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 2px; }
+    @media (max-width: 640px) {
+      main { padding: 1.5rem; }
+      h1 { font-size: 1.5rem; }
+    }
   </style>
 </head>
 <body>
-  <header class="legal-header">
-    <span class="legal-logo">BusTrack Pro</span>
-    <span class="legal-sep">›</span>
-    <a href="index.html">← Volver al panel</a>
-  </header>
-
   <main>
-    <span class="legal-badge">Legal</span>
-    <h1>Política de Privacidad</h1>
-    <p class="last-updated">Última actualización: 24 de septiembre de 2026</p>
+    <span class="legal-badge">Cumplimiento Legal Costa Rica — Ley N° 8968</span>
+    <h1>Política de Privacidad y Tratamiento de Datos</h1>
+    <p class="last-updated">Última actualización: 28 de octubre de 2026 | Versión 2026.1</p>
 
     <div class="info-box">
-      <p><strong>Resumen:</strong> BusTrack Pro es un sistema de rastreo operativo de flotas. <em>No recolectamos datos personales de pasajeros.</em> Los datos que procesamos son exclusivamente datos operativos de flota (posición GPS de unidades, velocidades, estados de servicio).</p>
+      <p><strong>Resumen de Privacidad:</strong> BusTrack Pro es una plataforma integral de monitoreo operativo y telemetría de transporte público. Procesamos datos personales de usuarios registrados bajo su <strong>consentimiento informado, previo y expreso</strong>, y datos operativos de unidades de flota bajo estrictos estándares de seguridad y confidencialidad.</p>
     </div>
 
-    <h2>1. ¿Quién es el responsable del tratamiento?</h2>
-    <p>El responsable del tratamiento de datos es el operador de transporte o la institución que contrata y administra el servicio BusTrack Pro. En el contexto del piloto de la <strong>Universidad Fidélitas (Campus San Pedro, San José, Costa Rica)</strong>, el responsable es la entidad universitaria correspondiente.</p>
-    <p>Para más información, contacte a: <strong>admin@bustrack.example.com</strong></p>
-
-    <h2>2. ¿Qué datos recopilamos?</h2>
-    <p>BusTrack Pro procesa únicamente datos operativos necesarios para el funcionamiento del servicio:</p>
+    <h2>1. Responsable del Tratamiento (Ley N° 7472 y Ley N° 8968)</h2>
+    <p>El responsable del tratamiento de las bases de datos de BusTrack Pro es:</p>
     <ul>
-      <li><strong>Datos de telemetría de flota:</strong> posición GPS de las unidades de transporte, velocidad, estado operativo, combustible estimado.</li>
-      <li><strong>Datos de operación:</strong> rutas activas, paradas, tiempos estimados de llegada.</li>
-      <li><strong>Datos técnicos del servidor:</strong> logs de acceso al sistema (dirección IP del servidor, timestamps, códigos HTTP) para diagnóstico y seguridad.</li>
-    </ul>
-    <p><strong>No recopilamos</strong> datos personales de pasajeros, datos de identificación, correos electrónicos ni datos de pago en la versión actual del sistema.</p>
-
-    <h2>3. ¿Para qué usamos los datos?</h2>
-    <ul>
-      <li>Visualización en tiempo real de la posición de las unidades de transporte</li>
-      <li>Cálculo de tiempos estimados de llegada a paradas</li>
-      <li>Generación de reportes operativos de la flota</li>
-      <li>Diagnóstico de fallos y mantenimiento del servicio</li>
+      <li><strong>Razón Social:</strong> BusTrack Pro Tecnología de Transporte S.A.</li>
+      <li><strong>Cédula Jurídica:</strong> 3-101-849201</li>
+      <li><strong>Domicilio Legal:</strong> Oficinas Centrales, San Pedro de Montes de Oca, San José, Costa Rica.</li>
+      <li><strong>Canal Oficial de Protección de Datos:</strong> <a href="mailto:privacidad@bustrackpro.cr">privacidad@bustrackpro.cr</a> / <a href="mailto:legal@bustrackpro.cr">legal@bustrackpro.cr</a></li>
     </ul>
 
-    <h2>4. Base legal (Ley 8968 — LEPD, Costa Rica)</h2>
-    <p>El tratamiento de los datos operativos de flota se realiza bajo la base legal del <strong>interés legítimo del operador de transporte</strong> en gestionar su flota de manera eficiente y segura, conforme al artículo 5 inciso e) de la <em>Ley de Protección de la Persona frente al tratamiento de sus datos personales</em> (Ley N° 8968) de Costa Rica.</p>
-
-    <h2>5. ¿Con quién compartimos los datos?</h2>
-    <p>No compartimos datos con terceros con fines comerciales. Los datos operativos pueden ser accedidos por:</p>
+    <h2>2. Datos Personales Recopilados</h2>
+    <p>El sistema recolecta y trata las siguientes categorías de información:</p>
     <ul>
-      <li>El personal administrativo del operador de transporte</li>
-      <li>Proveedores de infraestructura tecnológica bajo acuerdos de confidencialidad</li>
+      <li><strong>Datos de Cuenta y Registro:</strong> Nombre completo, dirección de correo electrónico, identificador único de usuario (UUID), foto de perfil/avatar provista o generada, y proveedor de autenticación utilizado (correo directo o proveedor OAuth).</li>
+      <li><strong>Metadatos de Consentimiento:</strong> Registro electrónico de fecha, hora y versión de los Términos y Condiciones y de la Política de Privacidad aceptados por el titular al momento del registro.</li>
+      <li><strong>Datos de Geolocalización Voluntaria:</strong> Coordenadas GPS del navegador del usuario cuando este otorga permiso explícito vía la API de Geolocalización para visualizar su posición respecto a las paradas y buses en el mapa en vivo. Esta ubicación no se comparte públicamente ni se rastrea de manera continua en segundo plano.</li>
+      <li><strong>Datos Operativos de Flota (No Personales):</strong> Posicionamiento telemático de buses, velocidades, tiempos estimados de llegada (ETA), frecuencias y estados de servicio. Los choferes que operan unidades de demostración se presentan bajo identificadores de operadores simulados sin exponer datos personales de conductores reales.</li>
+      <li><strong>Datos de Seguridad y Auditoría del Servidor:</strong> Dirección IP de origen, cabeceras HTTP, identificadores de correlación y registros de acceso a endpoints para prevención de intrusiones, diagnóstico y control de tasa (rate limiting).</li>
     </ul>
 
-    <h2>6. Almacenamiento y seguridad</h2>
-    <p>Los datos de telemetría se procesan en memoria de forma temporal. El sistema implementa medidas técnicas de seguridad incluyendo: transmisión cifrada (HTTPS/WSS), headers de seguridad HTTP (Content Security Policy, X-Frame-Options, HSTS), y control de acceso por IP.</p>
+    <h2>3. Base Legal del Tratamiento (Ley N° 8968 de Costa Rica)</h2>
+    <p>Conforme a los artículos 5, 9 y 14 de la <em>Ley de Protección de la Persona frente al tratamiento de sus datos personales</em> (Ley N° 8968) de Costa Rica, la base legal primordial para el tratamiento de los datos personales es el <strong>consentimiento informado, expreso e inequívoco</strong> manifestado por el titular mediante la marcación de casillas afirmativas previas a la creación de su cuenta.</p>
+    <p>Para la telemetría operativa de buses de servicio público y seguridad en carretera, el tratamiento se realiza conforme al interés público en la eficiencia y seguridad del transporte colectivo regulado por el Consejo de Transporte Público (CTP) y la ARESEP.</p>
 
-    <h2>7. Uso de localStorage (almacenamiento local)</h2>
-    <p>La interfaz web de BusTrack Pro utiliza el almacenamiento local del navegador (<code>localStorage</code>) únicamente para guardar <strong>preferencias de usuario</strong> (tema de color, densidad de la interfaz, última parada seleccionada). Estos datos nunca se envían a nuestros servidores y se pueden eliminar borrando los datos del navegador.</p>
-    <p>No utilizamos cookies de rastreo, cookies de terceros ni sistemas de analíticas externas.</p>
+    <h2>4. Inscripción de Bases de Datos ante la PRODHAB</h2>
+    <p>De conformidad con el artículo 9 de la Ley N° 8968 y el Decreto Ejecutivo N° 37554-JP, BusTrack Pro gestiona la debida inscripción formal de sus bases de datos con fines de servicio ante la <strong>Agencia de Protección de Datos de los Habitantes (PRODHAB)</strong> del Ministerio de Justicia y Paz de Costa Rica.</p>
 
-    <h2>8. Derechos del interesado</h2>
-    <p>Conforme a la Ley 8968 de Costa Rica, usted tiene derecho a:</p>
+    <h2>5. Derechos del Titular (Derechos ARCO y Revocación)</h2>
+    <p>Conforme a la legislación costarricense, todo usuario titular de datos tiene los siguientes derechos intransferibles:</p>
     <ul>
-      <li><strong>Acceso:</strong> conocer qué datos almacenamos sobre usted</li>
-      <li><strong>Rectificación:</strong> corregir datos inexactos</li>
-      <li><strong>Supresión:</strong> solicitar la eliminación de sus datos</li>
-      <li><strong>Oposición:</strong> oponerse al tratamiento de sus datos</li>
+      <li><strong>Acceso:</strong> Derecho a conocer qué datos personales constan en el sistema.</li>
+      <li><strong>Rectificación:</strong> Derecho a solicitar la corrección de datos inexactos o desactualizados.</li>
+      <li><strong>Supresión / Cancelación:</strong> Derecho a solicitar la eliminación permanente de su cuenta y sus datos personales.</li>
+      <li><strong>Oposición:</strong> Derecho a oponerse al tratamiento de sus datos para finalidades específicas.</li>
+      <li><strong>Revocación del Consentimiento:</strong> Derecho a retirar en cualquier momento el consentimiento otorgado.</li>
     </ul>
-    <p>Para ejercer estos derechos, contacte a la entidad operadora del servicio.</p>
+    <p><strong>Herramientas directas en la plataforma:</strong> Para garantizar el ejercicio efectivo de estos derechos sin fricciones, el panel de perfil de usuario de BusTrack Pro incluye botones dedicados para <em>"Exportar mis datos personales (JSON)"</em> y <em>"Eliminar cuenta y datos personales"</em>. También puede ejercerlos escribiendo a <a href="mailto:privacidad@bustrackpro.cr">privacidad@bustrackpro.cr</a>.</p>
 
-    <h2>9. Cambios a esta política</h2>
-    <p>Nos reservamos el derecho de actualizar esta política. Los cambios relevantes se notificarán con al menos 30 días de antelación. La versión vigente siempre estará disponible en esta página.</p>
+    <h2>6. Almacenamiento, Retención y Seguridad Técnica</h2>
+    <ul>
+      <li><strong>Almacenamiento Seguro:</strong> Los datos se almacenan en infraestructura con bases de datos relacionales seguras (PostgreSQL / SQLite) protegidas con cifrado en tránsito (TLS 1.3 / HTTPS / WSS) y encabezados de seguridad HTTP (CSP, HSTS, X-Frame-Options: DENY).</li>
+      <li><strong>Políticas de Acceso (RLS):</strong> Se implementa seguridad a nivel de filas (Row Level Security) que impide que usuarios no autorizados lean información operativa sensible o perfiles de otros usuarios.</li>
+      <li><strong>Política de Retención y Poda:</strong> Los registros telemáticos y logs de actividad operativa detallados se depuran periódicamente tras 30 días naturales. Los datos de perfil se conservan mientras la cuenta permanezca activa o hasta que el titular ejerza su derecho de supresión.</li>
+    </ul>
+
+    <h2>7. Uso de Almacenamiento Local (LocalStorage)</h2>
+    <p>La aplicación utiliza tecnologías de almacenamiento local del navegador (<code>localStorage</code>) estrictamente para el funcionamiento del servicio:</p>
+    <ul>
+      <li><code>bustrack_user</code>: Datos de sesión activa del usuario para renderizado de perfil.</li>
+      <li><code>bustrack:prefs</code>: Preferencias de interfaz (vista inicial, filtros de flota).</li>
+      <li><code>bustrack_geolocate</code>: Indicador de si el usuario ha consentido el uso de GPS en el mapa.</li>
+      <li><code>bustrack_cookie_consent</code>: Registro de la respuesta del usuario ante el banner informativo.</li>
+    </ul>
+
+    <h2>8. Procedimiento ante Vulneraciones o Brechas de Seguridad</h2>
+    <p>En el evento de cualquier incidente de seguridad que comprometa la confidencialidad, integridad o disponibilidad de datos personales tratados por la plataforma, BusTrack Pro cuenta con un protocolo formal de respuesta técnica y legal para notificar a la Agencia de Protección de Datos de los Habitantes (PRODHAB) y a los titulares afectados sin dilación indebida, detallando el alcance del incidente y las medidas correctivas implementadas.</p>
 
     <div class="contact-card">
-      <h3>Contacto — Responsable de Datos</h3>
-      <p>BusTrack Pro — Sistema de Rastreo de Flotas</p>
-      <p>Piloto: Universidad Fidélitas, San Pedro, Montes de Oca, San José, Costa Rica</p>
-      <p>Correo: <a href="mailto:admin@bustrack.example.com">admin@bustrack.example.com</a></p>
-      <p><em>Nota: Sustituya estos datos con los datos reales de su empresa antes de publicar.</em></p>
+      <h3>Contacto de Privacidad y Oficial de Protección de Datos</h3>
+      <p><strong>BusTrack Pro Tecnología de Transporte S.A.</strong> (Céd. Jur. 3-101-849201)</p>
+      <p>San Pedro de Montes de Oca, San José, Costa Rica</p>
+      <p>Correo de atención al titular: <a href="mailto:privacidad@bustrackpro.cr">privacidad@bustrackpro.cr</a></p>
     </div>
   </main>
 
   <footer>
-    <p>© 2026 BusTrack Pro. Todos los derechos reservados. |
+    <p>© 2026 BusTrack Pro Costa Rica. Todos los derechos reservados. |
       <a href="privacy.html">Privacidad</a> ·
       <a href="terms.html">Términos</a> ·
+      <a href="cookies.html">Cookies</a> ·
       <a href="index.html">Panel</a>
     </p>
   </footer>

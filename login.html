@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
-  <!-- Supabase JS Client para autenticación directa en la nube -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <!-- Supabase JS Client Local -->
+  <script src="/vendor/supabase/supabase.js"></script>
   <style>
     :root {
       --bg: #0a0f1c;
@@ -502,11 +502,17 @@
   </footer>
 
   <script>
-    // Si ya existe sesión activa, redirigir al panel principal
+    // Validar sesión activa en Supabase antes de redirigir (evita bypass por localStorage manipulado)
     try {
-      const existingUser = localStorage.getItem('bustrack_user');
-      if (existingUser) {
-        window.location.replace('index.html');
+      if (window.supabase && window.supabase.createClient) {
+        const supaUrl = window.__SUPABASE_URL || 'https://xdfzffyghbcfvjwhfndq.supabase.co';
+        const supaKey = window.__SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkZnpmZnlnaGJjZnZqd2hmbmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDg1MzMsImV4cCI6MjA1NDEyNDUzM30.7Q_S9U0Bsmw9b_k5TfWpA7e6hWkXhF6Q6_g9pUo1-1w';
+        const checkClient = window.supabase.createClient(supaUrl, supaKey);
+        checkClient.auth.getSession().then(({ data }) => {
+          if (data?.session) {
+            window.location.replace('index.html');
+          }
+        });
       }
     } catch (_) {}
 

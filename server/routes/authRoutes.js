@@ -73,3 +73,34 @@ authRouter.post('/oauth-callback', writeLimiter, async (req, res) => {
 authRouter.post('/logout', (req, res) => {
   res.json({ status: 'success', message: 'Sesión cerrada correctamente' });
 });
+
+/** GET /api/v1/auth/me/export — ARCO: Exportación de datos personales (Ley 8968) */
+authRouter.get('/me/export', authenticateToken, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('users')
+    .select('*')
+    .eq('id', req.user.id)
+    .maybeSingle();
+  if (error || !data) {
+    return res.status(404).json({ type: 'about:blank', title: 'Not Found', status: 404, detail: 'Usuario no encontrado.' });
+  }
+  res.setHeader('Content-Disposition', `attachment; filename="bustrack-datos-${req.user.id}.json"`);
+  res.json({
+    exportedAt: new Date().toISOString(),
+    legalBasis: 'Ley 8968 Costa Rica - Derecho de Acceso y Portabilidad',
+    user: data,
+  });
+});
+
+/** DELETE /api/v1/auth/me — ARCO: Supresión / Cancelación de cuenta (Ley 8968) */
+authRouter.delete('/me', authenticateToken, writeLimiter, async (req, res) => {
+  try {
+    const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(req.user.id);
+    if (authErr) {
+      await supabaseAdmin.from('users').delete().eq('id', req.user.id);
+    }
+    res.json({ status: 'success', message: 'Cuenta y datos personales eliminados conforme a la Ley 8968' });
+  } catch (err) {
+    res.status(500).json({ type: 'about:blank', title: 'Internal Server Error', status: 500, detail: err.message });
+  }
+});

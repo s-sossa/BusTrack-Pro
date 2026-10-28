@@ -40,18 +40,32 @@ export class TelemetryEngine {
     this.isRunning = false;
   }
 
-  registerClient(ws) {
+  registerClient(ws, isAdmin = false) {
     this.wsClients.add(ws);
+    ws.isAdmin = Boolean(isAdmin);
+    this.sendSnapshot(ws);
+  }
+
+  sendSnapshot(ws) {
+    const isAdmin = Boolean(ws.isAdmin);
+    const rawBuses = db.getAllBuses();
+    const buses = isAdmin
+      ? rawBuses
+      : rawBuses.map(b => ({
+          ...b,
+          driver: b.driver ? { id: b.driver.id, name: b.driver.name, initials: b.driver.initials } : null,
+        }));
+
     // Send initial snapshot on connect
     const snapshot = {
       event: 'snapshot',
       timestamp: new Date().toISOString(),
       data: {
-        buses: db.getAllBuses(),
+        buses,
         routes: db.getAllRoutes(),
-        drivers: db.getAllDrivers(),
-        alerts: db.getAllAlerts(),
-        activities: db.getActivities(),
+        drivers: isAdmin ? db.getAllDrivers() : [],
+        alerts: isAdmin ? db.getAllAlerts() : [],
+        activities: isAdmin ? db.getActivities() : [],
       },
     };
     if (ws.readyState === 1) { // OPEN

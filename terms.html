@@ -3,114 +3,152 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="noindex, follow" />
-  <title>Términos y Condiciones — BusTrack Pro</title>
-  <meta name="description" content="Términos y condiciones de uso del sistema BusTrack Pro para operadores de flotas de transporte." />
+  <title>Términos de Servicio — BusTrack Pro Costa Rica</title>
+  <meta name="description" content="Términos y condiciones de uso de BusTrack Pro conforme a la legislación de la República de Costa Rica." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b6ef5'/><rect x='8' y='7' width='16' height='16' rx='4' fill='none' stroke='white' stroke-width='2'/><path d='M8 15h16' stroke='white' stroke-width='2'/></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0a0f1c; --surface: #111827; --border: rgba(255,255,255,0.08);
-      --text: #e5e7eb; --text-muted: #9ca3af; --brand: #5b6ef5; --brand-light: #818cf8;
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --primary: #5b6ef5;
+      --primary-light: #7988f7;
+      --code-bg: #21262d;
+      --warn: #d29922;
     }
-    @media (prefers-color-scheme: light) {
-      :root { --bg: #f9fafb; --surface: #fff; --border: rgba(0,0,0,0.08); --text: #111827; --text-muted: #6b7280; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; font-size: 1rem; }
-    .legal-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; }
-    .legal-header a { color: var(--brand-light); text-decoration: none; font-size: 0.875rem; }
-    .legal-header a:hover { text-decoration: underline; }
-    .legal-logo { font-weight: 700; color: var(--brand); font-size: 1.1rem; }
-    .legal-sep { color: var(--text-muted); }
-    main { max-width: 760px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
-    .legal-badge { display: inline-block; background: rgba(91,110,245,0.15); color: var(--brand-light); border: 1px solid rgba(91,110,245,0.3); border-radius: 99px; padding: 0.2rem 0.75rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 1rem; }
-    h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.5rem; }
-    .last-updated { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 2.5rem; padding-bottom: 2.5rem; border-bottom: 1px solid var(--border); }
-    h2 { font-size: 1.2rem; font-weight: 600; margin: 2.5rem 0 0.75rem; color: var(--brand-light); }
-    p { margin-bottom: 1rem; }
-    ul { margin: 0.5rem 0 1rem 1.5rem; }
-    li { margin-bottom: 0.4rem; }
-    .info-box { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--brand); border-radius: 8px; padding: 1.25rem 1.5rem; margin: 2rem 0; }
-    .info-box strong { color: var(--brand-light); }
-    .warn-box { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.25); border-left: 3px solid #ef4444; border-radius: 8px; padding: 1.25rem 1.5rem; margin: 2rem 0; }
-    footer { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.8rem; border-top: 1px solid var(--border); }
-    footer a { color: var(--brand-light); text-decoration: none; }
-    a { color: var(--brand-light); }
-    a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 2px; }
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2.5rem;
+    }
+    h1 { font-size: 2rem; margin-bottom: 0.5rem; color: #fff; }
+    .legal-badge {
+      display: inline-block; font-size: 0.75rem; font-weight: 700; color: var(--primary);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem;
+    }
+    .last-updated {
+      font-size: 0.85rem; color: var(--text-muted); margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border); padding-bottom: 1rem;
+    }
+    h2 {
+      font-size: 1.25rem; color: #fff; margin-top: 2rem; margin-bottom: 0.75rem;
+      border-left: 3px solid var(--primary); padding-left: 0.75rem;
+    }
+    p, ul { margin-bottom: 1rem; color: #c9d1d9; }
+    ul { padding-left: 1.5rem; }
+    li { margin-bottom: 0.5rem; }
+    .info-box {
+      background: rgba(91, 110, 245, 0.08);
+      border: 1px solid rgba(91, 110, 245, 0.25);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+    }
+    .warn-box {
+      background: rgba(210, 153, 34, 0.08);
+      border: 1px solid rgba(210, 153, 34, 0.3);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+    }
+    a { color: var(--primary-light); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    footer {
+      text-align: center; margin-top: 2rem; font-size: 0.85rem; color: var(--text-muted);
+    }
+    .contact-card {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-top: 1.5rem;
+    }
   </style>
 </head>
 <body>
-  <header class="legal-header">
-    <span class="legal-logo">BusTrack Pro</span>
-    <span class="legal-sep">›</span>
-    <a href="index.html">← Volver al panel</a>
-  </header>
-
   <main>
-    <span class="legal-badge">Legal</span>
-    <h1>Términos y Condiciones de Uso</h1>
-    <p class="last-updated">Última actualización: 24 de septiembre de 2026</p>
+    <span class="legal-badge">Condiciones Contractuales — Costa Rica</span>
+    <h1>Términos y Condiciones de Servicio</h1>
+    <p class="last-updated">Última actualización: 28 de octubre de 2026 | Versión 2026.1</p>
 
     <div class="info-box">
-      <p><strong>Importante:</strong> Al acceder y utilizar BusTrack Pro, usted acepta estos términos. Si no está de acuerdo, por favor deje de utilizar el servicio.</p>
+      <p><strong>Aceptación:</strong> Al registrarse, acceder o utilizar BusTrack Pro, usted acepta y se compromete a cumplir los presentes Términos y Condiciones, los cuales constituyen un acuerdo vinculante conforme al Código de Comercio y la Ley N° 7472 de Costa Rica.</p>
     </div>
 
-    <h2>1. Descripción del Servicio</h2>
-    <p>BusTrack Pro es un sistema de rastreo y gestión de flotas de transporte en tiempo real. El servicio permite monitorear posición de unidades, gestionar rutas, visualizar alertas operativas y generar reportes de flota.</p>
-    <p>El sistema incluye un <strong>Modo Pasajero (Piloto Fidélitas)</strong> que muestra tiempos estimados de llegada de buses al corredor San Pedro–Montes de Oca, con fines informativos y no vinculantes.</p>
-
-    <h2>2. Acceso y Uso Autorizado</h2>
-    <p>El acceso al panel de administración de BusTrack Pro está restringido al personal autorizado del operador de transporte. El usuario se compromete a:</p>
+    <h2>1. Identificación del Proveedor del Servicio (Ley N° 7472)</h2>
+    <p>El servicio es desarrollado y operado por:</p>
     <ul>
-      <li>No compartir credenciales de acceso con terceros no autorizados</li>
-      <li>Usar el sistema únicamente para fines operativos legítimos</li>
-      <li>No intentar acceder a áreas no autorizadas del sistema</li>
-      <li>Reportar cualquier vulnerabilidad o acceso no autorizado detectado</li>
+      <li><strong>Razón Social:</strong> BusTrack Pro Tecnología de Transporte S.A.</li>
+      <li><strong>Cédula Jurídica:</strong> 3-101-849201</li>
+      <li><strong>Domicilio Social:</strong> Oficinas Centrales, San Pedro de Montes de Oca, San José, Costa Rica.</li>
+      <li><strong>Correo de Contacto y Notificaciones:</strong> <a href="mailto:legal@bustrackpro.cr">legal@bustrackpro.cr</a> / <a href="mailto:soporte@bustrackpro.cr">soporte@bustrackpro.cr</a></li>
     </ul>
 
-    <h2>3. Exactitud de la Información</h2>
+    <h2>2. Descripción del Servicio y Naturaleza de los Datos</h2>
+    <p>BusTrack Pro es una solución de telemetría y monitoreo de transporte colectivo. La plataforma provee:</p>
+    <ul>
+      <li>Visualización en mapa de unidades y rutas en tránsito.</li>
+      <li>Estimación referencial de tiempos de llegada (ETA) a paradas seleccionadas.</li>
+      <li>Herramientas de auditoría operativa y gestión de flota para operadores autorizados.</li>
+    </ul>
     <div class="warn-box">
-      <p><strong>Limitación de responsabilidad:</strong> Los tiempos de llegada mostrados en el Modo Pasajero son <em>estimaciones</em> calculadas a partir de telemetría en tiempo real. BusTrack Pro <strong>no garantiza</strong> la exactitud de los tiempos de llegada. No tome decisiones críticas basándose exclusivamente en esta información.</p>
+      <p><strong>Aviso Importante sobre Horarios y Tarifas:</strong> Los horarios, itinerarios y tarifas desplegados en la sección de información son de naturaleza <strong>referencial</strong>, recopilados de fuentes abiertas de conocimiento público. No constituyen itinerarios oficiales emitidos en tiempo real por el Consejo de Transporte Público (CTP) ni por la Autoridad Reguladora de los Servicios Públicos (ARESEP). Los usuarios deben confirmar siempre cualquier itinerario crítico directamente con las empresas concesionarias.</p>
     </div>
-    <p>Los datos de flota son de carácter operativo e informativo. El operador de transporte es el único responsable de la exactitud de los datos ingresados al sistema.</p>
 
-    <h2>4. Propiedad Intelectual</h2>
-    <p>Todo el código fuente, diseño, logotipos, textos e interfaces de BusTrack Pro son propiedad de sus creadores y están protegidos por las leyes de propiedad intelectual aplicables en Costa Rica (Ley 6683 de Derechos de Autor y Derechos Conexos).</p>
-    <p>Queda prohibida la reproducción, distribución o modificación del software sin autorización expresa por escrito.</p>
-    <p><strong>Fuentes tipográficas:</strong> Inter y JetBrains Mono se utilizan bajo licencia SIL Open Font License 1.1 (OFL). No se utilizan imágenes o fotografías de terceros en la versión actual — los íconos son SVG propios del sistema.</p>
+    <h2>3. Marcas Comerciales, Concesiones y Pilotos Académicos</h2>
+    <p>Los nombres de empresas de transporte colectivo (como TUASA, Lumaca, MUSOC, Pulmitan, etc.) y de centros de estudio (como Universidad Fidélitas) se utilizan con fines exclusivamente identificativos, referenciales y en el marco de prototipos técnicos demostrativos. Dicha mención no implica patrocinio, endoso, vínculo societario ni representación oficial alguna por parte de dichas entidades, salvo que medie un convenio formal suscrito por escrito.</p>
 
-    <h2>5. Desarrollo y Tecnología de Inteligencia Artificial (IA)</h2>
-    <div class="info-box">
-      <p><strong>Declaración de Tecnología:</strong> La arquitectura, código fuente, interfaz y simulación de BusTrack Pro han sido desarrollados con la asistencia de modelos de <strong>Inteligencia Artificial (IA)</strong>. El uso de la plataforma presupone la aceptación de esta naturaleza tecnológica.</p>
-    </div>
-    <p>La asistencia de Inteligencia Artificial se utiliza para optimizar el rendimiento, generar algoritmos de simulación en tiempo real y acelerar el desarrollo del software bajo supervisión técnica constante.</p>
+    <h2>4. Propiedad Intelectual y Licencia (Ley N° 6683)</h2>
+    <p>Todo el código fuente de backend y frontend, algoritmos de cálculo de rutas, interfaces gráficas, diseño y logotipos de BusTrack Pro son propiedad exclusiva de <strong>BusTrack Pro Tecnología de Transporte S.A.</strong> y están protegidos por la Ley N° 6683 de Derechos de Autor y Derechos Conexos de la República de Costa Rica y tratados internacionales de la OMPI.</p>
+    <p>El software se suministra bajo licencia de uso comercial privativa ("UNLICENSED" / Todos los derechos reservados). Queda expresamente prohibida su copia no autorizada, descompilación, ingeniería inversa, reventa o distribución pública sin autorización previa y por escrito del titular de los derechos.</p>
 
-    <h2>6. Limitación de Responsabilidad</h2>
-    <p>BusTrack Pro se provee "tal como está". En ningún caso los desarrolladores o proveedores del servicio serán responsables por:</p>
+    <h2>5. Créditos y Licencias de Componentes de Terceros</h2>
+    <p>La plataforma integra componentes de código abierto y servicios cartográficos respetando sus respectivas licencias:</p>
     <ul>
-      <li>Interrupciones del servicio por mantenimiento o causas de fuerza mayor</li>
-      <li>Pérdidas derivadas de datos de flota inexactos o retrasados</li>
-      <li>Daños causados por el uso inadecuado del sistema</li>
+      <li><strong>Leaflet:</strong> Biblioteca de mapas web interactivos (Licencia BSD 2-Clause, © Vladimir Agafonkin).</li>
+      <li><strong>OpenStreetMap:</strong> Datos cartográficos provistos bajo la licencia Open Database License (ODbL) © Colaboradores de OpenStreetMap.</li>
+      <li><strong>CartoDB / Esri ArcGIS:</strong> Mosaicos de mapa base utilizados bajo sus respectivos términos de servicio para aplicaciones web.</li>
+      <li><strong>Tipografías:</strong> Inter y JetBrains Mono utilizadas bajo licencia SIL Open Font License 1.1 (OFL).</li>
     </ul>
 
-    <h2>7. Modificaciones al Servicio</h2>
-    <p>Nos reservamos el derecho de modificar, suspender o descontinuar el servicio con previo aviso de 30 días, salvo en casos de emergencia de seguridad.</p>
+    <h2>6. Requisitos de Edad y Uso de Cuentas</h2>
+    <p>El registro de cuentas está restringido a personas mayores de 18 años o menores emancipados legalmente. Toda información provista en el registro debe ser veraz y exacta. El usuario es responsable de custodiar la confidencialidad de su contraseña.</p>
 
-    <h2>8. Ley Aplicable y Jurisdicción</h2>
-    <p>Estos términos se rigen por las leyes de la <strong>República de Costa Rica</strong>. Cualquier disputa se someterá a la jurisdicción de los tribunales competentes de San José, Costa Rica.</p>
-    <p>Leyes aplicables: Ley 7472 (Promoción de la Competencia y Defensa Efectiva del Consumidor), Ley 8968 (LEPD), Ley 9048 (delitos informáticos).</p>
+    <h2>7. Desistimiento, Retracto y Devoluciones (Ley N° 7472)</h2>
+    <p>En caso de contratación de servicios mediante canales a distancia o electrónicos, al consumidor le asiste el derecho de desistimiento o retracto en los términos y condiciones previstos en el artículo 40 de la Ley N° 7472 y su reglamento, pudiendo ejercerlo dentro de los plazos legales aplicables a través de nuestra política formal de reembolsos.</p>
 
-    <h2>9. Contacto</h2>
-    <p>Para consultas sobre estos términos: <a href="mailto:admin@bustrack.example.com">admin@bustrack.example.com</a></p>
-    <p><em>Nota: Sustituya este correo con los datos reales de su empresa antes de publicar.</em></p>
+    <h2>8. Jurisdicción y Ley Aplicable</h2>
+    <p>Cualquier controversia relacionada con la validez, ejecución o interpretación de estos términos se resolverá conforme a la legislación sustantiva de la <strong>República de Costa Rica</strong>, sometiéndose las partes a la competencia de los Tribunales de Justicia del Primer Circuito Judicial de San José.</p>
+
+    <div class="contact-card">
+      <h3>Canal Oficial de Atención y Reclamos</h3>
+      <p>BusTrack Pro Costa Rica S.A. | Cédula Jurídica: 3-101-849201</p>
+      <p>Correo de atención al cliente: <a href="mailto:soporte@bustrackpro.cr">soporte@bustrackpro.cr</a></p>
+    </div>
   </main>
 
   <footer>
-    <p>© 2026 BusTrack Pro. Todos los derechos reservados. |
+    <p>© 2026 BusTrack Pro Costa Rica. Todos los derechos reservados. |
       <a href="privacy.html">Privacidad</a> ·
       <a href="terms.html">Términos</a> ·
+      <a href="cookies.html">Cookies</a> ·
+      <a href="refunds.html">Reembolsos</a> ·
       <a href="index.html">Panel</a>
     </p>
   </footer>

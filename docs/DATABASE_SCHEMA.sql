@@ -183,13 +183,14 @@ CREATE OR REPLACE FUNCTION fn_audit_bus_status_change()
 RETURNS TRIGGER AS $$
 BEGIN
     IF (OLD.status IS DISTINCT FROM NEW.status) THEN
-        INSERT INTO audit_logs (entity_name, entity_id, action, old_data, new_data)
+        INSERT INTO audit_logs (entity_name, entity_id, action, old_data, new_data, changed_by)
         VALUES (
             'buses',
             NEW.id,
             'STATUS_CHANGE',
-            jsonb_build_object('status', OLD.status, 'speed', OLD.speed, 'delay', OLD.delay),
-            jsonb_build_object('status', NEW.status, 'speed', NEW.speed, 'delay', NEW.delay)
+            jsonb_build_object('status', OLD.status, 'speed', OLD.speed, 'delay_minutes', OLD.delay_minutes),
+            jsonb_build_object('status', NEW.status, 'speed', NEW.speed, 'delay_minutes', NEW.delay_minutes),
+            coalesce(nullif(current_setting('request.jwt.claim.sub', true), ''), 'system')
         );
     END IF;
     NEW.updated_at = NOW();

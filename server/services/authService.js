@@ -59,11 +59,21 @@ export class AuthService {
     const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
       password,
-      options: { data: { full_name: cleanName } },
+      options: { 
+        data: { 
+          full_name: cleanName,
+          consent_terms: true,
+          consent_terms_version: '2026.1',
+          consent_terms_at: new Date().toISOString(),
+          consent_privacy: true,
+          consent_privacy_version: '2026.1',
+          consent_privacy_at: new Date().toISOString(),
+        } 
+      },
     });
     if (error) {
       if (/already registered/i.test(error.message)) {
-        throw new Error('Ya existe una cuenta registrada con este correo electrónico.');
+        throw new Error('Si el correo no está registrado se enviará un enlace de verificación; de lo contrario, inicia sesión.');
       }
       throw new Error(error.message);
     }

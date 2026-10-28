@@ -1,0 +1,54 @@
+UNLICENSED — ALL RIGHTS RESERVED
+
+Copyright (c) 2025-2026 BusTrack Pro Tecnología de Transporte S.A.
+Cédula Jurídica: 3-101-849201
+San José, Costa Rica
+
+This software and all associated source code, documentation, assets, and
+configuration files (collectively, the "Software") are the exclusive proprietary
+property of BusTrack Pro Tecnología de Transporte S.A. ("BusTrack Pro").
+
+RESTRICTIONS
+------------
+No part of this Software may be reproduced, distributed, transmitted, copied,
+modified, publicly performed, sublicensed, or sold, in whole or in part, in any
+form or by any means — electronic, mechanical, photocopying, recording, or
+otherwise — without the prior written permission of BusTrack Pro.
+
+Unauthorized use, reproduction, or distribution of this Software, or any portion
+of it, may result in severe civil and criminal penalties, and will be prosecuted
+to the maximum extent possible under the law of the Republic of Costa Rica and
+applicable international treaties.
+
+PERMITTED USE
+-------------
+Access to this repository is granted solely for internal development, review, or
+audit purposes as expressly authorized in writing by BusTrack Pro. Any other use
+is strictly prohibited.
+
+THIRD-PARTY COMPONENTS
+-----------------------
+This product incorporates components from third parties that are licensed under
+their own terms:
+
+- Leaflet (BSD 2-Clause) — https://leafletjs.com
+- OpenStreetMap data (ODbL 1.0) — https://www.openstreetmap.org/copyright
+- CartoDB Basemaps (CC BY 3.0) — https://carto.com/legal
+- Inter typeface (SIL OFL 1.1) — https://rsms.me/inter
+- JetBrains Mono (SIL OFL 1.1) — https://www.jetbrains.com/legalforms/fonts
+
+DISCLAIMER OF WARRANTIES
+-------------------------
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL BUSTRACK PRO BE
+LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+CONTACT
+-------
+  Legal:     legal@bustrackpro.cr
+  Security:  security@bustrackpro.cr
+  Support:   soporte@bustrackpro.cr
+

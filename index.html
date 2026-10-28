@@ -14,13 +14,17 @@
   <link rel="stylesheet" href="styles.css" />
   <!-- Leaflet CSS para Mapas Reales a escala Nacional y Mundial -->
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" onerror="this.onerror=null;this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';" />
-  <!-- Supabase JS SDK para OAuth real (Google / Apple) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <!-- Leaflet JS Library (Local con respaldo CDN) -->
+  <!-- Supabase JS SDK Local -->
+  <script src="/vendor/supabase/supabase.js"></script>
+  <!-- Leaflet JS Library (Local con respaldo CDN e Integrity) -->
   <script src="/vendor/leaflet/leaflet.js"></script>
   <script>
     if (typeof L === 'undefined') {
-      document.write('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>');
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      s.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+      s.crossOrigin = 'anonymous';
+      document.head.appendChild(s);
     }
   </script>
 </head>
@@ -86,7 +90,7 @@
           </span>
           <span class="home-tile-text">
             <span class="home-tile-name">Horarios</span>
-            <span class="home-tile-desc">Horarios oficiales, frecuencias y salidas CTP</span>
+            <span class="home-tile-desc">Horarios de referencia, frecuencias y tarifas</span>
           </span>
           <span class="home-chip" id="chipSchedules">10 Rutas</span>
         </button>
@@ -462,10 +466,10 @@
           <div class="schedules-title-text">
             <div class="schedules-badge-wrap">
               <span class="cr-flag-pill">🇨🇷 Costa Rica</span>
-              <span class="ctp-badge">Regulación CTP & ARESEP</span>
+              <span class="ctp-badge">Tarifario Referencial</span>
             </div>
-            <h2 class="schedules-main-title">Horarios y Salidas Oficiales de Buses</h2>
-            <p class="schedules-main-desc">Itinerarios reglamentarios, tarifas aprobadas y frecuencias de salida de las principales rutas de transporte público nacional e interurbano.</p>
+            <h2 class="schedules-main-title">Horarios y Salidas de Buses</h2>
+            <p class="schedules-main-desc">Itinerarios de referencia pública y tarifas aproximadas para rutas de transporte nacional e interurbano. <em>(Nota: Datos referenciales para fines informativos; consulte directamente a la empresa operadora para confirmaciones en tiempo real)</em>.</p>
           </div>
           <div class="schedules-live-clock-card">
             <div class="live-clock-head">
@@ -741,6 +745,14 @@
               <p class="user-active-email" id="userActiveEmail"></p>
               <span class="user-active-badge" id="userActiveBadge"></span>
             </div>
+          </div>
+          <div class="user-arco-actions" style="margin-top:1.25rem; display:flex; flex-direction:column; gap:0.5rem;">
+            <button class="btn-ghost full-width" id="exportDataBtn" style="font-size:0.82rem;">
+              📥 Exportar mis datos (Ley 8968)
+            </button>
+            <button class="btn-ghost full-width danger-text" id="deleteAccountBtn" style="font-size:0.82rem; color:#ef4444;">
+              🗑️ Eliminar cuenta y datos personales
+            </button>
           </div>
           <button class="btn-ghost full-width danger-text" id="modalLogoutBtn" style="margin-top:1rem">Cerrar Sesión</button>
         </div>

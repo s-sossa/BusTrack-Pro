@@ -93,12 +93,12 @@ const ROUTES = [
 
  
 const DRIVERS = [
-  { id: 'D001', name: 'Carlos Mendoza',  initials: 'CM', license: 'CR-2-0456-0891', trips: 1248, rating: 4.9, hours: 8.5 },
-  { id: 'D002', name: 'Ana García',      initials: 'AG', license: 'CR-1-0782-0334', trips: 987,  rating: 4.8, hours: 7.2 },
-  { id: 'D003', name: 'Roberto López',   initials: 'RL', license: 'CR-3-0219-0645', trips: 1567, rating: 4.7, hours: 6.8 },
-  { id: 'D004', name: 'María Flores',    initials: 'MF', license: 'CR-1-1043-0277', trips: 732,  rating: 5.0, hours: 9.0 },
-  { id: 'D005', name: 'Jorge Ramírez',   initials: 'JR', license: 'CR-4-0388-0912', trips: 2103, rating: 4.6, hours: 5.5 },
-  { id: 'D006', name: 'Lucía Castro',    initials: 'LC', license: 'CR-2-0955-0158', trips: 891,  rating: 4.9, hours: 8.0 },
+  { id: 'D001', name: 'Operador 1',  initials: 'OP1', license: 'OP-001-SIM', trips: 1248, rating: 4.9, hours: 8.5 },
+  { id: 'D002', name: 'Operador 2',  initials: 'OP2', license: 'OP-002-SIM', trips: 987,  rating: 4.8, hours: 7.2 },
+  { id: 'D003', name: 'Operador 3',  initials: 'OP3', license: 'OP-003-SIM', trips: 1567, rating: 4.7, hours: 6.8 },
+  { id: 'D004', name: 'Operador 4',  initials: 'OP4', license: 'OP-004-SIM', trips: 732,  rating: 5.0, hours: 9.0 },
+  { id: 'D005', name: 'Operador 5',  initials: 'OP5', license: 'OP-005-SIM', trips: 2103, rating: 4.6, hours: 5.5 },
+  { id: 'D006', name: 'Operador 6',  initials: 'OP6', license: 'OP-006-SIM', trips: 891,  rating: 4.9, hours: 8.0 },
 ];
  
 const STOPS = [
@@ -1254,7 +1254,7 @@ function renderSchedules() {
       if (!route) return;
       const dayData = route[schedulesState.day] || route.weekday;
       const departures = schedulesState.dir === 'outbound' ? dayData.outboundDepartures : dayData.inboundDepartures;
-      const text = `🚌 Horario Oficial CTP: ${route.concession} - ${route.name}\nOperador: ${route.operator}\nTarifa ARESEP: ${route.tariffRegular}\nOrigen: ${route.originTerminal}\nDestino: ${route.destinationTerminal}\nPrimer bus: ${dayData.firstBus} | Último bus: ${dayData.lastBus}\nFrecuencia: ${dayData.peakFreq}\nSalidas:\n${departures.join(', ')}`;
+      const text = `🚌 Horario Referencial: ${route.concession} - ${route.name}\nOperador: ${route.operator}\nTarifa Aprox.: ${route.tariffRegular}\nOrigen: ${route.originTerminal}\nDestino: ${route.destinationTerminal}\nPrimer bus: ${dayData.firstBus} | Último bus: ${dayData.lastBus}\nFrecuencia: ${dayData.peakFreq}\nSalidas:\n${departures.join(', ')}\n(Nota: Sujeto a variaciones de la empresa operadora)`;
       if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => {
           toast(`📋 Itinerario de ${route.concession} copiado al portapapeles`, 'ok');
@@ -2976,7 +2976,7 @@ $('modalStatusSelect').addEventListener('change', async function () {
 
   if (typeof supabaseClient !== 'undefined' && supabaseClient) {
     try {
-      await supabaseClient.from('bus_positions').update({ status: newStatus }).eq('bus_id', b.id);
+      await supabaseClient.from('buses').update({ status: newStatus }).eq('id', b.id);
     } catch (e) {
       console.warn('[Supabase] Error actualizando estado de bus:', e);
     }
@@ -3596,18 +3596,20 @@ async function initSupabaseData() {
     console.warn('[Supabase] Alertas remotas no disponibles:', err);
   }
 
-  // 3. Suscripción en tiempo real a posiciones de buses
+  // 3. Suscripción en tiempo real a posiciones y estado de buses
   try {
     supabaseClient
-      .channel('realtime_bus_positions')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bus_positions' }, payload => {
+      .channel('realtime_buses')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'buses' }, payload => {
         const row = payload.new;
-        if (!row || !row.bus_id) return;
-        const bus = buses.find(b => b.id === row.bus_id);
+        if (!row || !row.id) return;
+        const bus = buses.find(b => b.id === row.id);
         if (bus) {
-          if (row.lat && row.lon) bus._gpsOverride = [row.lat, row.lon];
-          if (row.speed !== undefined) bus.speed = row.speed;
-          if (row.passengers !== undefined) bus.passengers = row.passengers;
+          if (row.pos_x !== undefined && row.pos_y !== undefined) {
+            bus.pos = { x: Number(row.pos_x), y: Number(row.pos_y) };
+          }
+          if (row.speed_kmh !== undefined) bus.speed = row.speed_kmh;
+          if (row.passengers_count !== undefined) bus.passengers = row.passengers_count;
           if (row.status) bus.status = row.status;
           drawMapMarkers();
           if (state.view === 'dashboard') renderBusList();
@@ -4183,6 +4185,56 @@ function init() {
   const modalLogoutBtn = $('modalLogoutBtn');
   if (logoutBtn)      logoutBtn.addEventListener('click',      performLogout);
   if (modalLogoutBtn) modalLogoutBtn.addEventListener('click', performLogout);
+
+  // ARCO: Derechos de Acceso (Exportación) y Supresión (Eliminación) - Ley 8968
+  const exportDataBtn    = $('exportDataBtn');
+  const deleteAccountBtn = $('deleteAccountBtn');
+
+  if (exportDataBtn) {
+    exportDataBtn.addEventListener('click', async () => {
+      try {
+        const token = (await supabaseClient?.auth?.getSession())?.data?.session?.access_token;
+        const res = await fetch('/api/v1/auth/me/export', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!res.ok) throw new Error('No se pudo exportar la información');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bustrack_mis_datos_${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        toast('📥 Archivo de datos personales descargado', 'ok');
+      } catch (err) {
+        toast(err.message || 'Error al exportar datos', 'warn');
+      }
+    });
+  }
+
+  if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener('click', async () => {
+      const confirmDelete = confirm('¿Estás seguro de que deseas eliminar permanentemente tu cuenta y todos tus datos personales asociados? Esta acción no se puede deshacer (Ley 8968).');
+      if (!confirmDelete) return;
+      try {
+        const token = (await supabaseClient?.auth?.getSession())?.data?.session?.access_token;
+        const res = await fetch('/api/v1/auth/me', {
+          method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (res.ok) {
+          toast('Cuenta eliminada correctamente', 'info');
+          await performLogout();
+        } else {
+          toast('No se pudo eliminar la cuenta directamente. Contacte a soporte.', 'warn');
+        }
+      } catch (err) {
+        toast('Error al procesar la solicitud de eliminación', 'warn');
+      }
+    });
+  }
 
 
 

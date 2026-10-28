@@ -19,11 +19,14 @@ export async function initPostgresDatabase(connectionString) {
     return null;
   }
 
+  const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
   const pool = new Pool({
     connectionString,
-    ssl: connectionString.includes('localhost') || connectionString.includes('127.0.0.1')
+    ssl: isLocal
       ? false
-      : { rejectUnauthorized: false },
+      : (process.env.PG_CA_CERT
+          ? { ca: process.env.PG_CA_CERT, rejectUnauthorized: true }
+          : { rejectUnauthorized: process.env.NODE_ENV === 'production' }),
   });
 
   try {
