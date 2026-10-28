@@ -3,6 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+    (function() {
+      try {
+        const savedTheme = localStorage.getItem('bustrack:theme');
+        let theme = savedTheme;
+        if (!theme) {
+          const raw = localStorage.getItem('bustrack:prefs');
+          if (raw) theme = JSON.parse(raw).theme;
+        }
+        if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+          theme = 'light';
+        }
+        if (theme === 'light') {
+          document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <title>Términos de Servicio — BusTrack Pro Costa Rica</title>
   <meta name="description" content="Términos y condiciones de uso de BusTrack Pro conforme a la legislación de la República de Costa Rica." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b6ef5'/><rect x='8' y='7' width='16' height='16' rx='4' fill='none' stroke='white' stroke-width='2'/><path d='M8 15h16' stroke='white' stroke-width='2'/></svg>" />
@@ -30,7 +50,10 @@
       padding: 2rem 1rem;
     }
     main {
-      max-width: 860px;
+      max-width: 880px;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255,255,255,0.06);
+      backdrop-filter: blur(12px);
+      transition: transform 0.25s ease;
       margin: 0 auto;
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -78,6 +101,97 @@
       border-radius: 8px;
       padding: 1.25rem;
       margin-top: 1.5rem;
+    }
+    .back-home-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      background: linear-gradient(135deg, var(--primary) 0%, #7c4ddb 100%);
+      color: #fff !important;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 14px rgba(91, 110, 245, 0.35);
+    }
+    .back-home-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(91, 110, 245, 0.55);
+      text-decoration: none !important;
+    }
+    .back-home-btn:active {
+      transform: scale(0.98);
+    }
+    h2 {
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    h2:hover {
+      transform: translateX(3px);
+      border-color: var(--primary-light);
+    }
+  
+    html[data-theme="light"] {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --primary: #4f46e5;
+      --primary-light: #4338ca;
+      --code-bg: #f1f5f9;
+    }
+    html[data-theme="light"] body {
+      background: var(--bg);
+      color: var(--text);
+    }
+    html[data-theme="light"] main {
+      background: #ffffff !important;
+      border-color: rgba(15, 23, 42, 0.1) !important;
+      color: #334155 !important;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
+    }
+    html[data-theme="light"] h1,
+    html[data-theme="light"] h2,
+    html[data-theme="light"] h3 {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] p,
+    html[data-theme="light"] ul,
+    html[data-theme="light"] ol,
+    html[data-theme="light"] li {
+      color: #334155 !important;
+    }
+    html[data-theme="light"] table {
+      border-color: rgba(15, 23, 42, 0.1) !important;
+    }
+    html[data-theme="light"] th {
+      background: #f1f5f9 !important;
+      color: #0f172a !important;
+      border-color: rgba(15, 23, 42, 0.1) !important;
+    }
+    html[data-theme="light"] td {
+      color: #334155 !important;
+      border-color: rgba(15, 23, 42, 0.1) !important;
+    }
+    html[data-theme="light"] .info-box {
+      background: rgba(79, 70, 229, 0.06) !important;
+      border-color: rgba(79, 70, 229, 0.2) !important;
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .info-box p {
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .contact-card {
+      background: #f8fafc !important;
+      border-color: rgba(15, 23, 42, 0.1) !important;
+    }
+    html[data-theme="light"] .contact-card h3 {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .contact-card p {
+      color: #475569 !important;
     }
   </style>
 </head>

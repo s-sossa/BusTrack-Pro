@@ -11,7 +11,7 @@ import { db } from '../database/db.js';
 import { authRouter } from './authRoutes.js';
 import { writeLimiter } from '../middleware/rateLimiter.js';
 import { validateBusStatus, validateAlertSeverity } from '../middleware/sanitizer.js';
-import { authenticateToken, requireRole } from '../middleware/auth.js'; // ✅ ítem #3
+import { authenticateToken, requireRole } from '../middleware/auth.js';
 
 export const apiRouter = Router();
 

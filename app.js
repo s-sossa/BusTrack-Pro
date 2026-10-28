@@ -371,6 +371,7 @@ const ACCENTS = [
 ];
  
 const prefs = {
+  theme: 'dark',
   accent: 'indigo',
   motion: true,
   live: true,
@@ -381,6 +382,8 @@ function loadPrefs() {
   try {
     const raw = localStorage.getItem('bustrack:prefs');
     if (raw) Object.assign(prefs, JSON.parse(raw));
+    const savedTheme = localStorage.getItem('bustrack:theme');
+    if (savedTheme) prefs.theme = savedTheme;
   } catch (e) {
     // Algunos navegadores bloquean localStorage con file://; no es grave.
     console.warn('No se pudieron leer las preferencias:', e);
@@ -391,16 +394,110 @@ function loadPrefs() {
 function savePrefs() {
   try {
     localStorage.setItem('bustrack:prefs', JSON.stringify(prefs));
+    if (prefs.theme) localStorage.setItem('bustrack:theme', prefs.theme);
   } catch (e) {
     console.warn('No se pudieron guardar las preferencias:', e);
   }
 }
  
+
+function applyTheme(theme, showToast = false) {
+  const currentTheme = theme === 'light' ? 'light' : 'dark';
+  prefs.theme = currentTheme;
+  document.documentElement.setAttribute('data-theme', currentTheme);
+
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) {
+    metaTheme.setAttribute('content', currentTheme === 'light' ? '#f8fafc' : '#0a0f1c');
+  }
+
+  const isLight = currentTheme === 'light';
+  const label = isLight ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro';
+
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  if (themeToggleBtn) {
+    themeToggleBtn.setAttribute('aria-label', label);
+    themeToggleBtn.setAttribute('title', label);
+  }
+
+  const sidebarThemeBtn = document.getElementById('sidebarThemeToggleBtn');
+  if (sidebarThemeBtn) {
+    sidebarThemeBtn.setAttribute('aria-label', label);
+    sidebarThemeBtn.setAttribute('title', label);
+  }
+
+  const themeSwitch = document.getElementById('themeSwitch');
+  if (themeSwitch) {
+    themeSwitch.setAttribute('aria-checked', String(isLight));
+  }
+
+  try {
+    localStorage.setItem('bustrack:theme', currentTheme);
+  } catch (_) {}
+
+  // Sincronizar estilo de mapa Leaflet si ya está inicializado
+  syncMapTheme(currentTheme);
+
+  // Redibujar gráficos si están visibles
+  if (typeof drawMainChart === 'function') {
+    requestAnimationFrame(drawMainChart);
+  }
+  if (typeof drawReportCharts === 'function' && typeof state !== 'undefined' && state.view === 'reports') {
+    requestAnimationFrame(drawReportCharts);
+  }
+
+  if (showToast && typeof toast === 'function') {
+    toast(`Modo ${isLight ? 'claro' : 'oscuro'} activado`, 'info');
+  }
+}
+
+function toggleTheme() {
+  const nextTheme = prefs.theme === 'light' ? 'dark' : 'light';
+  applyTheme(nextTheme, true);
+  savePrefs();
+}
+
+function syncMapTheme(theme) {
+  const isLight = theme === 'light';
+  const targetIdx = isLight ? 1 : 0; // 0: oscuro pro, 1: calles / vias
+
+  const maps = [];
+  if (typeof realLeafletMap !== 'undefined' && realLeafletMap) maps.push(realLeafletMap);
+  if (typeof dashboardLeafletMap !== 'undefined' && dashboardLeafletMap) maps.push(dashboardLeafletMap);
+
+  maps.forEach(m => {
+    if (!m || !m._mapStyles) return;
+    const currentIdx = m._currentStyleIdx;
+    if ((isLight && currentIdx === 0) || (!isLight && currentIdx === 1)) {
+      if (m._activeLayer) m.removeLayer(m._activeLayer);
+      const newStyle = m._mapStyles[targetIdx];
+      if (newStyle && newStyle.layer) {
+        newStyle.layer.addTo(m);
+        m._activeLayer = newStyle.layer;
+        m._currentStyleIdx = targetIdx;
+      }
+    }
+    try {
+      m.invalidateSize({ animate: false });
+    } catch (_) {}
+  });
+
+  const styleBtn = document.getElementById('mapStyleToggleBtn');
+  if (styleBtn && typeof realLeafletMap !== 'undefined' && realLeafletMap && realLeafletMap._mapStyles) {
+    const cur = realLeafletMap._mapStyles[realLeafletMap._currentStyleIdx];
+    if (cur) {
+      styleBtn.textContent = cur.icon;
+      styleBtn.setAttribute('title', 'Capa actual: ' + cur.name + ' (Clic para cambiar)');
+    }
+  }
+}
+
 function applyPrefs() {
   const root = document.documentElement;
   if (prefs.accent === 'indigo') root.removeAttribute('data-accent');
   else root.setAttribute('data-accent', prefs.accent);
   root.setAttribute('data-density', prefs.density);
+  applyTheme(prefs.theme || 'dark', false);
   syncRouteColors();
 }
  
@@ -499,6 +596,7 @@ function openSidebar() {
   const btn = $('mobileMenuBtn');
   if (btn) btn.setAttribute('aria-expanded', 'true');
   document.body.style.overflow = 'hidden';
+  document.body.classList.add('sidebar-open');
 }
 function closeSidebar() {
   if (sidebar) sidebar.classList.remove('mobile-open');
@@ -507,6 +605,7 @@ function closeSidebar() {
   const btn = $('mobileMenuBtn');
   if (btn) btn.setAttribute('aria-expanded', 'false');
   document.body.style.overflow = '';
+  document.body.classList.remove('sidebar-open');
 }
  
   function applySidebarCollapsed(collapsed) {
@@ -1793,9 +1892,10 @@ function initRealLeafletMap() {
 
   const styles = createArcGisLayers();
   realLeafletMap._mapStyles = styles;
-  realLeafletMap._currentStyleIdx = 0;
-  realLeafletMap._activeLayer = styles[0].layer;
-  styles[0].layer.addTo(realLeafletMap);
+  const initMapIdx = prefs.theme === 'light' ? 1 : 0;
+  realLeafletMap._currentStyleIdx = initMapIdx;
+  realLeafletMap._activeLayer = styles[initMapIdx].layer;
+  styles[initMapIdx].layer.addTo(realLeafletMap);
 
   paintRealStopsAndRoutes();
   setupMapControls();
@@ -1859,9 +1959,10 @@ function initDashboardLeafletMap() {
 
   const styles = createArcGisLayers();
   dashboardLeafletMap._mapStyles = styles;
-  dashboardLeafletMap._currentStyleIdx = 0;
-  dashboardLeafletMap._activeLayer = styles[0].layer;
-  styles[0].layer.addTo(dashboardLeafletMap);
+  const initDashMapIdx = prefs.theme === 'light' ? 1 : 0;
+  dashboardLeafletMap._currentStyleIdx = initDashMapIdx;
+  dashboardLeafletMap._activeLayer = styles[initDashMapIdx].layer;
+  styles[initDashMapIdx].layer.addTo(dashboardLeafletMap);
 
   paintDashboardStopsAndRoutes();
   setupDashboardMapControls();
@@ -3047,6 +3148,26 @@ bindSwitch('liveSwitch', v => {
   prefs.live = v;
   syncLiveIndicator();
 });
+
+// Controladores de Alternancia de Tema (Modo Claro / Oscuro)
+const topbarThemeBtn = $('themeToggleBtn');
+if (topbarThemeBtn) {
+  topbarThemeBtn.addEventListener('click', () => toggleTheme());
+}
+const sidebarThemeBtnEl = $('sidebarThemeToggleBtn');
+if (sidebarThemeBtnEl) {
+  sidebarThemeBtnEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleTheme();
+  });
+}
+if ($('themeSwitch')) {
+  bindSwitch('themeSwitch', v => {
+    applyTheme(v ? 'light' : 'dark', true);
+    savePrefs();
+  });
+}
+
 bindSwitch('densitySwitch', v => {
   prefs.density = v ? 'compact' : 'normal';
   applyPrefs();
@@ -3067,6 +3188,7 @@ $('resetDataBtn').addEventListener('click', () => {
 });
  
 function openSettings() {
+  const themeSw = $('themeSwitch'); if (themeSw) themeSw.setAttribute('aria-checked', String(prefs.theme === 'light'));
   $('motionSwitch').setAttribute('aria-checked', String(prefs.motion));
   $('liveSwitch').setAttribute('aria-checked', String(prefs.live));
   $('densitySwitch').setAttribute('aria-checked', String(prefs.density === 'compact'));
@@ -3413,6 +3535,7 @@ function redrawAll() {
  
 const homeScreen = $('homeScreen');
 let homeOpen = true;
+document.body.classList.add('home-open');
 let homeTimer = null;
  
 // Cada azulejo muestra un dato vivo para que el menú no sea solo decoración.
@@ -3439,6 +3562,7 @@ function showHome() {
   homeOpen = true;
   homeScreen.classList.remove('hidden', 'closing');
   document.body.style.overflow = 'hidden';
+  document.body.classList.add('home-open');
   $$('.nav-item').forEach(n => n.classList.remove('active'));
   $('nav-home').classList.add('active');
   updateHomeChips();
@@ -3457,6 +3581,7 @@ function hideHome() {
   homeOpen = false;
   homeScreen.classList.add('closing');
   document.body.style.overflow = '';
+  document.body.classList.remove('home-open');
   homeTimer = setTimeout(() => {
     homeScreen.classList.add('hidden');
     homeScreen.classList.remove('closing');
@@ -4329,8 +4454,9 @@ function init() {
   // ------------------------------------------------------------------
   // NOTIFICATION DROPDOWN PANEL
   // ------------------------------------------------------------------
-  // notifBtn, notifDropdownPanel, notifMarkAllReadBtn ya declarados en scope global
-
+  const notifBtn = $('notifBtn');
+  const notifDropdownPanel = $('notifDropdownPanel');
+  const notifMarkAllReadBtn = $('notifMarkAllReadBtn');
 
   function renderNotifDropdown() {
     const list = $('notifList');

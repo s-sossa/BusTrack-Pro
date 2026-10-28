@@ -4,6 +4,26 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0a0f1c" />
+  <script>
+    (function() {
+      try {
+        const savedTheme = localStorage.getItem('bustrack:theme');
+        let theme = savedTheme;
+        if (!theme) {
+          const raw = localStorage.getItem('bustrack:prefs');
+          if (raw) theme = JSON.parse(raw).theme;
+        }
+        if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+          theme = 'light';
+        }
+        if (theme === 'light') {
+          document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <title>Crear Cuenta — BusTrack Pro</title>
   <meta name="description" content="Regístrate en BusTrack Pro para comenzar a monitorear y gestionar flotas de transporte en tiempo real." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b6ef5'/><rect x='8' y='7' width='16' height='16' rx='4' fill='none' stroke='white' stroke-width='2'/><path d='M8 15h16' stroke='white' stroke-width='2'/></svg>" />
@@ -446,6 +466,115 @@
       color: var(--text);
       text-decoration: underline;
     }
+  
+    html[data-theme="light"] {
+      --bg: #f1f5f9;
+      --card-bg: rgba(255, 255, 255, 0.96);
+      --card-border: rgba(15, 23, 42, 0.09);
+      --input-bg: #f8fafc;
+      --input-border: rgba(15, 23, 42, 0.16);
+      --input-focus: #4f46e5;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #94a3b8;
+      --brand: #4f46e5;
+      --brand-hover: #4338ca;
+      --brand-glow: rgba(79, 70, 229, 0.25);
+    }
+    html[data-theme="light"] .auth-header {
+      border-bottom-color: rgba(15, 23, 42, 0.08);
+      background: rgba(255, 255, 255, 0.85);
+    }
+    html[data-theme="light"] .back-link,
+    html[data-theme="light"] .auth-theme-toggle {
+      background: #ffffff;
+      border-color: rgba(15, 23, 42, 0.12);
+      color: var(--text);
+    }
+    html[data-theme="light"] .auth-card {
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.09), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    }
+    html[data-theme="light"] .auth-title {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .brand-link {
+      color: #0f172a;
+    }
+    html[data-theme="light"] .form-label {
+      color: #334155;
+    }
+    html[data-theme="light"] .form-control {
+      background: #f8fafc !important;
+      border-color: rgba(15, 23, 42, 0.16) !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .form-control:focus {
+      background: #ffffff !important;
+      border-color: var(--input-focus) !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .input-icon {
+      color: #64748b;
+    }
+    html[data-theme="light"] .demo-box {
+      background: rgba(15, 23, 42, 0.03);
+      border-color: rgba(15, 23, 42, 0.08);
+    }
+    html[data-theme="light"] .demo-title {
+      color: #64748b;
+    }
+    html[data-theme="light"] .demo-pill {
+      background: #ffffff;
+      color: #334155;
+      border-color: rgba(15, 23, 42, 0.12);
+    }
+    html[data-theme="light"] .demo-pill:hover {
+      background: rgba(79, 70, 229, 0.08);
+      color: #4f46e5;
+      border-color: rgba(79, 70, 229, 0.3);
+    }
+    html[data-theme="light"] .auth-divider {
+      color: #64748b;
+    }
+    html[data-theme="light"] .auth-divider::before,
+    html[data-theme="light"] .auth-divider::after {
+      background: rgba(15, 23, 42, 0.12);
+    }
+    html[data-theme="light"] .btn-oauth {
+      background: #ffffff;
+      border-color: rgba(15, 23, 42, 0.14);
+      color: #334155;
+    }
+    html[data-theme="light"] .btn-oauth:hover {
+      background: rgba(15, 23, 42, 0.04);
+      color: #0f172a;
+    }
+    html[data-theme="light"] .remember-label,
+    html[data-theme="light"] .consent-label {
+      color: #475569;
+    }
+    html[data-theme="light"] .consent-card {
+      background: rgba(15, 23, 42, 0.02);
+      border-color: rgba(15, 23, 42, 0.08);
+    }
+    html[data-theme="light"] .auth-footer {
+      color: #64748b;
+    }
+    html[data-theme="light"] .legal-footer,
+    html[data-theme="light"] .legal-footer a {
+      color: #64748b;
+    }
+    html[data-theme="light"] .legal-footer a:hover {
+      color: #0f172a;
+    }
+    html[data-theme="light"] .pw-strength-track {
+      background: rgba(15, 23, 42, 0.08);
+    }
+    html[data-theme="light"] .pw-rule {
+      color: #64748b;
+    }
+    html[data-theme="light"] .auth-theme-toggle .theme-icon-sun { display: none; }
+    html[data-theme="light"] .auth-theme-toggle .theme-icon-moon { display: block; }
   </style>
 </head>
 <body>
@@ -466,12 +595,22 @@
       </div>
       <span class="brand-name">BusTrack <span>Pro</span></span>
     </a>
-    <a href="index.html" class="back-link">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <button class="auth-theme-toggle" id="authThemeToggleBtn" aria-label="Cambiar a modo claro" title="Alternar modo claro / oscuro">
+        <svg class="theme-icon-sun" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+        </svg>
+        <svg class="theme-icon-moon" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+        </svg>
+      </button>
+      <a href="index.html" class="back-link">
       <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
         <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
       </svg>
       Volver al Panel
     </a>
+    </div>
   </header>
 
   <main class="auth-main">
@@ -847,5 +986,26 @@
       }
     });
   </script>
+
+  <script>
+    const authThemeBtn = document.getElementById('authThemeToggleBtn');
+    if (authThemeBtn) {
+      authThemeBtn.addEventListener('click', () => {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const next = isLight ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', next);
+        try {
+          localStorage.setItem('bustrack:theme', next);
+          const raw = localStorage.getItem('bustrack:prefs');
+          if (raw) {
+            const p = JSON.parse(raw);
+            p.theme = next;
+            localStorage.setItem('bustrack:prefs', JSON.stringify(p));
+          }
+        } catch (_) {}
+      });
+    }
+  </script>
+
 </body>
 </html>

@@ -4,6 +4,26 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, follow" />
+    <script>
+    (function() {
+      try {
+        const savedTheme = localStorage.getItem('bustrack:theme');
+        let theme = savedTheme;
+        if (!theme) {
+          const raw = localStorage.getItem('bustrack:prefs');
+          if (raw) theme = JSON.parse(raw).theme;
+        }
+        if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+          theme = 'light';
+        }
+        if (theme === 'light') {
+          document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <title>Política de Reembolsos y Retracto — BusTrack Pro</title>
   <meta name="description" content="Términos y condiciones sobre reembolsos, derecho de retracto (Ley 7472) y garantía de nivel de servicio de BusTrack Pro." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b6ef5'/><rect x='8' y='7' width='16' height='16' rx='4' fill='none' stroke='white' stroke-width='2'/><path d='M8 15h16' stroke='white' stroke-width='2'/></svg>" />
@@ -32,6 +52,97 @@
     footer { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.8rem; border-top: 1px solid var(--border); }
     footer a { color: var(--brand-light); text-decoration: none; }
     a { color: var(--brand-light); }
+    .back-home-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      background: linear-gradient(135deg, var(--primary) 0%, #7c4ddb 100%);
+      color: #fff !important;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 14px rgba(91, 110, 245, 0.35);
+    }
+    .back-home-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(91, 110, 245, 0.55);
+      text-decoration: none !important;
+    }
+    .back-home-btn:active {
+      transform: scale(0.98);
+    }
+    h2 {
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    h2:hover {
+      transform: translateX(3px);
+      border-color: var(--primary-light);
+    }
+  
+    html[data-theme="light"] {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --primary: #4f46e5;
+      --primary-light: #4338ca;
+      --code-bg: #f1f5f9;
+    }
+    html[data-theme="light"] body {
+      background: var(--bg);
+      color: var(--text);
+    }
+    html[data-theme="light"] main {
+      background: #ffffff !important;
+      border-color: rgba(15, 23, 42, 0.1) !important;
+      color: #334155 !important;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
+    }
+    html[data-theme="light"] h1,
+    html[data-theme="light"] h2,
+    html[data-theme="light"] h3 {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] p,
+    html[data-theme="light"] ul,
+    html[data-theme="light"] ol,
+    html[data-theme="light"] li {
+      color: #334155 !important;
+    }
+    html[data-theme="light"] table {
+      border-color: rgba(15, 23, 42, 0.1) !important;
+    }
+    html[data-theme="light"] th {
+      background: #f1f5f9 !important;
+      color: #0f172a !important;
+      border-color: rgba(15, 23, 42, 0.1) !important;
+    }
+    html[data-theme="light"] td {
+      color: #334155 !important;
+      border-color: rgba(15, 23, 42, 0.1) !important;
+    }
+    html[data-theme="light"] .info-box {
+      background: rgba(79, 70, 229, 0.06) !important;
+      border-color: rgba(79, 70, 229, 0.2) !important;
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .info-box p {
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .contact-card {
+      background: #f8fafc !important;
+      border-color: rgba(15, 23, 42, 0.1) !important;
+    }
+    html[data-theme="light"] .contact-card h3 {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .contact-card p {
+      color: #475569 !important;
+    }
   </style>
 </head>
 <body>

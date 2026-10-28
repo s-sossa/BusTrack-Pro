@@ -1,6 +1,26 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <script>
+    (function() {
+      try {
+        const savedTheme = localStorage.getItem('bustrack:theme');
+        let theme = savedTheme;
+        if (!theme) {
+          const raw = localStorage.getItem('bustrack:prefs');
+          if (raw) theme = JSON.parse(raw).theme;
+        }
+        if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+          theme = 'light';
+        }
+        if (theme === 'light') {
+          document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
@@ -103,6 +123,70 @@
     }
     .btn-primary:hover { background: #4b5de4; transform: translateY(-1px); }
     a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+  
+
+    html[data-theme="light"] {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --primary: #4f46e5;
+      --primary-light: #4338ca;
+      --code-bg: #f1f5f9;
+    }
+    html[data-theme="light"] body {
+      background: var(--bg);
+      color: var(--text);
+    }
+    html[data-theme="light"] main {
+      background: #ffffff !important;
+      border-color: rgba(15, 23, 42, 0.1) !important;
+      color: #334155 !important;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
+    }
+    html[data-theme="light"] h1,
+    html[data-theme="light"] h2,
+    html[data-theme="light"] h3 {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] p,
+    html[data-theme="light"] ul,
+    html[data-theme="light"] ol,
+    html[data-theme="light"] li {
+      color: #334155 !important;
+    }
+    html[data-theme="light"] table {
+      border-color: rgba(15, 23, 42, 0.1) !important;
+    }
+    html[data-theme="light"] th {
+      background: #f1f5f9 !important;
+      color: #0f172a !important;
+      border-color: rgba(15, 23, 42, 0.1) !important;
+    }
+    html[data-theme="light"] td {
+      color: #334155 !important;
+      border-color: rgba(15, 23, 42, 0.1) !important;
+    }
+    html[data-theme="light"] .info-box {
+      background: rgba(79, 70, 229, 0.06) !important;
+      border-color: rgba(79, 70, 229, 0.2) !important;
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .info-box p {
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .contact-card {
+      background: #f8fafc !important;
+      border-color: rgba(15, 23, 42, 0.1) !important;
+    }
+    html[data-theme="light"] .contact-card h3 {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .contact-card p {
+      color: #475569 !important;
+    }
+
   </style>
 </head>
 <body>

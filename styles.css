@@ -66,6 +66,61 @@ html[data-accent="amber"]  { --brand-300: #f2c98a; --brand-500: #d38b2a; --brand
 html[data-accent="rose"]   { --brand-300: #f2a2b4; --brand-500: #d95273; --brand-700: #ab3d5a; --brand-alt: #9b4bc4; }
 html[data-accent="forest"] { --brand-300: #96d7ae; --brand-500: #2f9e63; --brand-700: #237a4c; --brand-alt: #2aa3c4; }
  
+
+/* ============================================================
+   SISTEMA DE MODO CLARO (Light Theme)
+   ============================================================ */
+html[data-theme="light"] {
+  /* --- Marca en modo claro (contraste AA nítido) --- */
+  --brand-300: #4338ca;
+  --brand-500: #4f46e5;
+  --brand-700: #3730a3;
+  --brand-alt: #7c3aed;
+
+  /* --- Neutros escala limpia Slate/Zinc --- */
+  --bg-base:    #f1f5f9;
+  --bg-surface: #f8fafc;
+  --bg-card:    #ffffff;
+  --bg-raised:  #e2e8f0;
+  --bg-sidebar: #ffffff;
+
+  --text-strong: #0f172a;
+  --text:        #334155;
+  --text-soft:   #64748b;
+
+  --line:       rgba(15, 23, 42, 0.08);
+  --line-brand: color-mix(in srgb, var(--brand-500) 24%, transparent);
+
+  /* --- Semánticos --- */
+  --ok:    #059669;
+  --warn:  #d97706;
+  --risk:  #dc2626;
+  --info:  var(--brand-500);
+
+  /* --- Rutas --- */
+  --route-a: #4338ca;
+  --route-b: #7c3aed;
+  --route-c: #0891b2;
+  --route-d: #059669;
+  --stop:    #d97706;
+
+  /* --- Mapa --- */
+  --map-bg:    #e2e8f0;
+  --map-grid:  #cbd5e1;
+  --map-road:  #94a3b8;
+  --map-block: #e2e8f0;
+
+  /* --- Sombras y Efectos --- */
+  --shadow: 0 4px 20px rgba(15, 23, 42, 0.07), 0 1px 3px rgba(15, 23, 42, 0.05);
+  --glow: 0 0 0 1px var(--line-brand), 0 8px 24px rgba(79, 70, 229, 0.12);
+}
+
+/* Paletas alternas en Modo Claro */
+html[data-theme="light"][data-accent="teal"]   { --brand-300: #0d9488; --brand-500: #0f766e; --brand-700: #115e59; --brand-alt: #0891b2; }
+html[data-theme="light"][data-accent="amber"]  { --brand-300: #b45309; --brand-500: #d97706; --brand-700: #92400e; --brand-alt: #ea580c; }
+html[data-theme="light"][data-accent="rose"]   { --brand-300: #be185d; --brand-500: #e11d48; --brand-700: #9f1239; --brand-alt: #9333ea; }
+html[data-theme="light"][data-accent="forest"] { --brand-300: #15803d; --brand-500: #16a34a; --brand-700: #166534; --brand-alt: #0d9488; }
+
 /* Densidad compacta */
 html[data-density="compact"] { --gap: 11px; --pad-view: 16px; --icon-stat: 38px; }
  
@@ -118,7 +173,7 @@ button, input, select { font-family: inherit; }
  
 /* ============ SIDEBAR ============ */
 .sidebar-overlay {
-  position: fixed; inset: 0; z-index: 99;
+  position: fixed; inset: 0; z-index: 1100;
   background: rgba(4, 8, 16, 0.7);
   backdrop-filter: blur(2px);
   opacity: 0; pointer-events: none;
@@ -132,7 +187,7 @@ button, input, select { font-family: inherit; }
   border-right: 1px solid var(--line);
   display: flex; flex-direction: column;
   position: fixed; inset: 0 auto 0 0;
-  z-index: 100; overflow: hidden;
+  z-index: 1200; overflow: hidden;
   transition: width var(--t), transform var(--t);
 }
 .sidebar.collapsed { width: var(--sidebar-collapsed); }
@@ -413,7 +468,8 @@ button, input, select { font-family: inherit; }
 }
 .search-bar:focus-within {
   border-color: var(--brand-500);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-500) 22%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-500) 25%, transparent), 0 4px 16px rgba(91, 110, 245, 0.2);
+  transform: translateY(-1px);
 }
 .search-bar svg { width: 15px; height: 15px; color: var(--text-soft); flex-shrink: 0; }
 .search-bar input {
@@ -547,7 +603,12 @@ button, input, select { font-family: inherit; }
 .card {
   background: var(--bg-card); border: 1px solid var(--line);
   border-radius: var(--radius); overflow: hidden; min-width: 0;
-  transition: border-color var(--t);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: border-color var(--t), box-shadow var(--t), transform var(--t);
+}
+.card:hover {
+  border-color: var(--line-brand);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
 }
 .card:hover { border-color: var(--line-brand); }
 .card-header {
@@ -627,30 +688,63 @@ button, input, select { font-family: inherit; }
 .map-bg svg.dragging { cursor: grabbing; }
  
 .map-controls {
-  position: absolute; right: 14px; bottom: 14px; z-index: 10;
-  display: flex; flex-direction: column; gap: 5px;
+  position: absolute; right: 14px; bottom: 14px; z-index: 20;
+  display: flex; flex-direction: column; gap: 6px;
 }
 .map-controls-top { top: 14px; bottom: auto; }
 .map-btn {
-  width: 34px; height: 34px; border-radius: 8px;
+  width: 36px; height: 36px; border-radius: 9px;
   background: color-mix(in srgb, var(--bg-card) 90%, transparent);
   backdrop-filter: blur(8px);
-  border: 1px solid var(--line); color: var(--text);
-  font-size: 16px; font-weight: 600; cursor: pointer;
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--line); color: var(--text-strong);
+  font-size: 15px; font-weight: 600; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: background var(--t), color var(--t), border-color var(--t);
+  user-select: none; -webkit-user-select: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+  transition: background var(--t), color var(--t), border-color var(--t), transform var(--t), box-shadow var(--t);
 }
 .map-btn:hover {
-  background: color-mix(in srgb, var(--brand-500) 22%, var(--bg-card));
+  background: color-mix(in srgb, var(--brand-500) 25%, var(--bg-card));
   color: var(--brand-300); border-color: var(--line-brand);
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+.map-btn:active {
+  transform: scale(0.94);
+}
+.map-btn[data-zoom="in"],
+.map-btn[data-zoom="out"] {
+  font-size: 18px;
+  line-height: 1;
+}
+.map-btn[data-zoom="reset"] {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  font-family: inherit;
 }
  
 .map-legend {
-  position: absolute; left: 14px; bottom: 14px; z-index: 10;
+  position: absolute; left: 14px; bottom: 14px; z-index: 20;
   display: flex; flex-direction: column; gap: 5px;
   padding: 9px 11px; border-radius: 10px;
   background: color-mix(in srgb, var(--bg-card) 88%, transparent);
-  backdrop-filter: blur(8px); border: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition: opacity var(--t), visibility var(--t);
+}
+
+/* Ocultar panel de leyenda (círculos de colores) cuando el panel lateral está abierto */
+.sidebar.mobile-open ~ .main-content .map-legend,
+.sidebar-overlay.open ~ .main-content .map-legend,
+body.sidebar-open .map-legend {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
  
 /* Aviso de seguimiento continuo sobre el mapa completo */
@@ -677,11 +771,17 @@ button, input, select { font-family: inherit; }
 .map-btn-geo {
   font-size: 14px;
 }
-.map-btn-geo.active {
-  background: var(--brand-500);
-  color: #ffffff;
-  border-color: var(--brand-400);
-  box-shadow: 0 0 10px rgba(91, 110, 245, 0.4);
+.map-btn-geo.active,
+html[data-theme="light"] .map-btn-geo.active {
+  background: var(--brand-500) !important;
+  color: #ffffff !important;
+  border-color: var(--brand-400) !important;
+  box-shadow: 0 0 12px rgba(91, 110, 245, 0.5) !important;
+}
+.map-btn-geo.active:hover,
+html[data-theme="light"] .map-btn-geo.active:hover {
+  background: var(--brand-600) !important;
+  color: #ffffff !important;
 }
 
 .user-location-bar {
@@ -740,10 +840,13 @@ button, input, select { font-family: inherit; }
   display: flex; align-items: center; gap: 12px;
   padding: 11px 18px; cursor: pointer;
   border-bottom: 1px solid var(--line);
-  transition: background var(--t);
+  transition: background var(--t), transform var(--t), padding-left var(--t);
 }
 .bus-item:last-child { border-bottom: none; }
-.bus-item:hover { background: rgba(255,255,255,0.03); }
+.bus-item:hover {
+  background: color-mix(in srgb, var(--brand-500) 8%, var(--bg-card));
+  padding-left: 22px;
+}
 .bus-item-icon {
   width: 32px; height: 32px; flex-shrink: 0; border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
@@ -868,8 +971,13 @@ button, input, select { font-family: inherit; }
 .alert-item {
   display: flex; align-items: flex-start; gap: 13px; padding: 15px;
   background: var(--bg-card); border: 1px solid var(--line);
-  border-left-width: 3px; border-radius: var(--radius);
+  border-left-width: 3.5px; border-radius: var(--radius);
   animation: alertIn 0.25s ease;
+  transition: transform var(--t), box-shadow var(--t), border-color var(--t);
+}
+.alert-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 @keyframes alertIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
 .alert-item.critical { border-left-color: var(--risk); }
@@ -931,7 +1039,11 @@ button, input, select { font-family: inherit; }
   border: 1px solid var(--line); border-radius: var(--radius);
   transition: border-color var(--t), transform var(--t), box-shadow var(--t);
 }
-.route-card:hover { border-color: var(--line-brand); transform: translateY(-2px); box-shadow: var(--shadow); }
+.route-card:hover {
+  border-color: color-mix(in srgb, var(--rc) 45%, var(--line));
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45), 0 0 18px color-mix(in srgb, var(--rc) 25%, transparent);
+}
 .route-card::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--rc); }
 .route-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
 .route-id { font-size: 21px; font-weight: 800; letter-spacing: -0.8px; color: var(--rc); }
@@ -978,7 +1090,18 @@ button, input, select { font-family: inherit; }
   background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
   transition: border-color var(--t), transform var(--t), box-shadow var(--t);
 }
-.driver-card:hover { border-color: var(--line-brand); transform: translateY(-2px); box-shadow: var(--shadow); }
+.driver-card:hover {
+  border-color: var(--line-brand);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 15px color-mix(in srgb, var(--brand-500) 20%, transparent);
+}
+.driver-card:hover .driver-avatar {
+  transform: scale(1.06);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--brand-500) 50%, transparent);
+}
+.driver-avatar {
+  transition: transform var(--t), box-shadow var(--t);
+}
 .driver-top { display: flex; align-items: center; gap: 13px; margin-bottom: 14px; }
 .driver-avatar {
   width: 46px; height: 46px; flex-shrink: 0; border-radius: 50%;
@@ -1161,7 +1284,8 @@ button, input, select { font-family: inherit; }
 @media (max-width: 768px) {
   :root { --pad-view: 16px; --gap: 12px; --icon-stat: 40px; --topbar-h: 58px; }
  
-  .sidebar { transform: translateX(-100%); width: 262px; box-shadow: 0 0 40px rgba(0,0,0,0.6); }
+  .sidebar { transform: translateX(-100%); width: 262px; box-shadow: 0 0 40px rgba(0,0,0,0.6); z-index: 1200; }
+  .sidebar-overlay { z-index: 1100; }
   .sidebar.mobile-open { transform: none; }
   /* En celular el modo "contraído" de escritorio no aplica */
   .sidebar.collapsed { width: 262px; }
@@ -1244,7 +1368,7 @@ button, input, select { font-family: inherit; }
    MENÚ PRINCIPAL (pantalla de entrada) - ADAPTACIÓN MULTI-DISPOSITIVO
    ============================================================ */
 .home-screen {
-  position: fixed; inset: 0; z-index: 180;
+  position: fixed; inset: 0; z-index: 1500;
   display: flex; align-items: flex-start; justify-content: center;
   min-height: 100vh;
   min-height: 100dvh;
@@ -1259,6 +1383,16 @@ button, input, select { font-family: inherit; }
 }
 .home-screen.closing { animation: homeOut 0.32s ease forwards; }
 .home-screen.hidden { display: none !important; }
+/* Ocultar barra lateral en la pantalla de inicio */
+body.home-open .sidebar,
+body.home-open .sidebar-overlay,
+.home-screen:not(.hidden) ~ .sidebar,
+.home-screen:not(.hidden) ~ .sidebar-overlay {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 @keyframes homeOut { to { opacity: 0; transform: scale(1.015); visibility: hidden; } }
 
 .home-inner {
@@ -3119,3 +3253,752 @@ button, input, select { font-family: inherit; }
   from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+
+/* ============================================================
+   REGLAS DE INTERFAZ PARA MODO CLARO (Component Overrides)
+   ============================================================ */
+
+/* Transiciones suaves entre temas */
+body, .topbar, .sidebar, .card, .stat-card, .fleet-table-wrapper, 
+.schedule-card, .route-card, .driver-card, .modal, .search-bar, .icon-btn {
+  transition: background-color 0.22s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.22s ease;
+}
+
+/* Scrollbar en modo claro */
+html[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Barra superior y Barra lateral */
+html[data-theme="light"] .topbar {
+  background: rgba(255, 255, 255, 0.88);
+  border-bottom: 1px solid var(--line);
+}
+html[data-theme="light"] .sidebar {
+  background: #ffffff;
+  border-right: 1px solid var(--line);
+}
+html[data-theme="light"] .sidebar-toggle:hover {
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--text-strong);
+}
+html[data-theme="light"] .sidebar.collapsed .sidebar-toggle {
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--text-strong);
+  border-color: var(--line);
+}
+html[data-theme="light"] .nav-item:hover {
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--text-strong);
+}
+html[data-theme="light"] .nav-item.active {
+  background: color-mix(in srgb, var(--brand-500) 10%, transparent);
+  color: var(--brand-500);
+}
+html[data-theme="light"] .nav-count {
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--text);
+}
+html[data-theme="light"] .user-profile:hover {
+  background: rgba(15, 23, 42, 0.04);
+}
+html[data-theme="light"] .sidebar-logout-btn {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+}
+html[data-theme="light"] .sidebar-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.16);
+  color: #b91c1c;
+}
+html[data-theme="light"] .mobile-menu-btn {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.12);
+  color: var(--text);
+}
+
+/* Búsqueda, inputs y botones generales */
+html[data-theme="light"] .search-bar,
+html[data-theme="light"] .icon-btn,
+html[data-theme="light"] .table-btn,
+html[data-theme="light"] .modal-close,
+html[data-theme="light"] .fleet-search,
+html[data-theme="light"] .filter-select,
+html[data-theme="light"] .modal-stat {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.12);
+  color: var(--text);
+}
+html[data-theme="light"] .search-bar input {
+  color: var(--text-strong);
+}
+html[data-theme="light"] .search-bar input::-webkit-search-cancel-button {
+  filter: none;
+}
+html[data-theme="light"] .icon-btn:hover,
+html[data-theme="light"] .table-btn:hover {
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--text-strong);
+  border-color: var(--line-brand);
+}
+html[data-theme="light"] .btn-ghost {
+  color: var(--text);
+  border-color: rgba(15, 23, 42, 0.14);
+}
+html[data-theme="light"] .btn-ghost:hover {
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--text-strong);
+}
+html[data-theme="light"] .filter-tab:hover,
+html[data-theme="light"] .period-btn:hover {
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--text-strong);
+}
+html[data-theme="light"] .filter-tab.active,
+html[data-theme="light"] .period-btn.active {
+  background: color-mix(in srgb, var(--brand-500) 12%, transparent);
+  color: var(--brand-500);
+}
+html[data-theme="light"] .filter-select option {
+  background: #ffffff;
+  color: var(--text-strong);
+}
+
+/* Tarjetas y Tablas */
+html[data-theme="light"] .card,
+html[data-theme="light"] .stat-card,
+html[data-theme="light"] .fleet-table-wrapper {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 14px rgba(15, 23, 42, 0.05);
+}
+html[data-theme="light"] .card:hover,
+html[data-theme="light"] .stat-card:hover {
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.08);
+}
+html[data-theme="light"] .fleet-table th {
+  background: var(--bg-surface);
+  color: var(--text-soft);
+  border-bottom: 1px solid var(--line);
+}
+html[data-theme="light"] .fleet-table tbody tr:hover td {
+  background: rgba(79, 70, 229, 0.035);
+  color: var(--text-strong);
+}
+html[data-theme="light"] .bus-item {
+  border-bottom: 1px solid var(--line);
+}
+html[data-theme="light"] .bus-item:hover {
+  background: rgba(79, 70, 229, 0.04);
+}
+html[data-theme="light"] .mini-bar {
+  background: #e2e8f0;
+}
+html[data-theme="light"] .route-progress-bar {
+  background: #e2e8f0;
+}
+html[data-theme="light"] .activity-item {
+  border-bottom: 1px solid var(--line);
+}
+
+/* Switch de configuración */
+html[data-theme="light"] .switch {
+  background: #cbd5e1;
+  border-color: #94a3b8;
+}
+html[data-theme="light"] .switch span {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+html[data-theme="light"] .switch[aria-checked="true"] {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+}
+
+/* Modales y Notificaciones */
+html[data-theme="light"] .modal-overlay {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+}
+html[data-theme="light"] .modal {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+}
+html[data-theme="light"] .notif-dropdown-panel {
+  background: #ffffff;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12);
+  border: 1px solid var(--line);
+}
+html[data-theme="light"] .notif-item {
+  border-bottom: 1px solid var(--line);
+}
+html[data-theme="light"] .notif-item:hover {
+  background: rgba(15, 23, 42, 0.03);
+}
+html[data-theme="light"] .notif-item.unread {
+  background: color-mix(in srgb, var(--brand-500) 6%, transparent);
+}
+html[data-theme="light"] .toast {
+  background: #ffffff;
+  border: 1px solid var(--line-brand);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+  color: var(--text-strong);
+}
+
+/* Leaflet Map y Popups */
+html[data-theme="light"] .leaflet-container {
+  background-color: #e2e8f0 !important;
+}
+html[data-theme="light"] .leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+}
+html[data-theme="light"] .leaflet-popup-tip {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+}
+html[data-theme="light"] .map-btn {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  color: var(--text-strong);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] .map-btn:hover {
+  background: var(--bg-surface);
+  color: var(--brand-500);
+  border-color: var(--line-brand);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+html[data-theme="light"] .map-legend {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  color: var(--text);
+}
+html[data-theme="light"] .map-bus-item {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  color: var(--text);
+}
+html[data-theme="light"] .map-bus-item:hover,
+html[data-theme="light"] .map-bus-item.highlight {
+  background: color-mix(in srgb, var(--brand-500) 10%, #fff);
+  border-color: var(--line-brand);
+}
+html[data-theme="light"] .map-route-focus-pill {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--line-brand);
+  color: var(--text-strong);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Tarjetas de Rutas, Conductores, Alertas y Horarios */
+html[data-theme="light"] .route-card,
+html[data-theme="light"] .driver-card,
+html[data-theme="light"] .alert-item {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
+}
+html[data-theme="light"] .route-card:hover,
+html[data-theme="light"] .driver-card:hover {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+}
+html[data-theme="light"] .driver-name {
+  color: var(--text-strong);
+}
+html[data-theme="light"] .schedule-card {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.05);
+}
+html[data-theme="light"] .schedule-card:hover {
+  border-color: var(--line-brand);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+}
+html[data-theme="light"] .sched-route-code {
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--text-strong);
+}
+html[data-theme="light"] .sched-route-name {
+  color: var(--text-strong);
+}
+html[data-theme="light"] .sched-terminal-flow {
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+}
+html[data-theme="light"] .sched-terminal-name {
+  color: var(--text-strong);
+}
+html[data-theme="light"] .sched-metric-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+}
+html[data-theme="light"] .sched-metric-val {
+  color: var(--text-strong);
+}
+html[data-theme="light"] .sched-pill {
+  background: rgba(15, 23, 42, 0.05);
+  border-color: rgba(15, 23, 42, 0.08);
+  color: var(--text);
+}
+html[data-theme="light"] .sched-pill.passed {
+  background: rgba(15, 23, 42, 0.02);
+  color: #94a3b8;
+}
+html[data-theme="light"] .sched-action-btn.secondary {
+  background: rgba(15, 23, 42, 0.05);
+  border-color: rgba(15, 23, 42, 0.1);
+  color: var(--text);
+}
+html[data-theme="light"] .sched-action-btn.secondary:hover {
+  background: rgba(15, 23, 42, 0.09);
+  color: var(--text-strong);
+}
+html[data-theme="light"] .mobile-bottom-nav {
+  background: rgba(255, 255, 255, 0.95);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+}
+html[data-theme="light"] .mobile-tab-btn {
+  color: var(--text-soft);
+}
+html[data-theme="light"] .mobile-tab-btn.active {
+  color: var(--brand-500);
+}
+
+/* Botones de cambio de tema (Theme Toggle) */
+.theme-toggle-btn {
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--t), background var(--t), color var(--t), border-color var(--t);
+}
+.theme-toggle-btn:hover {
+  transform: rotate(15deg) scale(1.06);
+}
+.theme-toggle-btn:active {
+  transform: scale(0.92);
+}
+.theme-toggle-btn-sidebar {
+  position: relative;
+  transition: transform var(--t), color var(--t);
+}
+.theme-toggle-btn-sidebar:hover {
+  transform: scale(1.1);
+}
+
+/* Iconos de sol y luna */
+.theme-icon-sun {
+  display: block;
+  color: #f59e0b;
+  width: 17px;
+  height: 17px;
+}
+.theme-icon-moon {
+  display: none;
+  color: #6366f1;
+  width: 17px;
+  height: 17px;
+}
+
+/* En Modo Claro, ocultar sol y mostrar luna */
+html[data-theme="light"] .theme-icon-sun {
+  display: none !important;
+}
+html[data-theme="light"] .theme-icon-moon {
+  display: block !important;
+}
+
+/* ============================================================
+   MODO CLARO — OVERRIDES EXTENDIDOS PARA CONTRASTE COMPLETO
+   Garantiza que ningún texto quede blanco o ilegible en modo claro.
+   ============================================================ */
+
+html[data-theme="light"] body {
+  background: var(--bg-base);
+  color: var(--text-strong);
+}
+
+/* Status badges */
+html[data-theme="light"] .status-active  { color: #065f46; background: rgba(5, 150, 105, 0.12); }
+html[data-theme="light"] .status-delayed { color: #92400e; background: rgba(217, 119, 6, 0.14); }
+html[data-theme="light"] .status-maintenance { color: #991b1b; background: rgba(220, 38, 38, 0.12); }
+html[data-theme="light"] .status-stopped { color: var(--text); background: rgba(15, 23, 42, 0.06); }
+
+/* Títulos y textos principales */
+html[data-theme="light"] h1,
+html[data-theme="light"] h2,
+html[data-theme="light"] h3,
+html[data-theme="light"] .page-title,
+html[data-theme="light"] .home-title,
+html[data-theme="light"] .home-tile-name,
+html[data-theme="light"] .home-tile { color: var(--text-strong); }
+
+html[data-theme="light"] .home-sub,
+html[data-theme="light"] .home-foot,
+html[data-theme="light"] .home-tile-desc { color: var(--text-soft); }
+
+html[data-theme="light"] .home-tile {
+  background: #ffffff;
+  border-color: var(--line);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+}
+html[data-theme="light"] .home-tile:hover,
+html[data-theme="light"] .home-tile:focus-visible {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+}
+
+/* Stat cards y métricas */
+html[data-theme="light"] .stat-card {
+  background: #ffffff;
+  border-color: var(--line);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
+}
+html[data-theme="light"] .stat-value { color: var(--text-strong); }
+html[data-theme="light"] .stat-value small { color: var(--text-soft); }
+html[data-theme="light"] .stat-label { color: var(--text-soft); }
+html[data-theme="light"] .card-title { color: var(--text-strong); }
+html[data-theme="light"] .card-sub { color: var(--text-soft); }
+html[data-theme="light"] .card-header h3 { color: var(--text-strong); }
+
+/* DB pills y status */
+html[data-theme="light"] .db-status-pill { color: var(--brand-500); }
+html[data-theme="light"] .db-table-name  { color: var(--brand-500); }
+html[data-theme="light"] .server-status-pill { color: var(--text-soft); }
+
+/* Fleet table */
+html[data-theme="light"] .fleet-table th { background: var(--bg-surface); color: var(--text-soft); border-bottom-color: var(--line); }
+html[data-theme="light"] .fleet-table td { color: var(--text); border-bottom-color: var(--line); }
+html[data-theme="light"] .fleet-table tbody tr:hover td { background: rgba(79, 70, 229, 0.035); color: var(--text-strong); }
+
+/* Form inputs */
+html[data-theme="light"] .form-group label { color: var(--text-strong); }
+html[data-theme="light"] .form-group input {
+  background: var(--bg-surface);
+  color: var(--text-strong);
+  border-color: var(--line);
+}
+html[data-theme="light"] .form-group input::placeholder { color: var(--text-soft); }
+html[data-theme="light"] .user-active-card {
+  background: var(--bg-surface);
+  border-color: var(--line);
+}
+html[data-theme="light"] .auth-tabs {
+  background: rgba(15, 23, 42, 0.04);
+}
+html[data-theme="light"] .auth-tab.active {
+  background: #ffffff;
+  color: var(--text-strong);
+  box-shadow: 0 2px 6px rgba(15,23,42,0.07);
+}
+
+/* Summary y reports */
+html[data-theme="light"] .summary-cell {
+  background: var(--bg-surface);
+  border-color: var(--line);
+}
+html[data-theme="light"] .summary-cell b { color: var(--text-strong); }
+html[data-theme="light"] .summary-cell span { color: var(--text-soft); }
+html[data-theme="light"] .report-summary {
+  background: #ffffff;
+}
+html[data-theme="light"] .cmd-key {
+  background: rgba(15, 23, 42, 0.06);
+  border-color: var(--line);
+}
+html[data-theme="light"] .cmd-item:hover,
+html[data-theme="light"] .cmd-item.selected {
+  background: color-mix(in srgb, var(--brand-500) 10%, transparent);
+  color: var(--brand-500);
+}
+
+/* Horarios de buses (Costa Rica) */
+html[data-theme="light"] .schedules-header-card {
+  background: linear-gradient(135deg, rgba(241, 245, 249, 0.95) 0%, rgba(248, 250, 252, 0.98) 100%);
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  color: var(--text-strong);
+}
+html[data-theme="light"] .sched-header-title { color: var(--text-strong); }
+html[data-theme="light"] .sched-header-desc  { color: var(--text-soft); }
+html[data-theme="light"] .sched-clock-box {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: var(--line);
+}
+html[data-theme="light"] .sched-clock-label { color: var(--text-soft); }
+html[data-theme="light"] .sched-clock-time  { color: var(--brand-500); }
+html[data-theme="light"] .sched-clock-date  { color: var(--text-soft); }
+
+html[data-theme="light"] .sched-day-tabs,
+html[data-theme="light"] .sched-dir-tabs {
+  background: rgba(15, 23, 42, 0.05);
+  border-color: var(--line);
+}
+html[data-theme="light"] .sched-day-btn,
+html[data-theme="light"] .sched-dir-btn {
+  color: var(--text-soft);
+}
+html[data-theme="light"] .sched-day-btn:hover,
+html[data-theme="light"] .sched-dir-btn:hover {
+  color: var(--text-strong);
+  background: rgba(15, 23, 42, 0.05);
+}
+html[data-theme="light"] .sched-day-btn.active,
+html[data-theme="light"] .sched-dir-btn.active {
+  background: var(--brand-500);
+  color: #ffffff;
+}
+
+html[data-theme="light"] .schedules-search-input {
+  background: #ffffff;
+  border-color: var(--line);
+  color: var(--text-strong);
+}
+html[data-theme="light"] .schedules-search-input::placeholder { color: var(--text-soft); }
+html[data-theme="light"] .schedules-search-icon { color: var(--text-soft); }
+
+html[data-theme="light"] .schedule-card {
+  background: #ffffff;
+  border-color: var(--line);
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.05);
+}
+html[data-theme="light"] .schedule-card:hover {
+  border-color: var(--line-brand);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+}
+html[data-theme="light"] .sched-route-code {
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--text-strong);
+}
+html[data-theme="light"] .sched-route-name {
+  color: var(--text-strong);
+}
+html[data-theme="light"] .sched-terminal-flow {
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+}
+html[data-theme="light"] .sched-terminal-label { color: var(--text-soft); }
+html[data-theme="light"] .sched-terminal-name  { color: var(--text-strong); }
+html[data-theme="light"] .sched-terminal-arrow { color: var(--brand-500); }
+
+html[data-theme="light"] .sched-metric-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+}
+html[data-theme="light"] .sched-metric-label { color: var(--text-soft); }
+html[data-theme="light"] .sched-metric-val   { color: var(--text-strong); }
+
+html[data-theme="light"] .sched-departures-header { color: var(--text-soft); }
+html[data-theme="light"] .sched-operator-name     { color: var(--text-soft); }
+
+html[data-theme="light"] .sched-pill {
+  background: rgba(15, 23, 42, 0.05);
+  border-color: rgba(15, 23, 42, 0.08);
+  color: var(--text);
+}
+html[data-theme="light"] .sched-pill.passed {
+  background: rgba(15, 23, 42, 0.02);
+  color: var(--text-soft);
+}
+html[data-theme="light"] .sched-pill.next {
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-alt));
+  border-color: var(--brand-300);
+  color: #ffffff;
+}
+
+html[data-theme="light"] .sched-actions-row {
+  border-top-color: var(--line);
+}
+html[data-theme="light"] .sched-concession-badge {
+  background: rgba(79, 70, 229, 0.1);
+  color: var(--brand-500);
+  border-color: rgba(79, 70, 229, 0.3);
+}
+html[data-theme="light"] .sched-tariff-pill {
+  background: rgba(5, 150, 105, 0.1);
+  color: #065f46;
+  border-color: rgba(5, 150, 105, 0.3);
+}
+html[data-theme="light"] .sched-header-badge {
+  background: rgba(79, 70, 229, 0.1);
+  color: var(--brand-500);
+  border-color: rgba(79, 70, 229, 0.3);
+}
+html[data-theme="light"] .sched-next-bus-badge {
+  background: rgba(79, 70, 229, 0.12);
+  color: var(--brand-500);
+  border-color: rgba(79, 70, 229, 0.35);
+}
+html[data-theme="light"] .sched-action-btn.primary {
+  background: rgba(79, 70, 229, 0.1);
+  border-color: rgba(79, 70, 229, 0.4);
+  color: var(--brand-500);
+}
+html[data-theme="light"] .sched-action-btn.primary:hover {
+  background: var(--brand-500);
+  color: #ffffff;
+}
+html[data-theme="light"] .sched-action-btn.secondary {
+  background: rgba(15, 23, 42, 0.05);
+  border-color: rgba(15, 23, 42, 0.1);
+  color: var(--text);
+}
+html[data-theme="light"] .sched-action-btn.secondary:hover {
+  background: rgba(15, 23, 42, 0.09);
+  color: var(--text-strong);
+}
+
+/* Rutas y Conductores */
+html[data-theme="light"] .route-card,
+html[data-theme="light"] .driver-card {
+  background: #ffffff;
+  border-color: var(--line);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
+}
+html[data-theme="light"] .route-card:hover,
+html[data-theme="light"] .driver-card:hover {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+}
+html[data-theme="light"] .route-name { color: var(--text-soft); }
+html[data-theme="light"] .route-operator { color: var(--text-soft); }
+html[data-theme="light"] .route-stat-value { color: var(--text-strong); }
+html[data-theme="light"] .route-stat-label { color: var(--text-soft); }
+html[data-theme="light"] .route-progress-head { color: var(--text-soft); }
+html[data-theme="light"] .route-progress-bar { background: #e2e8f0; }
+
+html[data-theme="light"] .driver-name { color: var(--text-strong); }
+html[data-theme="light"] .driver-license { color: var(--text-soft); }
+html[data-theme="light"] .driver-stat-val { color: var(--text-strong); }
+html[data-theme="light"] .driver-stat-lbl { color: var(--text-soft); }
+html[data-theme="light"] .driver-contact-card {
+  background: var(--bg-surface);
+  border-color: var(--line);
+}
+
+/* Bus list */
+html[data-theme="light"] .bus-item-id { color: var(--text-strong); }
+html[data-theme="light"] .bus-item-route { color: var(--text-soft); }
+html[data-theme="light"] .bus-item-speed { color: var(--text); }
+html[data-theme="light"] .bus-item:hover {
+  background: rgba(79, 70, 229, 0.04);
+}
+
+/* Alertas */
+html[data-theme="light"] .alert-item {
+  background: #ffffff;
+  border-color: var(--line);
+  color: var(--text-strong);
+}
+html[data-theme="light"] .alert-title { color: var(--text-strong); }
+html[data-theme="light"] .alert-desc { color: var(--text); }
+html[data-theme="light"] .alert-time { color: var(--text-soft); }
+html[data-theme="light"] .field-error-hint { color: #dc2626; }
+
+/* Modales y Configuración */
+html[data-theme="light"] .modal {
+  background: #ffffff;
+  border-color: var(--line);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+}
+html[data-theme="light"] .modal-header {
+  border-bottom-color: var(--line);
+}
+html[data-theme="light"] .modal-header h2 { color: var(--text-strong); }
+html[data-theme="light"] .modal-header p { color: var(--text-soft); }
+html[data-theme="light"] .modal-close {
+  background: rgba(15, 23, 42, 0.05);
+  border-color: var(--line);
+  color: var(--text-soft);
+}
+html[data-theme="light"] .modal-close:hover {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+html[data-theme="light"] .modal-stat {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.12);
+  color: var(--text);
+}
+html[data-theme="light"] .modal-stat-value { color: var(--text-strong); }
+html[data-theme="light"] .modal-stat-label { color: var(--text-soft); }
+html[data-theme="light"] .setting-name { color: var(--text-strong); }
+html[data-theme="light"] .setting-desc { color: var(--text-soft); }
+html[data-theme="light"] .modal-overlay {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+/* Nav y Sidebar */
+html[data-theme="light"] .nav-count.alert-badge {
+  background: rgba(220, 38, 38, 0.12);
+  color: #991b1b;
+}
+html[data-theme="light"] .nav-count.live-pulse {
+  background: rgba(5, 150, 105, 0.12);
+  color: #065f46;
+}
+html[data-theme="light"] .sidebar-logout-btn { color: #dc2626; }
+html[data-theme="light"] .sidebar-logout-btn:hover { color: #b91c1c; }
+html[data-theme="light"] .breadcrumb { color: var(--text-soft); }
+html[data-theme="light"] .nav-label  { color: var(--text-soft); }
+
+/* Móvil */
+html[data-theme="light"] .mobile-tab-btn { color: var(--text-soft); }
+html[data-theme="light"] .mobile-tab-btn.active { color: var(--brand-500); }
+html[data-theme="light"] .mobile-tab-btn.active svg {
+  stroke: var(--brand-500);
+  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--brand-500) 50%, transparent));
+}
+
+/* Mapa floating pill */
+html[data-theme="light"] .map-route-focus-pill {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: var(--line-brand);
+  color: var(--text-strong);
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.1);
+}
+html[data-theme="light"] .map-route-focus-pill strong { color: var(--brand-500); }
+html[data-theme="light"] .map-route-focus-pill button {
+  background: rgba(15, 23, 42, 0.06);
+  border-color: rgba(15, 23, 42, 0.14);
+  color: var(--text-soft);
+}
+
+/* Skeleton & forms */
+html[data-theme="light"] .skeleton {
+  background: linear-gradient(90deg, rgba(15,23,42,0.04) 25%, rgba(15,23,42,0.09) 50%, rgba(15,23,42,0.04) 75%);
+}
+html[data-theme="light"] .pw-strength-track { background: rgba(15,23,42,0.08); }
+
+/* Cookie banner & Command palette */
+html[data-theme="light"] .cookie-banner {
+  background: #ffffff;
+  border-color: var(--line-brand);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+}
+html[data-theme="light"] .command-palette-box {
+  background: #ffffff;
+  border-color: var(--line);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+}
+html[data-theme="light"] .db-modal-card {
+  background: #ffffff;
+  border-color: var(--line-brand);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.15);
+}
+html[data-theme="light"] .db-feature-badge {
+  background: rgba(5, 150, 105, 0.1);
+  color: #065f46;
+  border-color: rgba(5, 150, 105, 0.3);
+}
+
+/* Notif header */
+html[data-theme="light"] .notif-header {
+  background: color-mix(in srgb, var(--brand-500) 6%, #ffffff);
+}
+
