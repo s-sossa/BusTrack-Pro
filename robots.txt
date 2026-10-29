@@ -9,4 +9,4 @@ Disallow: /debug
 Disallow: /.env
 Disallow: /server/
 
-Sitemap: https://bustrack.example.com/sitemap.xml
+Sitemap: https://bustrackpro.cr/sitemap.xml

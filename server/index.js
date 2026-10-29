@@ -362,7 +362,7 @@ if (isMain) {
 
     console.log('============================================================');
     console.log(`  🚍 BusTrack Pro Backend & Telemetry Server Online`);
-    console.log(`  🗄️ Database:   ${dbStatus ? `${dbStatus.engine} (${dbStatus.storage}: ${dbStatus.filePath || 'memory'})` : 'Active'}`);
+    console.log(`  🗄️ Database:   ${dbStatus ? `${dbStatus.engine} (${dbStatus.storage})` : 'Active'}`);
     if (dbStatus && dbStatus.totalRows) {
       console.log(`  📊 DB Records: ${dbStatus.totalRows} filas relacionales cargadas`);
     }

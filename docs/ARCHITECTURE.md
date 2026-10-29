@@ -58,7 +58,7 @@ graph TD
 4. **Telemetry & Geo-Tracking Domain (Simulación Local)**:
    - Ingesta beacons de coordenadas GPS simuladas (coordenadas x, y, velocidad, combustible, ocupación).
    - *Nota de sincronización:* La flota, recorridos de buses y alertas operan actualmente mediante el motor de simulación local (`telemetrySimulator.js` y SQLite en memoria) para propósitos de demostración y prototipado, mientras que la autenticación e identidades residen 100% sincronizadas en Supabase Auth.
-   - Distribuye eventos en tiempo real a consumidores conectados mediante WebSocket (`/ws/telemetry`).
+   - **WebSocket (`/ws/telemetry`) — Estado actual:** El servidor expone el endpoint `/ws/telemetry` y el motor de telemetría emite eventos en tiempo real a clientes conectados (integración lista para apps nativas, bots o dashboards externos). El frontend web (`app.js`) actualiza la telemetría mediante polling con `setInterval` (no abre un WebSocket directo). La migración del frontend a WebSocket es un ítem pendiente de roadmap — el endpoint ya existe y está probado.
 
 5. **Alert & Incident Domain**:
    - Monitors telemetry thresholds (speeding, engine temperature, low fuel < 20%, severe delays, geofence deviation).
@@ -85,7 +85,7 @@ graph TD
    - Protection against telemetry packet storms via sliding window deduplication.
 3. **Heartbeat & Reconnection Protocol**:
    - WebSocket clients send periodic ping frames every 30 seconds; server terminates dead TCP connections after 2 missed beats.
-   - Frontend client implements exponential backoff with jitter (500ms, 1s, 2s, 4s, max 15s) upon connection drop.
+   - Future native/mobile client: implements exponential backoff with jitter (500ms, 1s, 2s, 4s, max 15s) upon connection drop. The current web frontend (`app.js`) uses polling intervals rather than a persistent WebSocket connection.
 4. **Graceful Shutdown**:
    - Catches `SIGTERM` and `SIGINT`:
      - Closes incoming HTTP listeners.

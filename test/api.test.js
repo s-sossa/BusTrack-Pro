@@ -5,7 +5,14 @@
 
 import dotenv from 'dotenv';
 dotenv.config();
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'bustrack_pro_production_secret_key_change_me_in_prod';
+// ⛔ JWT_SECRET MUST be defined in .env for production.
+// The fallback below is exclusively for local/CI test runs and must NEVER match production.
+if (!process.env.JWT_SECRET) {
+  // Generate a random 64-hex secret for this test run only.
+  // Node 20+ has crypto.randomBytes available globally.
+  const { randomBytes } = await import('node:crypto');
+  process.env.JWT_SECRET = randomBytes(32).toString('hex');
+}
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

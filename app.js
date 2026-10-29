@@ -535,6 +535,19 @@ function navigate(view) {
   $('pageTitle').textContent = VIEW_TITLES[view];
   $('breadcrumbCurrent').textContent = VIEW_TITLES[view];
   document.title = VIEW_TITLES[view] + ' — BusTrack Pro';
+  // Actualizar meta descripción según la vista activa
+  const _pageMeta = {
+    dashboard: 'Resumen en tiempo real del estado de la flota, mapa interactivo y métricas.',
+    map: 'Seguimiento satelital y mapa esquemático de todas las unidades en circulación.',
+    schedules: 'Tabla completa de unidades, conductores asignados, estados y exportación CSV.',
+    fleet: 'Tabla completa de unidades, conductores asignados, estados y exportación CSV.',
+    routes: 'Detalle de trazados, paradas e indicadores por recorrido.',
+    alerts: 'Alertas críticas, advertencias y avisos del sistema en tiempo real.',
+    reports: 'Gráficos de eficiencia, volumen de pasajeros y tiempos de retraso.',
+    drivers: 'Turnos, calificaciones y asignación de buses por conductor.',
+  };
+  const _metaEl = document.querySelector('meta[name="description"]');
+  if (_metaEl && _pageMeta[view]) _metaEl.content = _pageMeta[view];
 
   if (view === 'schedules' || view === 'fleet') renderSchedules();
   if (view === 'routes') renderRoutes();
@@ -2043,6 +2056,9 @@ function paintDashboardStopsAndRoutes() {
   paintLayerRoutesAndStops(dashboardLeafletMap, dashboardMarkers, true);
 }
 
+// NOTE (audit #13): setupDashboardMapControls handles the mini-map in the dashboard panel.
+// setupMapControls (below) handles the full-screen map view.
+// Both follow the same pattern but target different Leaflet instances and DOM elements.
 function setupDashboardMapControls() {
   const miniZoomBtns = document.querySelectorAll('.map-btn[data-map="mini"][data-zoom]');
   miniZoomBtns.forEach(btn => {
@@ -2291,7 +2307,7 @@ function applyRouteHighlightToMap(mapInstance, markersStore, bus, isMini) {
     lineCap: 'round',
     lineJoin: 'round'
   });
-  mainStreet.bindTooltip('🛣️ Calle de Ruta: ' + ((bus.route && bus.route.name) || canonicalRouteId), { sticky: true });
+  mainStreet.bindTooltip('🛣️ Calle de Ruta: ' + ((bus.route && bus.route.name) || routeId), { sticky: true });
 
   // C) Núcleo brillante de luz interior para efecto neón
   const innerCore = L.polyline(coords, {
@@ -2305,7 +2321,9 @@ function applyRouteHighlightToMap(mapInstance, markersStore, bus, isMini) {
   const layerGroup = L.layerGroup([casing, mainStreet, innerCore]).addTo(mapInstance);
   layerGroup.bringToFront();
   markersStore.highlightLayer = layerGroup;
-  console.log('✅ Highlight layer added to', isMini ? 'dashboard' : 'fullmap', '| route:', canonicalRouteId, '| coords:', coords.length, '| color:', color);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('✅ Highlight layer added to', isMini ? 'dashboard' : 'fullmap', '| route:', routeId, '| coords:', coords.length, '| color:', color);
+  }
 
   // 4. Asegurar que los marcadores de los buses queden visibles encima de la calle
   if (markersStore.buses) {
@@ -2317,10 +2335,8 @@ function applyRouteHighlightToMap(mapInstance, markersStore, bus, isMini) {
 
 function highlightRouteForBus(bus) {
   if (!bus) {
-    console.warn('⚠️ highlightRouteForBus: bus is null');
     return;
   }
-  console.log('🛣️ highlightRouteForBus:', bus.id, '| route:', bus.route?.id, '| realMap:', !!realLeafletMap, '| dashMap:', !!dashboardLeafletMap);
   state.highlightBus = bus.id;
   applyRouteHighlightToMap(realLeafletMap, leafletMarkers, bus, false);
   applyRouteHighlightToMap(dashboardLeafletMap, dashboardMarkers, bus, true);
@@ -3787,32 +3803,15 @@ function init() {
   // ------------------------------------------------------------------
   // DYNAMIC PAGE META TITLES & DESCRIPTIONS
   // ------------------------------------------------------------------
-  const pageMetaMap = {
-    dashboard: { title: 'Panel Principal — BusTrack Pro', desc: 'Resumen en tiempo real del estado de la flota, mapa interactivo y métricas.' },
-    map: { title: 'Mapa en Vivo — BusTrack Pro', desc: 'Seguimiento satelital y mapa esquemático de todas las unidades en circulación.' },
-    fleet: { title: 'Gestión de Flota — BusTrack Pro', desc: 'Tabla completa de unidades, conductores asignados, estados y exportación CSV.' },
-    routes: { title: 'Rutas Operativas — BusTrack Pro', desc: 'Detalle de trazados, paradas e indicadores por recorrido.' },
-    alerts: { title: 'Centro de Alertas — BusTrack Pro', desc: 'Alertas críticas, advertencias y avisos del sistema en tiempo real.' },
-    reports: { title: 'Reportes y Analíticas — BusTrack Pro', desc: 'Gráficos de eficiencia, volumen de pasajeros y tiempos de retraso.' },
-    drivers: { title: 'Directorio de Conductores — BusTrack Pro', desc: 'Turnos, calificaciones y asignación de buses por conductor.' }
-  };
-
-  const originalNavigate = navigate;
-  navigate = function(viewName) {
-    originalNavigate(viewName);
-    if (pageMetaMap[viewName]) {
-      document.title = pageMetaMap[viewName].title;
-      const metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) metaDesc.content = pageMetaMap[viewName].desc;
-    }
-  };
-
   // ------------------------------------------------------------------
   // AUTHENTICATION & LANDING GATE LOGIC (Email, Google, Apple via Supabase)
   // ------------------------------------------------------------------
 
   // ── Session state ────────────────────────────────────────────────────
   let currentUser    = null;
+  // NOTE (audit #13): isGuestSession is written at login/logout for future
+  // guest-mode UI differentiation but is not currently read for conditional logic.
+  // Left in place as scaffolding for the planned guest/visitor mode feature.
   let isGuestSession = false;
 
   // Restore persisted session from localStorage on cold start
@@ -4726,8 +4725,18 @@ function init() {
 
   // ------------------------------------------------------------------
   initSupabaseData();
-  setInterval(updateLiveData, 3000);
-  setInterval(pushActivity, 9000);
+  // Store interval IDs so they can be cancelled if needed (e.g. logout, page unload).
+  // audit #16: intervals were previously created without saving their IDs.
+  const _liveDataInterval = setInterval(updateLiveData, 3000);
+  const _activityInterval = setInterval(pushActivity, 9000);
+
+  // Cancel intervals when the page is hidden/unloaded to avoid stale updates
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      clearInterval(_liveDataInterval);
+      clearInterval(_activityInterval);
+    }
+  });
 }
  
 if (document.readyState === 'loading') {

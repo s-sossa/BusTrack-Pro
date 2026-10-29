@@ -11,7 +11,7 @@ import { db } from '../database/db.js';
 import { authRouter } from './authRoutes.js';
 import { writeLimiter } from '../middleware/rateLimiter.js';
 import { validateBusStatus, validateAlertSeverity } from '../middleware/sanitizer.js';
-import { authenticateToken, requireRole } from '../middleware/auth.js';
+import { authenticateToken, optionalAuth, requireRole } from '../middleware/auth.js';
 
 export const apiRouter = Router();
 
@@ -33,8 +33,9 @@ apiRouter.get('/health', (req, res) => {
       engine: dbStatus.engine,
       dialect: dbStatus.dialect,
       connected: dbStatus.connected,
-      storage: dbStatus.storage,
-      totalRows: dbStatus.totalRows,
+      // NOTE: 'storage' and 'filePath' are intentionally omitted from this
+      // public endpoint to avoid leaking deployment internals. Query
+      // GET /database/status (admin only) for the full status object.
     } : { engine: 'in-memory', connected: true },
     version: '1.0.0',
     // NOTE: 'environment' is intentionally omitted from the public health endpoint
@@ -83,9 +84,23 @@ apiRouter.get('/drivers/:id', authenticateToken, requireRole('admin'), (req, res
 });
 
 // --- 4. FLEET BUSES ---
+// ⛔ punto #5/6: La lista pública de buses omite la licencia del conductor (Ley 8968)
 apiRouter.get('/buses', (req, res) => {
   const { route, status, search } = req.query;
   const buses = FleetService.getBuses({ route, status, search });
+  const authHeader = req.headers['authorization'];
+  const isAuthenticated = Boolean(authHeader && authHeader.startsWith('Bearer '));
+  if (!isAuthenticated) {
+    // Strip driver license for unauthenticated callers
+    const sanitized = buses.map(b => {
+      if (b.driver && b.driver.license !== undefined) {
+        const { license: _license, ...safeDriver } = b.driver;
+        return { ...b, driver: safeDriver };
+      }
+      return b;
+    });
+    return res.json(sanitized);
+  }
   res.json(buses);
 });
 
@@ -100,9 +115,19 @@ apiRouter.post('/buses', authenticateToken, requireRole('admin'), writeLimiter, 
   }
 });
 
+// ⛔ punto #5/6: GET /buses/:id strips driver license from unauthenticated responses
+// (Ley 8968 — licencias de conductor son datos personales sensibles)
 apiRouter.get('/buses/:id', (req, res, next) => {
   try {
     const bus = FleetService.getBusById(req.params.id);
+    // Check if caller has a valid admin/dispatcher token
+    const authHeader = req.headers['authorization'];
+    const isAuthenticated = Boolean(authHeader && authHeader.startsWith('Bearer '));
+    if (!isAuthenticated && bus.driver) {
+      // Strip sensitive personal data for public/unauthenticated callers
+      const { license: _license, ...safeDriver } = bus.driver;
+      return res.json({ ...bus, driver: safeDriver });
+    }
     res.json(bus);
   } catch (err) {
     next(err);

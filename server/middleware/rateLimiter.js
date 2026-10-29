@@ -14,7 +14,7 @@ export const generalLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: {
-    type: 'https://bustrack.example.com/errors/rate-limit',
+    type: 'https://bustrackpro.cr/errors/rate-limit',
     title: 'Too Many Requests',
     status: 429,
     detail: 'You have exceeded the request limit. Please try again later.',
@@ -29,7 +29,7 @@ export const writeLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: {
-    type: 'https://bustrack.example.com/errors/rate-limit',
+    type: 'https://bustrackpro.cr/errors/rate-limit',
     title: 'Too Many Requests',
     status: 429,
     detail: 'Write operation limit reached. Please slow down and try again.',

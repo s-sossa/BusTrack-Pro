@@ -9,9 +9,13 @@
 :root {
   /* --- Marca. Cambiar estas tres líneas repinta la app entera --- */
   --brand-300: #a5b0fb;
+  --brand-400: #7e8df8;  /* intermedio brand-300/brand-500 */
   --brand-500: #5b6ef5;
+  --brand-600: #4d5ee3;  /* intermedio brand-500/brand-700 */
   --brand-700: #4453c9;
   --brand-alt: #7c4ddb;
+  --brand-light: var(--brand-300); /* alias: texto sobre fondo de acento */
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
  
   /* --- Neutros (escala fría, todos derivados del mismo tono azul) --- */
   --bg-base:    #070b14;
@@ -61,10 +65,10 @@
 }
  
 /* Paletas alternas (Preferencias) */
-html[data-accent="teal"]   { --brand-300: #7fd8d0; --brand-500: #22a79b; --brand-700: #1a7f76; --brand-alt: #2aa3c4; }
-html[data-accent="amber"]  { --brand-300: #f2c98a; --brand-500: #d38b2a; --brand-700: #a86a1c; --brand-alt: #c96a3c; }
-html[data-accent="rose"]   { --brand-300: #f2a2b4; --brand-500: #d95273; --brand-700: #ab3d5a; --brand-alt: #9b4bc4; }
-html[data-accent="forest"] { --brand-300: #96d7ae; --brand-500: #2f9e63; --brand-700: #237a4c; --brand-alt: #2aa3c4; }
+html[data-accent="teal"]   { --brand-300: #7fd8d0; --brand-400: #55c8be; --brand-500: #22a79b; --brand-600: #1e9589; --brand-700: #1a7f76; --brand-alt: #2aa3c4; --brand-light: var(--brand-300); }
+html[data-accent="amber"]  { --brand-300: #f2c98a; --brand-400: #e3a85a; --brand-500: #d38b2a; --brand-600: #be7b22; --brand-700: #a86a1c; --brand-alt: #c96a3c; --brand-light: var(--brand-300); }
+html[data-accent="rose"]   { --brand-300: #f2a2b4; --brand-400: #e67793; --brand-500: #d95273; --brand-600: #c44467; --brand-700: #ab3d5a; --brand-alt: #9b4bc4; --brand-light: var(--brand-300); }
+html[data-accent="forest"] { --brand-300: #96d7ae; --brand-400: #62bb88; --brand-500: #2f9e63; --brand-600: #278d57; --brand-700: #237a4c; --brand-alt: #2aa3c4; --brand-light: var(--brand-300); }
  
 
 /* ============================================================
@@ -73,9 +77,12 @@ html[data-accent="forest"] { --brand-300: #96d7ae; --brand-500: #2f9e63; --brand
 html[data-theme="light"] {
   /* --- Marca en modo claro (contraste AA nítido) --- */
   --brand-300: #4338ca;
+  --brand-400: #4841d6;
   --brand-500: #4f46e5;
+  --brand-600: #4035cc;
   --brand-700: #3730a3;
   --brand-alt: #7c3aed;
+  --brand-light: var(--brand-300);
 
   /* --- Neutros escala limpia Slate/Zinc --- */
   --bg-base:    #f1f5f9;
@@ -116,10 +123,10 @@ html[data-theme="light"] {
 }
 
 /* Paletas alternas en Modo Claro */
-html[data-theme="light"][data-accent="teal"]   { --brand-300: #0d9488; --brand-500: #0f766e; --brand-700: #115e59; --brand-alt: #0891b2; }
-html[data-theme="light"][data-accent="amber"]  { --brand-300: #b45309; --brand-500: #d97706; --brand-700: #92400e; --brand-alt: #ea580c; }
-html[data-theme="light"][data-accent="rose"]   { --brand-300: #be185d; --brand-500: #e11d48; --brand-700: #9f1239; --brand-alt: #9333ea; }
-html[data-theme="light"][data-accent="forest"] { --brand-300: #15803d; --brand-500: #16a34a; --brand-700: #166534; --brand-alt: #0d9488; }
+html[data-theme="light"][data-accent="teal"]   { --brand-300: #0d9488; --brand-400: #0e8079; --brand-500: #0f766e; --brand-600: #126863; --brand-700: #115e59; --brand-alt: #0891b2; --brand-light: var(--brand-300); }
+html[data-theme="light"][data-accent="amber"]  { --brand-300: #b45309; --brand-400: #c76507; --brand-500: #d97706; --brand-600: #b86806; --brand-700: #92400e; --brand-alt: #ea580c; --brand-light: var(--brand-300); }
+html[data-theme="light"][data-accent="rose"]   { --brand-300: #be185d; --brand-400: #cf1a52; --brand-500: #e11d48; --brand-600: #c81940; --brand-700: #9f1239; --brand-alt: #9333ea; --brand-light: var(--brand-300); }
+html[data-theme="light"][data-accent="forest"] { --brand-300: #15803d; --brand-400: #159144; --brand-500: #16a34a; --brand-600: #148f42; --brand-700: #166534; --brand-alt: #0d9488; --brand-light: var(--brand-300); }
 
 /* Densidad compacta */
 html[data-density="compact"] { --gap: 11px; --pad-view: 16px; --icon-stat: 38px; }

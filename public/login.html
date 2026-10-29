@@ -664,8 +664,8 @@
     // Validar sesión activa en Supabase antes de redirigir (evita bypass por localStorage manipulado)
     try {
       if (window.supabase && window.supabase.createClient) {
-        const supaUrl = window.__SUPABASE_URL || 'https://xdfzffyghbcfvjwhfndq.supabase.co';
-        const supaKey = window.__SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkZnpmZnlnaGJjZnZqd2hmbmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDg1MzMsImV4cCI6MjA1NDEyNDUzM30.7Q_S9U0Bsmw9b_k5TfWpA7e6hWkXhF6Q6_g9pUo1-1w';
+        const supaUrl = window.__SUPABASE_URL || 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
+        const supaKey = window.__SUPABASE_ANON_KEY || 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
         const checkClient = window.supabase.createClient(supaUrl, supaKey);
         checkClient.auth.getSession().then(({ data }) => {
           if (data?.session) {
