@@ -325,7 +325,7 @@ button, input, select { font-family: inherit; }
   border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
+
   border: 1px solid transparent;
   text-decoration: none;
   transition: transform 0.15s ease, background var(--t), border-color var(--t), box-shadow var(--t), color var(--t);
@@ -406,7 +406,7 @@ button, input, select { font-family: inherit; }
 .user-role { font-size: 11px; color: var(--text-soft); }
 .user-settings {
   background: none; border: none; color: var(--text-soft);
-  cursor: pointer; padding: 4px; border-radius: 6px; display: flex;
+ padding: 4px; border-radius: 6px; display: flex;
 }
 .user-settings svg { width: 16px; height: 16px; }
 .user-settings:hover { color: var(--brand-300); }
@@ -419,7 +419,7 @@ button, input, select { font-family: inherit; }
   background: rgba(240, 80, 80, 0.07);
   color: #f08080;
   font-size: 13px; font-weight: 500;
-  cursor: pointer; text-align: left;
+ text-align: left;
   transition: background var(--t), color var(--t), transform 0.15s;
   white-space: nowrap;
 }
@@ -562,9 +562,9 @@ button, input, select { font-family: inherit; }
 .stat-card {
   position: relative; overflow: hidden; min-width: 0;
   display: flex; align-items: center; gap: 14px;
-  padding: 16px 18px;
-  background: var(--bg-card); border: 1px solid var(--line);
-  border-radius: var(--radius);
+  padding: 16px 18px; background: var(--bg-card); border: 1px solid var(--line);
+
+   background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
   transition: border-color var(--t), transform var(--t), box-shadow var(--t), background var(--t);
   animation: cardFadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -602,7 +602,8 @@ button, input, select { font-family: inherit; }
 /* ============ TARJETAS ============ */
 .card {
   background: var(--bg-card); border: 1px solid var(--line);
-  border-radius: var(--radius); overflow: hidden; min-width: 0;
+
+   background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; min-width: 0;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   transition: border-color var(--t), box-shadow var(--t), transform var(--t);
 }
@@ -922,8 +923,8 @@ html[data-theme="light"] .map-btn-geo.active:hover {
  
 .fleet-table-wrapper {
   overflow-x: auto; -webkit-overflow-scrolling: touch;
-  background: var(--bg-card); border: 1px solid var(--line);
-  border-radius: var(--radius);
+
+   background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
 }
 .fleet-table { width: 100%; border-collapse: collapse; white-space: nowrap; }
 .fleet-table th {
@@ -963,43 +964,43 @@ html[data-theme="light"] .map-btn-geo.active:hover {
 }
 .empty-state { padding: 34px; text-align: center; color: var(--text-soft); font-size: 13px; }
  
-/* ============ ALERTAS ============ */
-.alerts-container { display: flex; flex-direction: column; gap: 14px; max-width: 880px; width: 100%; }
-.alerts-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.alerts-header h2 { font-size: 17px; font-weight: 700; }
-.alerts-list { display: flex; flex-direction: column; gap: 10px; }
-.alert-item {
-  display: flex; align-items: flex-start; gap: 13px; padding: 15px;
-  background: var(--bg-card); border: 1px solid var(--line);
-  border-left-width: 3.5px; border-radius: var(--radius);
-  animation: alertIn 0.25s ease;
-  transition: transform var(--t), box-shadow var(--t), border-color var(--t);
+
+
+
+
+
+
+
+
+
+
+
 }
-.alert-item:hover {
-  transform: translateX(4px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+
+
+
 }
-@keyframes alertIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
-.alert-item.critical { border-left-color: var(--risk); }
-.alert-item.warning  { border-left-color: var(--warn); }
-.alert-item.info     { border-left-color: var(--brand-500); }
-.alert-item.read { opacity: 0.55; }
-.alert-icon-wrap {
-  width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center; font-size: 17px;
+
+
+
+
+
+
+
+
 }
-.alert-icon-wrap.critical { background: color-mix(in srgb, var(--risk) 16%, transparent); }
-.alert-icon-wrap.warning  { background: color-mix(in srgb, var(--warn) 16%, transparent); }
-.alert-icon-wrap.info     { background: color-mix(in srgb, var(--brand-500) 16%, transparent); }
-.alert-content { flex: 1; min-width: 0; }
-.alert-title { font-size: 13.5px; font-weight: 600; margin-bottom: 3px; }
-.alert-desc { font-size: 12px; color: var(--text); line-height: 1.5; }
-.alert-meta { display: flex; align-items: center; gap: 8px; margin-top: 7px; flex-wrap: wrap; }
-.alert-time { font-size: 11px; color: var(--text-soft); }
-.alert-bus-tag {
-  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
-  background: color-mix(in srgb, var(--brand-500) 16%, transparent); color: var(--brand-300);
-  cursor: pointer;
+
+
+
+
+
+
+
+
+
+
+
+
 }
  
 /* ============ MAPA COMPLETO ============ */
@@ -1036,7 +1037,7 @@ html[data-theme="light"] .map-btn-geo.active:hover {
 .route-card {
   position: relative; overflow: hidden; cursor: pointer;
   padding: 18px; background: var(--bg-card);
-  border: 1px solid var(--line); border-radius: var(--radius);
+  border: 1px solid var(--line);  background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
   transition: border-color var(--t), transform var(--t), box-shadow var(--t);
 }
 .route-card:hover {
@@ -1069,7 +1070,7 @@ html[data-theme="light"] .map-btn-geo.active:hover {
 .report-card.full-width { grid-column: 1 / -1; }
  
 .report-summary {
-  padding: 18px; border-radius: var(--radius);
+  padding: 18px;  background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
   background: var(--bg-card);
   border: 1px solid var(--line-brand);
 }
@@ -1129,6 +1130,7 @@ html[data-theme="light"] .map-btn-geo.active:hover {
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 .modal {
   width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto;
+
   background: var(--bg-card); border: 1px solid var(--line);
   border-radius: 16px; box-shadow: 0 24px 60px rgba(0,0,0,0.55);
   animation: modalIn 0.25s cubic-bezier(0.34, 1.4, 0.64, 1);
@@ -1199,8 +1201,8 @@ html[data-theme="light"] .map-btn-geo.active:hover {
 .notif-dropdown {
   position: fixed; top: calc(var(--topbar-h) + 8px); right: 20px; z-index: 150;
   width: 350px; max-width: calc(100vw - 32px);
-  background: var(--bg-card); border: 1px solid var(--line);
-  border-radius: var(--radius); box-shadow: var(--shadow);
+
+   background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
   display: none;
 }
 .notif-dropdown.open { display: block; animation: dropIn 0.18s ease; }
@@ -1471,13 +1473,13 @@ body.home-open .sidebar-overlay,
   position: relative;
   overflow: hidden;
   text-align: left;
-  cursor: pointer;
+
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px 18px;
+  padding: 16px 18px; background: var(--bg-card); border: 1px solid var(--line);
   min-height: 68px;
-  border-radius: var(--radius);
+   background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
   background: color-mix(in srgb, var(--bg-card) 92%, transparent);
   border: 1px solid var(--line);
   color: var(--text-strong);
@@ -1782,7 +1784,7 @@ body.home-open .sidebar-overlay,
 .user-active-card {
   display: flex; align-items: center; gap: 14px; padding: 16px;
   background: rgba(255,255,255,0.03); border: 1px solid var(--line);
-  border-radius: var(--radius); text-align: left;
+   background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius); text-align: left;
 }
 .user-active-img {
   width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--brand-500);
@@ -1832,7 +1834,7 @@ body.home-open .sidebar-overlay,
 .cmd-item {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px;
   border-radius: var(--radius-sm); font-size: 13.5px; color: var(--text-strong);
-  cursor: pointer; transition: background var(--t);
+ transition: background var(--t);
 }
 .cmd-item:hover, .cmd-item.selected {
   background: rgba(91,110,245,0.15); color: var(--brand-light);
@@ -2030,7 +2032,7 @@ body.home-open .sidebar-overlay,
 .auth-landing-card {
   background: var(--bg-surface);
   border: 1px solid var(--line-brand);
-  border-radius: var(--radius);
+   background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
   padding: clamp(22px, 3.5vw, 32px);
   box-shadow: var(--glow), 0 24px 48px rgba(0,0,0,0.65);
   position: relative;
@@ -2283,7 +2285,7 @@ body.home-open .sidebar-overlay,
   font-size: 11.5px;
   font-weight: 600;
   color: #a5b0fb;
-  cursor: pointer;
+
   transition: all var(--t);
   user-select: none;
 }
@@ -2320,7 +2322,7 @@ body.home-open .sidebar-overlay,
   max-width: 600px;
   background: var(--bg-card);
   border: 1px solid var(--line-brand);
-  border-radius: var(--radius);
+   background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
   box-shadow: var(--glow);
   padding: 24px;
   display: flex;
@@ -2349,7 +2351,7 @@ body.home-open .sidebar-overlay,
   border: none;
   color: var(--text-soft);
   font-size: 20px;
-  cursor: pointer;
+
   padding: 4px;
   line-height: 1;
 }
@@ -2476,7 +2478,7 @@ body.home-open .sidebar-overlay,
   font-size: 11px;
   font-family: 'JetBrains Mono', monospace;
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  cursor: pointer;
+
 }
 .real-bus-icon-inner:hover {
   transform: scale(1.22);
@@ -2506,7 +2508,7 @@ body.home-open .sidebar-overlay,
   background: #f59e0b;
   border: 3px solid #ffffff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.55), 0 0 0 2px rgba(245,158,11,0.35);
-  cursor: pointer;
+
   transition: transform 0.18s, box-shadow 0.18s;
   position: relative;
 }
@@ -2688,7 +2690,7 @@ body.home-open .sidebar-overlay,
   border-radius: 7px;
   font-size: 12.5px;
   font-weight: 600;
-  cursor: pointer;
+
   transition: all 0.2s ease;
   white-space: nowrap;
 }
@@ -2988,7 +2990,7 @@ body.home-open .sidebar-overlay,
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
+
   transition: all 0.2s ease;
   min-height: 38px;
   text-decoration: none;
@@ -3050,7 +3052,7 @@ body.home-open .sidebar-overlay,
   background: transparent;
   border: none;
   color: #94a3b8;
-  cursor: pointer;
+
   padding: 6px 4px;
   transition: color 0.2s ease, transform 0.15s ease;
   min-height: 48px;
@@ -3236,7 +3238,7 @@ body.home-open .sidebar-overlay,
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+
   font-size: 11px;
   transition: all 0.2s ease;
   flex-shrink: 0;
@@ -3501,7 +3503,7 @@ html[data-theme="light"] .map-route-focus-pill {
 /* Tarjetas de Rutas, Conductores, Alertas y Horarios */
 html[data-theme="light"] .route-card,
 html[data-theme="light"] .driver-card,
-html[data-theme="light"] .alert-item {
+html[data-theme="light"] 
   background: #ffffff;
   border: 1px solid var(--line);
   box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
@@ -3890,7 +3892,7 @@ html[data-theme="light"] .bus-item:hover {
 }
 
 /* Alertas */
-html[data-theme="light"] .alert-item {
+html[data-theme="light"] 
   background: #ffffff;
   border-color: var(--line);
   color: var(--text-strong);

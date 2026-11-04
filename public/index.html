@@ -27,7 +27,7 @@
     })();
   </script>
   <title>BusTrack Pro — Rastreo de flotas en tiempo real</title>
-  <meta name="description" content="Panel de rastreo de flotas de buses: mapa en vivo, estado de la flota, rutas, alertas y reportes." />
+  <meta name="description" content="Panel de rastreo de flotas de buses: mapa en vivo, estado de la flota, rutas, horarios y reportes." />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https://unpkg.com https://*.arcgisonline.com https://*.tile.openstreetmap.org https://api.dicebear.com https://images.unsplash.com; connect-src 'self' https://jhuvaqrdhkzxqmvcrlws.supabase.co wss://jhuvaqrdhkzxqmvcrlws.supabase.co;" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b6ef5'/><rect x='8' y='7' width='16' height='16' rx='4' fill='none' stroke='white' stroke-width='2'/><path d='M8 15h16' stroke='white' stroke-width='2'/></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -131,19 +131,7 @@
           <span class="home-chip" id="chipRoutes">—</span>
         </button>
  
-        <button class="home-tile" data-go="alerts" style="--tone:var(--warn)">
-          <span class="home-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 8.6a6 6 0 1 0-12 0v4.2L4.6 15a.9.9 0 0 0 .7 1.4h13.4a.9.9 0 0 0 .7-1.4L18 12.8V8.6Z"/>
-              <path d="M9.8 19.4a2.4 2.4 0 0 0 4.4 0"/>
-            </svg>
-          </span>
-          <span class="home-tile-text">
-            <span class="home-tile-name">Alertas</span>
-            <span class="home-tile-desc">Avisos críticos y advertencias</span>
-          </span>
-          <span class="home-chip" id="chipAlerts">—</span>
-        </button>
+
  
         <button class="home-tile" data-go="reports" style="--tone:var(--brand-500)">
           <span class="home-icon">
@@ -236,11 +224,7 @@
             <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M4 3a2 2 0 100 4 2 2 0 000-4zm12 10a2 2 0 100 4 2 2 0 000-4zM4 8.5v3a3.5 3.5 0 003.5 3.5h5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M16 11.5v-3A3.5 3.5 0 0012.5 5h-5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
             <span>Rutas</span>
           </li>
-          <li class="nav-item" id="nav-alerts" data-view="alerts" role="button" tabindex="0" title="Alertas">
-            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
-            <span>Alertas</span>
-            <span class="nav-count alert-badge" id="alertsCountBadge">3</span>
-          </li>
+
         </ul>
       </div>
       <div class="nav-section">
@@ -550,25 +534,7 @@
       </div>
     </section>
  
-    <!-- ============ ALERTAS ============ -->
-    <section class="view" id="view-alerts">
-      <div class="alerts-container">
-        <div class="alerts-header">
-          <h2>Centro de alertas</h2>
-          <div class="report-actions">
-            <button class="btn-ghost" id="clearAlertsBtn">Marcar todo como leído</button>
-            <button class="btn-primary" id="newAlertBtn">Simular alerta</button>
-          </div>
-        </div>
-        <div class="filter-tabs alerts-filter" role="group" aria-label="Filtrar alertas">
-          <button class="filter-tab active" data-alert-filter="all">Todas</button>
-          <button class="filter-tab" data-alert-filter="critical">Críticas</button>
-          <button class="filter-tab" data-alert-filter="warning">Advertencias</button>
-          <button class="filter-tab" data-alert-filter="info">Informativas</button>
-        </div>
-        <div class="alerts-list" id="alertsList"></div>
-      </div>
-    </section>
+
  
     <!-- ============ MAPA COMPLETO ============ -->
     <section class="view" id="view-map">
@@ -941,10 +907,7 @@
       <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M4 3a2 2 0 100 4 2 2 0 000-4zm12 10a2 2 0 100 4 2 2 0 000-4zM4 8.5v3a3.5 3.5 0 003.5 3.5h5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M16 11.5v-3A3.5 3.5 0 0012.5 5h-5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
       <span>Rutas</span>
     </button>
-    <button class="mobile-tab-btn" data-view="alerts" aria-label="Ir a Alertas">
-      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
-      <span>Alertas</span>
-    </button>
+
   </nav>
 
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>

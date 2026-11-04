@@ -9,7 +9,7 @@
      4. Panel principal
      5. Flota (tabla, filtros, orden, CSV)
      6. Mapas (render, zoom, arrastre)
-     7. Rutas, alertas, conductores, reportes
+     7. Rutas, conductores, reportes
      8. Notificaciones y avisos
      9. Ciclo de vida (intervalos, resize, init)
    ============================================================ */
@@ -351,7 +351,6 @@ let buses = generateBuses(12);
 const state = {
   view: 'dashboard',
   busFilter: 'all',
-  alertFilter: 'all',
   chartPeriod: 'day',
   sort: { key: 'id', dir: 1 },
   highlightBus: null,
@@ -511,7 +510,6 @@ const VIEW_TITLES = {
   schedules: 'Horarios de Buses (Costa Rica)',
   fleet: 'Horarios de Buses (Costa Rica)',
   routes: 'Rutas',
-  alerts: 'Centro de Alertas',
   reports: 'Reportes',
   drivers: 'Conductores',
 };
@@ -542,7 +540,6 @@ function navigate(view) {
     schedules: 'Tabla completa de unidades, conductores asignados, estados y exportación CSV.',
     fleet: 'Tabla completa de unidades, conductores asignados, estados y exportación CSV.',
     routes: 'Detalle de trazados, paradas e indicadores por recorrido.',
-    alerts: 'Alertas críticas, advertencias y avisos del sistema en tiempo real.',
     reports: 'Gráficos de eficiencia, volumen de pasajeros y tiempos de retraso.',
     drivers: 'Turnos, calificaciones y asignación de buses por conductor.',
   };
@@ -551,7 +548,6 @@ function navigate(view) {
 
   if (view === 'schedules' || view === 'fleet') renderSchedules();
   if (view === 'routes') renderRoutes();
-  if (view === 'alerts') renderAlerts();
   if (view === 'drivers') renderDrivers();
   if (view === 'map') {
     if (!realLeafletMap) {
@@ -2787,7 +2783,7 @@ function setupMapControls() {
 }
 
 /* ==========================================================
-   7. RUTAS, ALERTAS, CONDUCTORES, REPORTES
+   7. RUTAS, CONDUCTORES, REPORTES
    ========================================================== */
  
 function routeStats(r) {
@@ -2838,114 +2834,7 @@ function openRoute(id) {
   renderFleet();
   toast('Mostrando los buses de la Ruta ' + id);
 }
- 
-const ALERT_SEED = [
-  { id: 1, type: 'critical', icon: '🚨', title: 'Temperatura del motor fuera de rango', desc: 'El sensor del BUS-011 reporta 112 °C de forma sostenida. Conviene detener la unidad en la próxima parada.', bus: 'BUS-011', time: 'hace 3 min', read: false },
-  { id: 2, type: 'warning',  icon: '⚠️', title: 'Retraso acumulado en Ruta B', desc: 'BUS-007 va 8 minutos por detrás del horario. Las pantallas de las paradas ya muestran el ajuste.', bus: 'BUS-007', time: 'hace 8 min', read: false },
-  { id: 3, type: 'warning',  icon: '⛽', title: 'Combustible bajo', desc: 'BUS-004 al 15%. Alcanza para terminar el recorrido, pero no para el siguiente.', bus: 'BUS-004', time: 'hace 15 min', read: false },
-  { id: 4, type: 'info',     icon: '📊', title: 'Reporte diario generado', desc: 'Operación del día cerrada: 2.847 pasajeros y 2,3 min de retraso promedio.', bus: 'Sistema', time: 'hace 32 min', read: true },
-  { id: 5, type: 'info',     icon: '🔄', title: 'Mantenimiento programado', desc: 'BUS-012 entra a taller mañana a las 06:00. Hay que reasignar su turno de la Ruta D.', bus: 'BUS-012', time: 'hace 1 h', read: true },
-];
-let alerts = ALERT_SEED.slice();
- 
-function renderAlerts() {
-  const data = state.alertFilter === 'all' ? alerts : alerts.filter(a => a.type === state.alertFilter);
-  const el = $('alertsList');
-  if (!el) return;
-  if (!data.length) {
-    el.innerHTML = '<p class="empty-state">No hay alertas en esta categoría</p>';
-  } else {
-    // Escapar title/desc/bus antes de inyectar en innerHTML
-    el.innerHTML = data.map(a => `
-      <article class="alert-item ${esc(a.type)} ${a.read ? 'read' : ''}" data-alert="${esc(String(a.id))}">
-        <span class="alert-icon-wrap ${esc(a.type)}">${esc(a.icon)}</span>
-        <div class="alert-content">
-          <p class="alert-title">${esc(a.title)}</p>
-          <p class="alert-desc">${esc(a.desc)}</p>
-          <p class="alert-meta">
-            <span class="alert-time">${esc(a.time)}</span>
-            ${String(a.bus).startsWith('BUS') ? `<span class="alert-bus-tag" data-bus="${esc(a.bus)}">${esc(a.bus)}</span>` : `<span class="alert-bus-tag">${esc(a.bus)}</span>`}
-          </p>
-        </div>
-      </article>`).join('');
-  }
-  refreshCounters();
-}
- 
-$$('.filter-tab[data-alert-filter]').forEach(tab => {
-  tab.addEventListener('click', function () {
-    $$('.filter-tab[data-alert-filter]').forEach(t => t.classList.remove('active'));
-    this.classList.add('active');
-    state.alertFilter = this.dataset.alertFilter;
-    renderAlerts();
-  });
-});
 
-$('clearAlertsBtn').addEventListener('click', async () => {
-  const pend = alerts.filter(a => !a.read).length;
-  alerts.forEach(a => { a.read = true; });
-  renderAlerts();
-  if (typeof renderNotifDropdown === 'function') renderNotifDropdown();
-  refreshCounters();
-
-  if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-    try {
-      await supabaseClient.from('alerts').update({ read: true }).eq('read', false);
-    } catch (e) {
-      console.warn('[Supabase] Error al marcar alertas leídas:', e);
-    }
-  }
-  toast(pend ? pend + ' alertas marcadas como leídas' : 'No había alertas pendientes', 'ok');
-});
-
-$('newAlertBtn').addEventListener('click', async () => {
-  const bus = pick(buses);
-  const plantillas = [
-    { type: 'warning', icon: '⛽', title: 'Combustible bajo', desc: `${bus.id} al ${randInt(8, 18)}% de combustible.` },
-    { type: 'critical', icon: '🚨', title: 'Frenado brusco detectado', desc: `${bus.id} registró una desaceleración fuerte cerca de ${pick(STOPS).name}.` },
-    { type: 'info', icon: '📍', title: 'Desvío de ruta', desc: `${bus.id} se apartó del trazado de la Ruta ${bus.route.id} por obras en la vía.` },
-    { type: 'warning', icon: '👥', title: 'Unidad al límite', desc: `${bus.id} viaja con ${bus.capacity} de ${bus.capacity} asientos ocupados.` },
-  ];
-  const t = pick(plantillas);
-
-  const newAlertItem = {
-    id: 'ALT-' + Date.now(),
-    type: t.type,
-    icon: t.icon,
-    title: t.title,
-    desc: t.desc,
-    bus: bus.id,
-    time: 'ahora mismo',
-    read: false
-  };
-
-  alerts.unshift(newAlertItem);
-  if (alerts.length > 25) alerts.pop();
-  renderAlerts();
-  if (typeof renderNotifDropdown === 'function') renderNotifDropdown();
-  refreshCounters();
-  toast('Nueva alerta: ' + t.title, 'warn');
-
-  if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-    try {
-      const { data, error } = await supabaseClient.from('alerts').insert([{
-        type: t.type,
-        icon: t.icon,
-        title: t.title,
-        desc: t.desc,
-        bus: bus.id,
-        read: false
-      }]).select().maybeSingle();
-
-      if (data && data.id) {
-        newAlertItem.id = data.id;
-      }
-    } catch (e) {
-      console.warn('[Supabase] Inserción de alerta:', e);
-    }
-  }
-});
- 
 function renderDrivers() {
   $('driversGrid').innerHTML = DRIVERS.map((d, i) => {
     const bus = buses.find(b => b.driver.id === d.id && b.status !== 'stopped');
@@ -3110,10 +2999,6 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (busModal.classList.contains('open')) closeModal(busModal);
   if (settingsModal.classList.contains('open')) closeModal(settingsModal);
-  const notifPanel = $('notifDropdownPanel');
-  if (notifPanel) notifPanel.hidden = true;
-  const nBtn = $('notifBtn');
-  if (nBtn) nBtn.setAttribute('aria-expanded', 'false');
   closeSidebar();
 });
  
@@ -3558,15 +3443,13 @@ let homeTimer = null;
 function updateHomeChips() {
   if (!homeOpen) return;
   const circulando = buses.filter(b => b.status === 'active' || b.status === 'delayed').length;
-  const pendientes = alerts.filter(a => !a.read).length;
   const pasajeros = buses.reduce((s, b) => s + b.passengers, 0);
  
   $('chipDashboard').textContent = circulando + '/' + buses.length;
-  $('chipFleet').textContent = buses.length + ' buses';
-  $('chipRoutes').textContent = ROUTES.length + ' rutas';
-  $('chipAlerts').textContent = pendientes ? pendientes + ' nuevas' : 'al día';
-  $('chipReports').textContent = fmt(pasajeros);
-  $('chipDrivers').textContent = DRIVERS.length;
+  if ($('chipFleet')) $('chipFleet').textContent = buses.length + ' buses';
+  if ($('chipRoutes')) $('chipRoutes').textContent = ROUTES.length + ' rutas';
+  if ($('chipReports')) $('chipReports').textContent = fmt(pasajeros);
+  if ($('chipDrivers')) $('chipDrivers').textContent = DRIVERS.length;
  
   $('homeStatus').textContent = circulando
     ? circulando + ' de ' + buses.length + ' unidades en circulación'
@@ -3651,16 +3534,12 @@ function animateDashboardCounters() {
 
 function refreshCounters() {
   const circulando = buses.filter(b => b.status === 'active' || b.status === 'delayed').length;
-  $('activeCount').textContent = circulando;
-  $('routeCount').textContent = ROUTES.length;
-  $('fleetCountBadge').textContent = buses.length;
-  const pendientes = alerts.filter(a => !a.read).length;
-  const badge = $('alertsCountBadge');
-  badge.textContent = pendientes;
-  badge.style.display = pendientes ? '' : 'none';
+  if ($('activeCount')) $('activeCount').textContent = circulando;
+  if ($('routeCount')) $('routeCount').textContent = ROUTES.length;
+  if ($('fleetCountBadge')) $('fleetCountBadge').textContent = buses.length;
  
   const retraso = buses.reduce((s, b) => s + b.delay, 0) / (buses.length || 1);
-  $('avgDelay').innerHTML = retraso.toFixed(1).replace('.', ',') + '<small>min</small>';
+  if ($('avgDelay')) $('avgDelay').innerHTML = retraso.toFixed(1).replace('.', ',') + '<small>min</small>';
  
   updateHomeChips();
 }
@@ -3738,32 +3617,7 @@ async function initSupabaseData() {
     console.warn('[Supabase] Paradas remotas no disponibles:', err);
   }
 
-  // 2. Cargar alertas desde Supabase
-  try {
-    const { data: remoteAlerts, error: alertsErr } = await supabaseClient
-      .from('alerts')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (!alertsErr && remoteAlerts && remoteAlerts.length) {
-      alerts = remoteAlerts.map(a => ({
-        id: a.id,
-        type: a.type || 'info',
-        icon: a.icon || 'ℹ️',
-        title: a.title,
-        desc: a.desc,
-        bus: a.bus || 'BUS-001',
-        time: a.created_at ? new Date(a.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'reciente',
-        read: !!(a.is_read || a.read)
-      }));
-      renderAlerts();
-      if (typeof renderNotifDropdown === 'function') renderNotifDropdown();
-      refreshCounters();
-    }
-  } catch (err) {
-    console.warn('[Supabase] Alertas remotas no disponibles:', err);
-  }
-
-  // 3. Suscripción en tiempo real a posiciones y estado de buses
+  // 2. Suscripción en tiempo real a posiciones y estado de buses
   try {
     supabaseClient
       .channel('realtime_buses')
@@ -4447,54 +4301,6 @@ function init() {
           toast('Estilo de mapa alternado', 'info');
         }
       }
-    });
-  }
-
-  // ------------------------------------------------------------------
-  // NOTIFICATION DROPDOWN PANEL
-  // ------------------------------------------------------------------
-  const notifBtn = $('notifBtn');
-  const notifDropdownPanel = $('notifDropdownPanel');
-  const notifMarkAllReadBtn = $('notifMarkAllReadBtn');
-
-  function renderNotifDropdown() {
-    const list = $('notifList');
-    if (!list) return;
-    const items = alerts.slice(0, 6);
-    if (!items.length) {
-      list.innerHTML = '<p class="empty-state" style="padding:1rem;font-size:12px">No hay notificaciones pendientes</p>';
-      return;
-    }
-    list.innerHTML = items.map(a => `
-      <div class="notif-item">
-        <span class="notif-item-icon">${a.type === 'critical' ? '🚨' : a.type === 'warning' ? '⚠️' : 'ℹ️'}</span>
-        <div>
-          <div class="notif-item-text"><strong>${esc(a.title)}</strong>: ${esc(a.desc)}</div>
-          <span class="notif-item-time">${a.time}</span>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  if (notifBtn && notifDropdownPanel) {
-    notifBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isHidden = notifDropdownPanel.hidden;
-      notifDropdownPanel.hidden = !isHidden;
-      if (isHidden) renderNotifDropdown();
-    });
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('#notifBtn') && !e.target.closest('#notifDropdownPanel')) {
-        if (notifDropdownPanel) notifDropdownPanel.hidden = true;
-      }
-    });
-  }
-  if (notifMarkAllReadBtn) {
-    notifMarkAllReadBtn.addEventListener('click', () => {
-      alerts.forEach(a => a.read = true);
-      refreshCounters();
-      if (notifDropdownPanel) notifDropdownPanel.hidden = true;
-      toast('Notificaciones limpiadas', 'ok');
     });
   }
 
