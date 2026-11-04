@@ -289,12 +289,7 @@ button, input, select { font-family: inherit; }
   font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 20px;
   background: rgba(255,255,255,0.08); color: var(--text);
 }
-.nav-count.alert-badge {
-  background: color-mix(in srgb, var(--risk) 22%, transparent); color: #f09aa8;
-  animation: badgeBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-@keyframes badgeBounce {
-  from { transform: scale(0.4); opacity: 0; }
+
   to   { transform: scale(1); opacity: 1; }
 }
 .nav-count.live-pulse {
@@ -488,12 +483,7 @@ button, input, select { font-family: inherit; }
 }
 .icon-btn svg { width: 17px; height: 17px; }
 .icon-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-strong); border-color: var(--line-brand); }
-.notif-dot {
-  position: absolute; top: 6px; right: 6px;
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--risk); border: 1.5px solid var(--bg-surface);
-}
-.notif-dot.hidden { display: none; }
+
  
 .live-indicator {
   display: flex; align-items: center; gap: 6px; white-space: nowrap;
@@ -680,7 +670,7 @@ button, input, select { font-family: inherit; }
   color: var(--brand-300); font-weight: 600;
 }
 .chart-period { display: flex; gap: 4px; }
-.alerts-filter { padding: 2px 0; }
+
  
 /* ============ MAPA ============ */
 .map-container { position: relative; height: 340px; }
@@ -1197,30 +1187,7 @@ html[data-theme="light"] .map-btn-geo.active:hover {
 .switch[aria-checked="true"] { background: color-mix(in srgb, var(--brand-500) 55%, transparent); }
 .switch[aria-checked="true"] span { transform: translateX(18px); background: #fff; }
  
-/* ============ NOTIFICACIONES ============ */
-.notif-dropdown {
-  position: fixed; top: calc(var(--topbar-h) + 8px); right: 20px; z-index: 150;
-  width: 350px; max-width: calc(100vw - 32px);
 
-   background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
-  display: none;
-}
-.notif-dropdown.open { display: block; animation: dropIn 0.18s ease; }
-@keyframes dropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-.notif-header { display: flex; align-items: center; justify-content: space-between; padding: 13px 15px; border-bottom: 1px solid var(--line); }
-.notif-header h3 { font-size: 13.5px; font-weight: 600; }
-.notif-list { max-height: 340px; overflow-y: auto; }
-.notif-item {
-  display: flex; align-items: flex-start; gap: 10px; padding: 11px 15px;
-  border-bottom: 1px solid var(--line); cursor: pointer; transition: background var(--t);
-}
-.notif-item:last-child { border-bottom: none; }
-.notif-item:hover { background: rgba(255,255,255,0.03); }
-.notif-item.unread { background: color-mix(in srgb, var(--brand-500) 7%, transparent); }
-.notif-item.unread .notif-msg { color: var(--text-strong); }
-.notif-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
-.notif-msg { display: block; font-size: 12.5px; color: var(--text); line-height: 1.45; }
-.notif-time { display: block; font-size: 10px; color: var(--text-soft); margin-top: 3px; }
  
 /* ============ AVISOS FLOTANTES ============ */
 .toast-stack {
@@ -1332,7 +1299,7 @@ html[data-theme="light"] .map-btn-geo.active:hover {
   .modal-stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .modal-info-grid { grid-template-columns: minmax(0, 1fr); }
   .modal-actions > * { min-width: 0; }
-  .notif-dropdown { left: 12px; right: 12px; width: auto; }
+  
   .toast-stack { left: 12px; right: 12px; bottom: 12px; align-items: stretch; }
   .toast { max-width: none; }
 }
@@ -1356,7 +1323,7 @@ html[data-theme="light"] .map-btn-geo.active:hover {
 /* ============ IMPRESIÓN ============ */
 @media print {
   .sidebar, .topbar, .map-controls, .report-actions, .toast-stack,
-  .notif-dropdown, .sidebar-overlay, .modal-overlay { display: none !important; }
+  .sidebar-overlay, .modal-overlay { display: none !important; }
   body { background: #fff; color: #111; display: block; }
   .main-content { margin: 0 !important; }
   .view { display: none !important; }
@@ -1882,29 +1849,7 @@ body.home-open .sidebar-overlay,
   opacity: 1; transform: translateY(0);
 }
 
-/* Panel desplegable de notificaciones */
-.notif-dropdown-panel {
-  position: absolute; right: 0; top: calc(100% + 8px); width: 320px;
-  background: var(--bg-card); border: 1px solid var(--line-brand);
-  border-radius: var(--radius-md); box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-  z-index: 1000; overflow: hidden; animation: dropIn 0.18s ease;
-}
-.notif-dropdown-panel[hidden] { display: none; }
-.notif-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 14px; background: color-mix(in srgb, var(--brand-500) 12%, var(--bg-card));
-  border-bottom: 1px solid var(--line);
-}
-.notif-title { font-size: 12.5px; font-weight: 700; color: var(--text-strong); }
-.notif-list { max-height: 280px; overflow-y: auto; padding: 6px; }
-.notif-item {
-  display: flex; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm);
-  font-size: 12px; color: var(--text); transition: background var(--t); cursor: pointer;
-}
-.notif-item:hover { background: color-mix(in srgb, var(--brand-500) 10%, transparent); }
-.notif-item-icon { font-size: 16px; flex-shrink: 0; }
-.notif-item-text { line-height: 1.4; color: var(--text-strong); }
-.notif-item-time { font-size: 10.5px; color: var(--text-soft); display: block; margin-top: 2px; }
+
 
 /* Tarjeta de contacto de conductor */
 .driver-contact-card {
@@ -3430,20 +3375,7 @@ html[data-theme="light"] .modal {
   border: 1px solid var(--line);
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
 }
-html[data-theme="light"] .notif-dropdown-panel {
-  background: #ffffff;
-  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12);
-  border: 1px solid var(--line);
-}
-html[data-theme="light"] .notif-item {
-  border-bottom: 1px solid var(--line);
-}
-html[data-theme="light"] .notif-item:hover {
-  background: rgba(15, 23, 42, 0.03);
-}
-html[data-theme="light"] .notif-item.unread {
-  background: color-mix(in srgb, var(--brand-500) 6%, transparent);
-}
+
 html[data-theme="light"] .toast {
   background: #ffffff;
   border: 1px solid var(--line-brand);
@@ -3500,11 +3432,10 @@ html[data-theme="light"] .map-route-focus-pill {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
-/* Tarjetas de Rutas, Conductores, Alertas y Horarios */
+/* Tarjetas de Rutas y Conductores */
 html[data-theme="light"] .route-card,
-html[data-theme="light"] .driver-card,
-html[data-theme="light"] 
-  background: #ffffff;
+html[data-theme="light"] .driver-card {
+background: #ffffff;
   border: 1px solid var(--line);
   box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
 }
@@ -3891,15 +3822,6 @@ html[data-theme="light"] .bus-item:hover {
   background: rgba(79, 70, 229, 0.04);
 }
 
-/* Alertas */
-html[data-theme="light"] 
-  background: #ffffff;
-  border-color: var(--line);
-  color: var(--text-strong);
-}
-html[data-theme="light"] .alert-title { color: var(--text-strong); }
-html[data-theme="light"] .alert-desc { color: var(--text); }
-html[data-theme="light"] .alert-time { color: var(--text-soft); }
 html[data-theme="light"] .field-error-hint { color: #dc2626; }
 
 /* Modales y Configuración */
@@ -3936,10 +3858,7 @@ html[data-theme="light"] .modal-overlay {
 }
 
 /* Nav y Sidebar */
-html[data-theme="light"] .nav-count.alert-badge {
-  background: rgba(220, 38, 38, 0.12);
-  color: #991b1b;
-}
+
 html[data-theme="light"] .nav-count.live-pulse {
   background: rgba(5, 150, 105, 0.12);
   color: #065f46;
@@ -3999,8 +3918,5 @@ html[data-theme="light"] .db-feature-badge {
   border-color: rgba(5, 150, 105, 0.3);
 }
 
-/* Notif header */
-html[data-theme="light"] .notif-header {
-  background: color-mix(in srgb, var(--brand-500) 6%, #ffffff);
-}
+
 

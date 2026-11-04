@@ -3593,7 +3593,7 @@ window.addEventListener('resize', () => {
 });
 
 // ==================================================================
-// CONEXIÓN DIRECTA CON SUPABASE (Opción A: paradas, alertas y posiciones)
+// CONEXIÓN DIRECTA CON SUPABASE (Opción A: paradas y posiciones)
 // ==================================================================
 async function initSupabaseData() {
   if (!supabaseClient) return;
@@ -4419,7 +4419,6 @@ function init() {
 
   const callDriverBtn = $('callDriverBtn');
   const msgDriverBtn = $('msgDriverBtn');
-  const dispatchAlertBtn = $('dispatchAlertBtn');
 
   if (callDriverBtn) {
     callDriverBtn.addEventListener('click', () => {
@@ -4430,12 +4429,6 @@ function init() {
   if (msgDriverBtn) {
     msgDriverBtn.addEventListener('click', () => {
       toast('💬 Canal de mensajería enviado al terminal de abordo', 'ok');
-      if (contactModal) contactModal.classList.remove('active');
-    });
-  }
-  if (dispatchAlertBtn) {
-    dispatchAlertBtn.addEventListener('click', () => {
-      toast('📡 Alerta de despacho enviada a la pantalla de la unidad', 'ok');
       if (contactModal) contactModal.classList.remove('active');
     });
   }
