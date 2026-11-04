@@ -26,6 +26,9 @@
   </script>
   <title>Iniciar Sesión — BusTrack Pro</title>
   <meta name="description" content="Inicia sesión en tu cuenta de BusTrack Pro para gestionar y monitorear tu flota en tiempo real." />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b6ef5'/><rect x='8' y='7' width='16' height='16' rx='4' fill='none' stroke='white' stroke-width='2'/><path d='M8 15h16' stroke='white' stroke-width='2'/></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -771,16 +774,32 @@
           if (error) {
             const msg = error.message || '';
             if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
-              showError('Correo o contraseña incorrectos en Supabase.');
+              // Verificar si existe en cuentas locales antes de fallar
+              try {
+                const raw = localStorage.getItem('bustrack_local_accounts');
+                if (raw) {
+                  const accounts = JSON.parse(raw);
+                  const match = accounts.find(a => a.email.toLowerCase() === email.toLowerCase() && a.password === password);
+                  if (match && match.user) {
+                    completeLogin(match.user);
+                    return;
+                  }
+                }
+              } catch (_) {}
+              showError('Correo o contraseña incorrectos.');
+              submitBtn.disabled = false;
+              btnSpinner.style.display = 'none';
+              btnText.textContent = 'Iniciar Sesión';
+              return;
             } else if (msg.includes('Email not confirmed')) {
               showError('Debes confirmar tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.');
+              submitBtn.disabled = false;
+              btnSpinner.style.display = 'none';
+              btnText.textContent = 'Iniciar Sesión';
+              return;
             } else {
-              showError('Error de Supabase: ' + msg);
+              console.warn('[Supabase Direct Login notice - Probando fallback local]:', msg);
             }
-            submitBtn.disabled = false;
-            btnSpinner.style.display = 'none';
-            btnText.textContent = 'Iniciar Sesión';
-            return;
           }
 
           const supaUser = data.user;

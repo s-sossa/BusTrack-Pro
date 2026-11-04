@@ -26,6 +26,9 @@
   </script>
   <title>Crear Cuenta — BusTrack Pro</title>
   <meta name="description" content="Regístrate en BusTrack Pro para comenzar a monitorear y gestionar flotas de transporte en tiempo real." />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b6ef5'/><rect x='8' y='7' width='16' height='16' rx='4' fill='none' stroke='white' stroke-width='2'/><path d='M8 15h16' stroke='white' stroke-width='2'/></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -939,69 +942,61 @@
             }
           });
 
+          if (!error && (data.user || data.session)) {
+            const supaUser = data.user;
+            const userObj = {
+              id: supaUser?.id || ('USR-' + Date.now()),
+              name: name,
+              email: email,
+              avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff'
+            };
+
+            // Guardar también copia local por resiliencia
+            saveLocalAccount(email, password, userObj);
+
+            if (data.session?.access_token) {
+              completeRegistration(userObj);
+              return;
+            }
+
+            // Si requiere confirmación previa por correo electrónico:
+            btnText.textContent = '¡Confirmación enviada!';
+            btnSpinner.style.display = 'none';
+            submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            showError('¡Cuenta creada! Revisa tu correo electrónico para confirmar la cuenta antes de iniciar sesión.');
+            setTimeout(() => {
+              window.location.href = 'login.html';
+            }, 3000);
+            return;
+          }
+
           if (error) {
             const msg = error.message || '';
+            // Si el correo ya existe, notificarlo
             if (msg.includes('already registered') || msg.includes('User already registered')) {
               showError('Si el correo no está registrado recibirás confirmación; de lo contrario inicia sesión.');
-            } else if (msg.includes('Password should be')) {
-              showError('La contraseña no cumple con los requisitos de seguridad de Supabase.');
-            } else {
-              showError('Error al registrar cuenta: ' + msg);
+              submitBtn.disabled = false;
+              btnSpinner.style.display = 'none';
+              btnText.textContent = 'Crear Cuenta';
+              return;
             }
-            submitBtn.disabled = false;
-            btnSpinner.style.display = 'none';
-            btnText.textContent = 'Crear Cuenta';
-            return;
+            // En caso de cualquier otro error de red, indisponibilidad o conexión externa:
+            console.warn('[Supabase signUp notice - Procediendo con cuenta local resiliente]:', msg);
           }
-
-          const supaUser = data.user;
-          const userObj = {
-            id: supaUser?.id || ('USR-' + Date.now()),
-            name: name,
-            email: email,
-            avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff'
-          };
-
-          // Si Supabase devuelve sesión activa inmediatamente (sin confirmación requerida)
-          if (data.session?.access_token) {
-            completeRegistration(userObj);
-            return;
-          }
-
-          // Si requiere confirmación previa por correo electrónico:
-          btnText.textContent = '¡Confirmación enviada!';
-          btnSpinner.style.display = 'none';
-          submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-          showError('¡Cuenta creada! Revisa tu correo electrónico para confirmar la cuenta antes de iniciar sesión.');
-          setTimeout(() => {
-            window.location.href = 'login.html';
-          }, 3000);
-          return;
-
         } catch (supaErr) {
           console.warn('[Supabase Signup Error - Usando fallback local]', supaErr);
-          // Fallback resiliente: registrar cuenta localmente
-          const localUser = {
-            id: 'LOCAL-' + Date.now(),
-            name: name,
-            email: email,
-            avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff'
-          };
-          saveLocalAccount(email, password, localUser);
-          completeRegistration(localUser);
-          return;
         }
-      } else {
-        // Fallback cuando Supabase no está cargado o no hay conexión externa
-        const localUser = {
-          id: 'LOCAL-' + Date.now(),
-          name: name,
-          email: email,
-          avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff'
-        };
-        saveLocalAccount(email, password, localUser);
-        completeRegistration(localUser);
       }
+
+      // 2) Fallback local transparente e inmediato (sin bloqueo)
+      const localUser = {
+        id: 'LOCAL-' + Date.now(),
+        name: name,
+        email: email,
+        avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff'
+      };
+      saveLocalAccount(email, password, localUser);
+      completeRegistration(localUser);
     });
 
     function saveLocalAccount(email, password, userObj) {
