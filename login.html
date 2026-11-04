@@ -30,8 +30,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
-  <!-- Supabase JS Client Local -->
-  <script src="/vendor/supabase/supabase.js"></script>
+  <!-- Supabase JS Client Local & CDN Fallback -->
+  <script src="vendor/supabase/supabase.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';"></script>
+  <script>
+    if (typeof supabase === 'undefined') {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      document.head.appendChild(s);
+    }
+  </script>
   <style>
     :root {
       --bg: #0a0f1c;
@@ -664,8 +671,8 @@
     // Validar sesión activa en Supabase antes de redirigir (evita bypass por localStorage manipulado)
     try {
       if (window.supabase && window.supabase.createClient) {
-        const supaUrl = window.__SUPABASE_URL || 'https://xdfzffyghbcfvjwhfndq.supabase.co';
-        const supaKey = window.__SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkZnpmZnlnaGJjZnZqd2hmbmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1NDg1MzMsImV4cCI6MjA1NDEyNDUzM30.7Q_S9U0Bsmw9b_k5TfWpA7e6hWkXhF6Q6_g9pUo1-1w';
+        const supaUrl = window.__SUPABASE_URL || 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
+        const supaKey = window.__SUPABASE_ANON_KEY || 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
         const checkClient = window.supabase.createClient(supaUrl, supaKey);
         checkClient.auth.getSession().then(({ data }) => {
           if (data?.session) {
@@ -789,11 +796,25 @@
           return;
 
         } catch (supaErr) {
-          console.warn('[Supabase Direct Login Exception]', supaErr);
+          console.warn('[Supabase Direct Login Exception - Probando fallback local]', supaErr);
         }
       }
 
-      // 2) Fallback secundario si Supabase no responde
+      // 2) Fallback secundario si Supabase no responde o la cuenta es local
+      try {
+        const raw = localStorage.getItem('bustrack_local_accounts');
+        if (raw) {
+          const accounts = JSON.parse(raw);
+          const match = accounts.find(a => a.email.toLowerCase() === email.toLowerCase() && a.password === password);
+          if (match && match.user) {
+            completeLogin(match.user);
+            return;
+          }
+        }
+      } catch (locErr) {
+        console.warn('Error leyendo cuentas locales:', locErr);
+      }
+
       showError('Correo o contraseña inválidos, intentelo de nuevo');
       submitBtn.disabled = false;
       btnSpinner.style.display = 'none';
