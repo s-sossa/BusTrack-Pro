@@ -3920,3 +3920,350 @@ html[data-theme="light"] .db-feature-badge {
 
 
 
+
+
+/* ============================================================
+   VISTA: MI CUENTA / PERFIL DE USUARIO (view-account)
+   ============================================================ */
+.account-container {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 40px;
+}
+
+.account-hero-card {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.account-hero-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand-500) 25%, transparent), color-mix(in srgb, var(--brand-alt) 20%, transparent));
+  border-bottom: 1px solid var(--line);
+}
+
+.account-hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 32px 24px 24px;
+  flex-wrap: wrap;
+}
+
+.account-avatar-wrapper {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  flex-shrink: 0;
+}
+
+.account-avatar-circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-alt));
+  color: #fff;
+  font-size: 30px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--bg-card);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.account-status-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  background: var(--ok);
+  border: 3px solid var(--bg-card);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(43, 184, 133, 0.6);
+}
+
+.account-hero-info {
+  flex: 1;
+  min-width: 240px;
+}
+
+.account-hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.account-hero-title-row h2 {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.account-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+
+.account-badge.role-badge.passenger {
+  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  color: var(--ok);
+  border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent);
+}
+
+.account-badge.role-badge.admin {
+  background: color-mix(in srgb, var(--brand-500) 18%, transparent);
+  color: var(--brand-300);
+  border: 1px solid color-mix(in srgb, var(--brand-500) 35%, transparent);
+}
+
+.account-badge.provider-badge {
+  background: color-mix(in srgb, var(--brand-alt) 15%, transparent);
+  color: var(--brand-300);
+  border: 1px solid color-mix(in srgb, var(--brand-alt) 30%, transparent);
+}
+
+.account-badge.ok-badge {
+  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  color: var(--ok);
+  border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent);
+}
+
+.account-hero-email {
+  font-size: 0.88rem;
+  color: var(--text);
+  margin: 2px 0 10px 0;
+}
+
+.account-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+
+.account-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.account-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 18px;
+}
+
+.account-card-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.account-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.account-label {
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-soft);
+}
+
+.account-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.account-input {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-surface);
+  color: var(--text-strong);
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color var(--t);
+}
+
+.account-input:focus {
+  border-color: var(--brand-500);
+}
+
+.account-readonly-val {
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-strong);
+}
+
+.account-field-help {
+  font-size: 0.75rem;
+  color: var(--text-soft);
+  line-height: 1.4;
+}
+
+.account-uuid-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+}
+
+.account-uuid-box code {
+  font-family: monospace;
+  font-size: 0.76rem;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.account-pref-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.account-pref-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.account-pref-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  margin-bottom: 2px;
+}
+
+.account-pref-desc {
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+
+.account-arco-text {
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.account-arco-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 6px;
+}
+
+.account-legal-links {
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  text-align: center;
+  margin-top: 8px;
+}
+
+.account-legal-links a {
+  color: var(--brand-300);
+  text-decoration: none;
+}
+
+.account-legal-links a:hover {
+  text-decoration: underline;
+}
+
+.account-guest-card {
+  padding: 48px 24px;
+  text-align: center;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+}
+
+.account-guest-icon {
+  font-size: 52px;
+  margin-bottom: 16px;
+}
+
+.account-guest-content h2 {
+  font-size: 1.4rem;
+  color: var(--text-strong);
+  margin-bottom: 8px;
+}
+
+.account-guest-content p {
+  font-size: 0.92rem;
+  color: var(--text);
+  max-width: 480px;
+  margin: 0 auto 24px;
+  line-height: 1.5;
+}
+
+.account-guest-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Light theme overrides */
+html[data-theme="light"] .account-hero-card {
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+html[data-theme="light"] .account-avatar-circle {
+  border-color: #ffffff;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+html[data-theme="light"] .account-status-dot {
+  border-color: #ffffff;
+}
+html[data-theme="light"] .account-input,
+html[data-theme="light"] .account-readonly-val,
+html[data-theme="light"] .account-uuid-box {
+  background: #f8fafc;
+}

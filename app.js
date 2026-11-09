@@ -512,6 +512,7 @@ const VIEW_TITLES = {
   routes: 'Rutas',
   reports: 'Reportes',
   drivers: 'Conductores',
+  account: 'Mi Cuenta',
 };
 
 function navigate(view) {
@@ -542,6 +543,7 @@ function navigate(view) {
     routes: 'Detalle de trazados, paradas e indicadores por recorrido.',
     reports: 'Gráficos de eficiencia, volumen de pasajeros y tiempos de retraso.',
     drivers: 'Turnos, calificaciones y asignación de buses por conductor.',
+    account: 'Gestión de la cuenta de usuario, perfil y preferencias en BusTrack Pro.',
   };
   const _metaEl = document.querySelector('meta[name="description"]');
   if (_metaEl && _pageMeta[view]) _metaEl.content = _pageMeta[view];
@@ -549,6 +551,7 @@ function navigate(view) {
   if (view === 'schedules' || view === 'fleet') renderSchedules();
   if (view === 'routes') renderRoutes();
   if (view === 'drivers') renderDrivers();
+  if (view === 'account') renderAccountView();
   if (view === 'map') {
     if (!realLeafletMap) {
       requestAnimationFrame(() => {
@@ -3097,11 +3100,17 @@ function openSettings() {
   openModal(settingsModal);
 }
  
-$('settingsBtn').addEventListener('click', e => { e.stopPropagation(); openSettings(); });
-$('userProfile').addEventListener('click', openSettings);
-$('userProfile').addEventListener('keydown', e => {
-  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSettings(); }
-});
+$('settingsBtn')?.addEventListener('click', e => { e.stopPropagation(); openSettings(); });
+const _userProfEl = $('userProfile');
+if (_userProfEl) {
+  _userProfEl.addEventListener('click', e => {
+    if (e.target.closest('#settingsBtn') || e.target.closest('#sidebarThemeToggleBtn') || e.target.closest('#authBtn')) return;
+    navigate('account');
+  });
+  _userProfEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('account'); }
+  });
+}
  
 document.addEventListener('click', e => {
   const bar = document.querySelector('.search-bar');
@@ -3742,6 +3751,10 @@ function init() {
       if (loginFormEl) loginFormEl.hidden = !!isRegTab;
       if (regFormEl)   regFormEl.hidden   = !isRegTab;
     }
+
+    if (typeof state !== 'undefined' && state.view === 'account') {
+      renderAccountView();
+    }
   }
   updateAuthUserUI();
 
@@ -3957,11 +3970,7 @@ function init() {
   if (authBtn) {
     authBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (!currentUser) {
-        window.location.href = 'login.html';
-      } else {
-        openAuthModal('login');
-      }
+      navigate('account');
     });
   }
   if (authClose)          authClose.addEventListener('click', () => authModal.classList.remove('active'));
@@ -4240,6 +4249,152 @@ function init() {
     });
   }
 
+  // ------------------------------------------------------------------
+  // ACCOUNT / PROFILE VIEW (view-account)
+  // ------------------------------------------------------------------
+  function renderAccountView() {
+    const heroCard = document.querySelector('.account-hero-card');
+    const accountGrid = document.querySelector('.account-grid');
+    const guestBox = $('accGuestBox');
+    const heroAvatar = $('accHeroAvatar');
+    const heroName = $('accHeroName');
+    const heroRole = $('accHeroRole');
+    const heroProvider = $('accHeroProvider');
+    const heroEmail = $('accHeroEmail');
+    const editName = $('accEditName');
+    const displayEmail = $('accDisplayEmail');
+    const displayRole = $('accDisplayRole');
+    const roleDesc = $('accRoleDesc');
+    const displayId = $('accDisplayId');
+    const geoStatus = $('accGeoStatus');
+
+    if (!currentUser) {
+      if (heroCard) heroCard.style.display = 'none';
+      if (accountGrid) accountGrid.style.display = 'none';
+      if (guestBox) guestBox.style.display = 'block';
+      return;
+    }
+
+    if (heroCard) heroCard.style.display = '';
+    if (accountGrid) accountGrid.style.display = '';
+    if (guestBox) guestBox.style.display = 'none';
+
+    const name = currentUser.name || 'Usuario';
+    const email = currentUser.email || 'No especificado';
+    const isAdmin = currentUser.role === 'admin';
+    const role = isAdmin ? 'Administrador' : 'Pasajero';
+    const provider = (currentUser.provider || 'supabase').toUpperCase();
+    const initials = (name).split(' ').map(n => n[0] || '').join('').slice(0, 2).toUpperCase() || 'U';
+
+    if (heroAvatar) {
+      if (currentUser.avatarUrl) {
+        heroAvatar.innerHTML = `<img src="${currentUser.avatarUrl}" alt="${name}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+      } else {
+        heroAvatar.textContent = initials;
+      }
+    }
+
+    if (heroName) heroName.textContent = name;
+    if (heroRole) {
+      heroRole.textContent = role;
+      heroRole.className = `account-badge role-badge ${isAdmin ? 'admin' : 'passenger'}`;
+    }
+    if (heroProvider) heroProvider.textContent = `Cuenta ${provider}`;
+    if (heroEmail) heroEmail.textContent = email;
+    if (editName) editName.value = name;
+    if (displayEmail) displayEmail.textContent = email;
+    if (displayRole) displayRole.textContent = `${role} — ${isAdmin ? 'Control total y reportes' : 'Consulta de rutas y buses en vivo'}`;
+    if (roleDesc) {
+      roleDesc.textContent = isAdmin
+        ? 'Tienes permisos elevados para gestionar conductores, configurar rutas y supervisar telemetría en tiempo real.'
+        : 'Tienes permisos para consultar mapas satelitales, horarios oficiales y paradas en tiempo real.';
+    }
+    if (displayId) {
+      const rawId = currentUser.id || currentUser.sub || ('usr_' + Math.abs((email).split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0)).toString(16));
+      displayId.textContent = rawId;
+    }
+    if (geoStatus) {
+      geoStatus.textContent = localStorage.getItem('bustrack_geolocate') === 'true' ? 'Activada' : 'Disponible';
+    }
+  }
+
+  function initAccountViewListeners() {
+    const saveNameBtn = $('accSaveNameBtn');
+    if (saveNameBtn) {
+      saveNameBtn.addEventListener('click', async () => {
+        const editInput = $('accEditName');
+        if (!editInput) return;
+        const newName = editInput.value.trim();
+        if (!newName || newName.length < 2) {
+          toast('Por favor ingresa un nombre válido (al menos 2 caracteres)', 'warn');
+          return;
+        }
+        if (currentUser) {
+          currentUser.name = newName;
+          try {
+            localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
+          } catch (_) {}
+
+          updateAuthUserUI();
+          renderAccountView();
+
+          if (typeof supabaseClient !== 'undefined' && supabaseClient && currentUser.id) {
+            try {
+              await supabaseClient.from('users').update({ full_name: newName }).eq('id', currentUser.id);
+            } catch (_) {}
+          }
+          toast('Nombre de cuenta actualizado con éxito', 'ok');
+        }
+      });
+    }
+
+    const copyIdBtn = $('accCopyIdBtn');
+    if (copyIdBtn) {
+      copyIdBtn.addEventListener('click', () => {
+        const idEl = $('accDisplayId');
+        if (idEl && idEl.textContent) {
+          navigator.clipboard?.writeText(idEl.textContent).then(() => {
+            toast('ID de usuario copiado al portapapeles', 'ok');
+          }).catch(() => {
+            toast('No se pudo copiar automáticamente', 'warn');
+          });
+        }
+      });
+    }
+
+    const toggleThemeBtn = $('accToggleThemeBtn');
+    if (toggleThemeBtn) {
+      toggleThemeBtn.addEventListener('click', () => {
+        toggleTheme();
+        toast(`Tema visual cambiado a ${prefs.theme === 'light' ? 'Claro' : 'Oscuro'}`, 'info');
+      });
+    }
+
+    const exportBtn = $('accExportDataBtn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        $('exportDataBtn')?.click();
+      });
+    }
+
+    const deleteBtn = $('accDeleteAccountBtn');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', () => {
+        $('deleteAccountBtn')?.click();
+      });
+    }
+
+    const logoutQuickBtn = $('accLogoutQuickBtn');
+    if (logoutQuickBtn) {
+      logoutQuickBtn.addEventListener('click', () => {
+        performLogout();
+        navigate('dashboard');
+      });
+    }
+  }
+
+  initAccountViewListeners();
+
 
 
 
@@ -4293,6 +4448,7 @@ function init() {
       if (action === 'go-dashboard') navigate('dashboard');
       else if (action === 'go-map') navigate('map');
       else if (action === 'go-fleet') navigate('fleet');
+      else if (action === 'go-account') navigate('account');
       else if (action === 'toggle-map-style' || action === 'toggle-theme') {
         const styleBtn = $('mapStyleToggleBtn');
         if (styleBtn) {

@@ -240,6 +240,15 @@
           </li>
         </ul>
       </div>
+      <div class="nav-section">
+        <span class="nav-label">Usuario</span>
+        <ul class="nav-list">
+          <li class="nav-item" id="nav-account" data-view="account" role="button" tabindex="0" title="Mi Cuenta">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+            <span>Mi Cuenta</span>
+          </li>
+        </ul>
+      </div>
     </nav>
  
     <div class="sidebar-footer">
@@ -614,6 +623,158 @@
     <section class="view" id="view-drivers">
       <div class="drivers-grid" id="driversGrid"></div>
     </section>
+
+    <!-- ============ MI CUENTA / PERFIL DE USUARIO ============ -->
+    <section class="view" id="view-account">
+      <div class="account-container">
+        <!-- Banner de Perfil -->
+        <div class="card account-hero-card">
+          <div class="account-hero-bg"></div>
+          <div class="account-hero-content">
+            <div class="account-avatar-wrapper">
+              <div class="account-avatar-circle" id="accHeroAvatar">U</div>
+              <span class="account-status-dot" title="Sesión activa"></span>
+            </div>
+            <div class="account-hero-info">
+              <div class="account-hero-title-row">
+                <h2 id="accHeroName">Usuario</h2>
+                <span class="account-badge role-badge passenger" id="accHeroRole">Pasajero</span>
+                <span class="account-badge provider-badge" id="accHeroProvider">Cuenta Supabase</span>
+              </div>
+              <p class="account-hero-email" id="accHeroEmail">correo@ejemplo.com</p>
+              <div class="account-hero-meta">
+                <span class="account-meta-item">
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+                  <span id="accHeroLastSeen">Sesión activa ahora</span>
+                </span>
+                <span class="account-meta-item">
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" aria-hidden="true"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                  <span>Cifrado y protección TLS</span>
+                </span>
+              </div>
+            </div>
+            <div class="account-hero-actions">
+              <button class="btn-ghost btn-sm" id="accLogoutQuickBtn" title="Cerrar sesión">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14" aria-hidden="true"><path d="M13 3h4a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-4M9 14l-4-4 4-4M5 10h9"/></svg>
+                <span>Cerrar Sesión</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cuadrícula de Información y Gestión -->
+        <div class="account-grid">
+          <!-- Tarjeta 1: Información Personal -->
+          <div class="card account-card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+                <h2>Datos Personales</h2>
+              </div>
+            </div>
+            <div class="account-card-body">
+              <div class="account-field-group">
+                <label for="accEditName" class="account-label">Nombre Completo</label>
+                <div class="account-input-row">
+                  <input type="text" id="accEditName" class="account-input" placeholder="Tu nombre" />
+                  <button class="btn-primary btn-sm" id="accSaveNameBtn">Guardar</button>
+                </div>
+              </div>
+              <div class="account-field-group">
+                <label class="account-label">Correo Electrónico</label>
+                <div class="account-readonly-val" id="accDisplayEmail">—</div>
+              </div>
+              <div class="account-field-group">
+                <label class="account-label">Rol del Usuario</label>
+                <div class="account-readonly-val" id="accDisplayRole">—</div>
+                <p class="account-field-help" id="accRoleDesc">Acceso a visualización de rutas, buses y horarios en tiempo real.</p>
+              </div>
+              <div class="account-field-group">
+                <label class="account-label">ID de Usuario (UUID)</label>
+                <div class="account-uuid-box">
+                  <code id="accDisplayId">cargando...</code>
+                  <button class="btn-ghost btn-xs" id="accCopyIdBtn" title="Copiar ID">Copiar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta 2: Preferencias y Ajustes -->
+          <div class="card account-card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.53 1.53 0 01-2.29.95c-1.37-.84-2.94.73-2.1 2.1.54.89.06 2.05-.95 2.29-1.56.38-1.56 2.6 0 2.98.89.21 1.49 1.4.95 2.29-.84 1.37.73 2.94 2.1 2.1a1.53 1.53 0 012.29.95c.38 1.56 2.6 1.56 2.98 0a1.53 1.53 0 012.29-.95c1.37.84 2.94-.73 2.1-2.1a1.53 1.53 0 01.95-2.29c1.56-.38 1.56-2.6 0-2.98a1.53 1.53 0 01-.95-2.29c.84-1.37-.73-2.94-2.1-2.1a1.53 1.53 0 01-2.29-.95zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+                <h2>Preferencias de la Cuenta</h2>
+              </div>
+            </div>
+            <div class="account-card-body">
+              <div class="account-pref-item">
+                <div>
+                  <p class="account-pref-title">Tema Visual</p>
+                  <p class="account-pref-desc">Alterna entre modo oscuro y modo claro.</p>
+                </div>
+                <button class="btn-ghost btn-sm" id="accToggleThemeBtn">Cambiar Tema</button>
+              </div>
+              <div class="account-pref-item">
+                <div>
+                  <p class="account-pref-title">Refresco Telemático</p>
+                  <p class="account-pref-desc">Actualización en vivo de posiciones de buses cada 3 segundos.</p>
+                </div>
+                <span class="account-badge ok-badge">Activo (3s)</span>
+              </div>
+              <div class="account-pref-item">
+                <div>
+                  <p class="account-pref-title">Geolocalización GPS</p>
+                  <p class="account-pref-desc">Permite centrar el mapa en tu ubicación actual.</p>
+                </div>
+                <span class="account-badge ok-badge" id="accGeoStatus">Disponible</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta 3: Privacidad y Derechos ARCO (Ley 8968 Costa Rica) -->
+          <div class="card account-card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" aria-hidden="true"><path fill-rule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zM4 10a1 1 0 01-1 1H2a1 1 0 110-2h1a1 1 0 011 1z" clip-rule="evenodd"/></svg>
+                <h2>Privacidad y Derechos ARCO</h2>
+              </div>
+            </div>
+            <div class="account-card-body">
+              <p class="account-arco-text">
+                Conforme a la <strong>Ley N° 8968</strong> de Costa Rica, puedes descargar una copia íntegra de tu información o suprimir tu cuenta de forma definitiva.
+              </p>
+              <div class="account-arco-buttons">
+                <button class="btn-ghost full-width" id="accExportDataBtn">
+                  📥 Exportar mis datos personales (JSON)
+                </button>
+                <button class="btn-ghost full-width danger-text" id="accDeleteAccountBtn" style="color: #ef4444;">
+                  🗑️ Eliminar cuenta y datos personales
+                </button>
+              </div>
+              <div class="account-legal-links">
+                <a href="privacy.html" target="_blank">Política de Privacidad</a> · 
+                <a href="terms.html" target="_blank">Términos de Servicio</a> · 
+                <a href="cookies.html" target="_blank">Cookies</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado para usuarios sin sesión activa (invitados) -->
+        <div class="card account-guest-card" id="accGuestBox" style="display:none;">
+          <div class="account-guest-content">
+            <div class="account-guest-icon">👤</div>
+            <h2>Navegando como Invitado</h2>
+            <p>Inicia sesión con tu cuenta de BusTrack Pro o regístrate para acceder a tus alertas personalizadas, historial y sincronización de flota en tiempo real.</p>
+            <div class="account-guest-actions">
+              <a href="login.html" class="btn-primary">Iniciar Sesión</a>
+              <a href="register.html" class="btn-ghost">Crear Cuenta</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
     <!-- MODO PASAJERO ELIMINADO --></main>
  
   <!-- Detalle de bus -->
@@ -904,6 +1065,10 @@
     <button class="mobile-tab-btn" data-view="routes" aria-label="Ir a Rutas">
       <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M4 3a2 2 0 100 4 2 2 0 000-4zm12 10a2 2 0 100 4 2 2 0 000-4zM4 8.5v3a3.5 3.5 0 003.5 3.5h5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M16 11.5v-3A3.5 3.5 0 0012.5 5h-5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
       <span>Rutas</span>
+    </button>
+    <button class="mobile-tab-btn" data-view="account" aria-label="Ir a Mi Cuenta">
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+      <span>Cuenta</span>
     </button>
 
   </nav>
