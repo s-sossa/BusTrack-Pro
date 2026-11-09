@@ -36,17 +36,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <!-- Leaflet CSS para Mapas Reales a escala Nacional y Mundial -->
-  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" onerror="this.onerror=null;this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';" />
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" onerror="this.onerror=null;this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';" />
   <!-- Supabase JS SDK Local -->
-  <script src="/vendor/supabase/supabase.js"></script>
-  <!-- Leaflet JS Library (Local con respaldo CDN e Integrity) -->
-  <script src="/vendor/leaflet/leaflet.js"></script>
+  <script src="vendor/supabase/supabase.js"></script>
+  <!-- Leaflet JS Library (Local con respaldo CDN) -->
+  <script src="vendor/leaflet/leaflet.js"></script>
   <script>
     if (typeof L === 'undefined') {
       const s = document.createElement('script');
       s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      s.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
-      s.crossOrigin = 'anonymous';
       document.head.appendChild(s);
     }
   </script>

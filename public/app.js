@@ -563,13 +563,13 @@ function navigate(view) {
     } else {
       setTimeout(() => {
         if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false });
-      }, 80);
+      }, 50);
       setTimeout(() => {
         if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false });
-      }, 250);
+      }, 200);
     }
     renderMapBusList();
-    drawMapMarkers(true);
+    setTimeout(() => drawMapMarkers(true), 60);
   }
   if (view === 'dashboard') {
     animateDashboardCounters();
@@ -1853,40 +1853,36 @@ let dashboardMarkers = {
 
 // Generador de capas base de mapas 100% gratuitas, sin marcas de agua y sin bloqueos 403
 function createArcGisLayers() {
-  const esriDarkBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-    maxNativeZoom: 16,
+  // Capa 1: Oscuro Pro — OSM tiles con filtro CSS invertido (no requiere API key)
+  const osmDark = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '&copy; Esri &copy; OpenStreetMap'
-  });
-  const esriDarkRef = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
-    maxNativeZoom: 16,
-    maxZoom: 19
-  });
-  const darkGroup = L.layerGroup([esriDarkBase, esriDarkRef]);
-
-  // Capa oficial de calles completas de ArcGIS (sustituye a OSM sin errores 403)
-  const streetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 19,
-    attribution: '&copy; Esri World Street Map'
+    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+    className: 'map-tiles-dark'
   });
 
-  // Capa satelital real de alta resolución
+  // Capa 2: Calles y Vías (OpenStreetMap estándar)
+  const streetLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+  });
+
+  // Capa 3: Satelital Real de alta resolución (ArcGIS World Imagery — sin API key)
   const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     maxNativeZoom: 19,
     maxZoom: 19,
-    attribution: '&copy; Esri Satellite'
+    attribution: '&copy; Esri &copy; Earthstar Geographics'
   });
 
   return [
-    { id: 'dark', icon: '🌙', name: 'Oscuro Pro (ArcGIS)', layer: darkGroup },
-    { id: 'streets', icon: '🗺️', name: 'Calles y Vías (ArcGIS)', layer: streetLayer },
-    { id: 'sat', icon: '🛰️', name: 'Satelital Real (ArcGIS)', layer: satLayer },
+    { id: 'dark', icon: '🌙', name: 'Oscuro Pro', layer: osmDark },
+    { id: 'streets', icon: '🗺️', name: 'Calles y Vías', layer: streetLayer },
+    { id: 'sat', icon: '🛰️', name: 'Satelital Real', layer: satLayer },
   ];
 }
 
 function initRealLeafletMap() {
   const container = document.getElementById('realFullMap');
-  if (!container || realLeafletMap) return;
+  if (!container) return;
 
   if (typeof L === 'undefined') {
     console.warn('Leaflet aún no está cargado en window. Reintentando en 150ms...');
@@ -1894,62 +1890,76 @@ function initRealLeafletMap() {
     return;
   }
 
-  // Centro inicial: San José / GAM (Costa Rica)
-  realLeafletMap = L.map('realFullMap', {
-    center: [9.9333, -84.0833],
-    zoom: 12,
-    zoomControl: false,
-    attributionControl: false
-  });
+  if (realLeafletMap) {
+    try { realLeafletMap.invalidateSize({ animate: false }); } catch (_) {}
+    return;
+  }
 
-  const styles = createArcGisLayers();
-  realLeafletMap._mapStyles = styles;
-  const initMapIdx = prefs.theme === 'light' ? 1 : 0;
-  realLeafletMap._currentStyleIdx = initMapIdx;
-  realLeafletMap._activeLayer = styles[initMapIdx].layer;
-  styles[initMapIdx].layer.addTo(realLeafletMap);
+  if (container._leaflet_id) {
+    container._leaflet_id = null;
+  }
 
-  paintRealStopsAndRoutes();
-  setupMapControls();
-
-  // Selector de provincias de Costa Rica
-  const provSelect = document.getElementById('provinceSelect');
-  if (provSelect) {
-    provSelect.addEventListener('change', (e) => {
-      resetMapRouteHighlight();
-      const p = CR_PROVINCES[e.target.value] || CR_PROVINCES.all;
-      realLeafletMap.flyTo(p.center, p.zoom, { duration: 1.5 });
-      toast('🇨🇷 Enfocando región: ' + p.name, 'info');
+  try {
+    // Centro inicial: San José / GAM (Costa Rica)
+    realLeafletMap = L.map('realFullMap', {
+      center: [9.9333, -84.0833],
+      zoom: 12,
+      zoomControl: false,
+      attributionControl: false
     });
-  }
 
-  realLeafletMap.on('dragstart', () => {
-    if (state.trackingBus) {
-      stopTracking('Dejaste de seguir el bus al mover el mapa');
-    }
-  });
+    const styles = createArcGisLayers();
+    realLeafletMap._mapStyles = styles;
+    const initMapIdx = prefs.theme === 'light' ? 1 : 0;
+    realLeafletMap._currentStyleIdx = initMapIdx;
+    realLeafletMap._activeLayer = styles[initMapIdx].layer;
+    styles[initMapIdx].layer.addTo(realLeafletMap);
 
-  // Observador de cambio de tamaño (al contraer/expandir sidebar o cambiar ventana)
-  if (window.ResizeObserver) {
-    try {
-      const ro = new ResizeObserver(() => {
-        if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false });
+    paintRealStopsAndRoutes();
+    setupMapControls();
+
+    // Selector de provincias de Costa Rica
+    const provSelect = document.getElementById('provinceSelect');
+    if (provSelect && !provSelect._bound) {
+      provSelect._bound = true;
+      provSelect.addEventListener('change', (e) => {
+        resetMapRouteHighlight();
+        const p = CR_PROVINCES[e.target.value] || CR_PROVINCES.all;
+        realLeafletMap.flyTo(p.center, p.zoom, { duration: 1.5 });
+        toast('🇨🇷 Enfocando región: ' + p.name, 'info');
       });
-      ro.observe(container);
-    } catch (_) {}
-  }
-
-  setTimeout(() => { if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false }); }, 80);
-  setTimeout(() => { if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false }); }, 250);
-  setTimeout(() => { if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false }); }, 500);
-
-  drawMapMarkers(true);
-  if (state.trackingBus) {
-    const trackedBus = buses.find(b => b.id === state.trackingBus);
-    if (trackedBus) {
-      highlightRouteForBus(trackedBus);
-      centerMapOnBus(state.trackingBus, true);
     }
+
+    realLeafletMap.on('dragstart', () => {
+      if (state.trackingBus) {
+        stopTracking('Dejaste de seguir el bus al mover el mapa');
+      }
+    });
+
+    // Observador de cambio de tamaño
+    if (window.ResizeObserver) {
+      try {
+        const ro = new ResizeObserver(() => {
+          if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false });
+        });
+        ro.observe(container);
+      } catch (_) {}
+    }
+
+    setTimeout(() => { if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false }); }, 50);
+    setTimeout(() => { if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false }); }, 200);
+    setTimeout(() => { if (realLeafletMap) realLeafletMap.invalidateSize({ animate: false }); }, 500);
+
+    drawMapMarkers(true);
+    if (state.trackingBus) {
+      const trackedBus = buses.find(b => b.id === state.trackingBus);
+      if (trackedBus) {
+        highlightRouteForBus(trackedBus);
+        centerMapOnBus(state.trackingBus, true);
+      }
+    }
+  } catch (err) {
+    console.error('Error inicializando mapa real de Leaflet:', err);
   }
 }
 
@@ -1962,41 +1972,49 @@ function initDashboardLeafletMap() {
     return;
   }
 
-  dashboardLeafletMap = L.map('dashboardRealMap', {
-    center: [9.9333, -84.0833],
-    zoom: 12,
-    zoomControl: false,
-    attributionControl: false
-  });
-
-  const styles = createArcGisLayers();
-  dashboardLeafletMap._mapStyles = styles;
-  const initDashMapIdx = prefs.theme === 'light' ? 1 : 0;
-  dashboardLeafletMap._currentStyleIdx = initDashMapIdx;
-  dashboardLeafletMap._activeLayer = styles[initDashMapIdx].layer;
-  styles[initDashMapIdx].layer.addTo(dashboardLeafletMap);
-
-  paintDashboardStopsAndRoutes();
-  setupDashboardMapControls();
-
-  if (window.ResizeObserver) {
-    try {
-      const ro = new ResizeObserver(() => {
-        if (dashboardLeafletMap) dashboardLeafletMap.invalidateSize({ animate: false });
-      });
-      ro.observe(container);
-    } catch (_) {}
+  if (container._leaflet_id) {
+    container._leaflet_id = null;
   }
 
-  setTimeout(() => { if (dashboardLeafletMap) dashboardLeafletMap.invalidateSize({ animate: false }); }, 100);
-  setTimeout(() => { if (dashboardLeafletMap) dashboardLeafletMap.invalidateSize({ animate: false }); }, 300);
+  try {
+    dashboardLeafletMap = L.map('dashboardRealMap', {
+      center: [9.9333, -84.0833],
+      zoom: 12,
+      zoomControl: false,
+      attributionControl: false
+    });
 
-  drawMapMarkers(true);
-  if (state.trackingBus) {
-    const trackedBus = buses.find(b => b.id === state.trackingBus);
-    if (trackedBus) {
-      highlightRouteForBus(trackedBus);
+    const styles = createArcGisLayers();
+    dashboardLeafletMap._mapStyles = styles;
+    const initDashMapIdx = prefs.theme === 'light' ? 1 : 0;
+    dashboardLeafletMap._currentStyleIdx = initDashMapIdx;
+    dashboardLeafletMap._activeLayer = styles[initDashMapIdx].layer;
+    styles[initDashMapIdx].layer.addTo(dashboardLeafletMap);
+
+    paintDashboardStopsAndRoutes();
+    setupDashboardMapControls();
+
+    if (window.ResizeObserver) {
+      try {
+        const ro = new ResizeObserver(() => {
+          if (dashboardLeafletMap) dashboardLeafletMap.invalidateSize({ animate: false });
+        });
+        ro.observe(container);
+      } catch (_) {}
     }
+
+    setTimeout(() => { if (dashboardLeafletMap) dashboardLeafletMap.invalidateSize({ animate: false }); }, 100);
+    setTimeout(() => { if (dashboardLeafletMap) dashboardLeafletMap.invalidateSize({ animate: false }); }, 300);
+
+    drawMapMarkers(true);
+    if (state.trackingBus) {
+      const trackedBus = buses.find(b => b.id === state.trackingBus);
+      if (trackedBus) {
+        highlightRouteForBus(trackedBus);
+      }
+    }
+  } catch (err) {
+    console.error('Error inicializando mapa del dashboard:', err);
   }
 }
 
