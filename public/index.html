@@ -674,9 +674,17 @@
               <div class="account-field-group">
                 <label for="accEditName" class="account-label">Nombre Completo</label>
                 <div class="account-input-row">
-                  <input type="text" id="accEditName" class="account-input" placeholder="Tu nombre" />
+                  <input type="text" id="accEditName" class="account-input" placeholder="Tu nombre completo" />
                   <button class="btn-primary btn-sm" id="accSaveNameBtn">Guardar</button>
                 </div>
+              </div>
+              <div class="account-field-group">
+                <label for="accEditCode" class="account-label">Código de Usuario</label>
+                <div class="account-input-row">
+                  <input type="text" id="accEditCode" class="account-input" placeholder="@tu_codigo" maxlength="30" autocomplete="off" />
+                  <button class="btn-primary btn-sm" id="accSaveCodeBtn">Guardar</button>
+                </div>
+                <p class="account-field-help">Alias corto visible en reportes y telemetría. Solo letras, números y guiones bajos.</p>
               </div>
               <div class="account-field-group">
                 <label class="account-label">Correo Electrónico</label>

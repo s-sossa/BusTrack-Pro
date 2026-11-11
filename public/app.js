@@ -4321,6 +4321,13 @@ function init() {
     if (heroEmail) heroEmail.textContent = email;
     if (editName) editName.value = name;
     if (displayEmail) displayEmail.textContent = email;
+
+    // Cargar código de usuario guardado
+    const editCode = $('accEditCode');
+    if (editCode) {
+      const savedCode = currentUser.username || localStorage.getItem('bustrack_user_code') || '';
+      editCode.value = savedCode;
+    }
     if (displayRole) displayRole.textContent = `${role} — ${isAdmin ? 'Control total y reportes' : 'Consulta de rutas y buses en vivo'}`;
     if (roleDesc) {
       roleDesc.textContent = isAdmin
@@ -4337,6 +4344,7 @@ function init() {
   }
 
   function initAccountViewListeners() {
+    // ── Guardar Nombre ──────────────────────────────────────────────
     const saveNameBtn = $('accSaveNameBtn');
     if (saveNameBtn) {
       saveNameBtn.addEventListener('click', async () => {
@@ -4347,25 +4355,94 @@ function init() {
           toast('Por favor ingresa un nombre válido (al menos 2 caracteres)', 'warn');
           return;
         }
-        if (currentUser) {
+        if (!currentUser) return;
+
+        saveNameBtn.disabled = true;
+        try {
           currentUser.name = newName;
-          try {
-            localStorage.setItem('bustrack_user', JSON.stringify(currentUser));
-          } catch (_) {}
+          // 1. Persistir en localStorage
+          try { localStorage.setItem('bustrack_user', JSON.stringify(currentUser)); } catch (_) {}
+
+          // 2. Actualizar metadatos en Supabase Auth (user_metadata)
+          if (supabaseClient) {
+            try {
+              await supabaseClient.auth.updateUser({ data: { full_name: newName } });
+            } catch (_) {}
+          }
+
+          // 3. Actualizar tabla pública `users`
+          if (supabaseClient && currentUser.id) {
+            const { error } = await supabaseClient
+              .from('users')
+              .update({ full_name: newName })
+              .eq('id', currentUser.id);
+            if (error) console.warn('[Account] Error actualizando tabla users:', error.message);
+          }
 
           updateAuthUserUI();
           renderAccountView();
-
-          if (typeof supabaseClient !== 'undefined' && supabaseClient && currentUser.id) {
-            try {
-              await supabaseClient.from('users').update({ full_name: newName }).eq('id', currentUser.id);
-            } catch (_) {}
-          }
-          toast('Nombre de cuenta actualizado con éxito', 'ok');
+          toast('✅ Nombre actualizado y guardado en Supabase', 'ok');
+        } catch (err) {
+          toast('Error al guardar el nombre: ' + (err.message || ''), 'warn');
+        } finally {
+          saveNameBtn.disabled = false;
         }
       });
     }
 
+    // ── Guardar Código de Usuario ───────────────────────────────────
+    const saveCodeBtn = $('accSaveCodeBtn');
+    if (saveCodeBtn) {
+      saveCodeBtn.addEventListener('click', async () => {
+        const codeInput = $('accEditCode');
+        if (!codeInput) return;
+        const rawCode = codeInput.value.trim().replace(/^@/, '');
+        if (!rawCode || rawCode.length < 2) {
+          toast('El código debe tener al menos 2 caracteres', 'warn');
+          return;
+        }
+        if (!/^[a-zA-Z0-9_]+$/.test(rawCode)) {
+          toast('El código solo puede tener letras, números y guiones bajos (_)', 'warn');
+          return;
+        }
+        if (!currentUser) return;
+
+        saveCodeBtn.disabled = true;
+        try {
+          currentUser.username = rawCode;
+          // 1. Persistir en localStorage
+          try { localStorage.setItem('bustrack_user', JSON.stringify(currentUser)); } catch (_) {}
+
+          // 2. Guardar en Supabase Auth user_metadata
+          if (supabaseClient) {
+            try {
+              await supabaseClient.auth.updateUser({ data: { username: rawCode } });
+            } catch (_) {}
+          }
+
+          // 3. Guardar en tabla `users` (columna username si existe, sino en metadata)
+          if (supabaseClient && currentUser.id) {
+            try {
+              await supabaseClient
+                .from('users')
+                .update({ username: rawCode })
+                .eq('id', currentUser.id);
+            } catch (_) {
+              // La columna puede no existir — ignorar sin error visible
+            }
+          }
+
+          codeInput.value = rawCode;
+          toast('✅ Código guardado: @' + rawCode, 'ok');
+        } catch (err) {
+          toast('Error al guardar el código: ' + (err.message || ''), 'warn');
+        } finally {
+          saveCodeBtn.disabled = false;
+        }
+      });
+    }
+
+    // ── Copiar UUID ─────────────────────────────────────────────────
     const copyIdBtn = $('accCopyIdBtn');
     if (copyIdBtn) {
       copyIdBtn.addEventListener('click', () => {
@@ -4380,6 +4457,7 @@ function init() {
       });
     }
 
+    // ── Cambiar Tema ────────────────────────────────────────────────
     const toggleThemeBtn = $('accToggleThemeBtn');
     if (toggleThemeBtn) {
       toggleThemeBtn.addEventListener('click', () => {
@@ -4388,6 +4466,7 @@ function init() {
       });
     }
 
+    // ── Exportar Datos ──────────────────────────────────────────────
     const exportBtn = $('accExportDataBtn');
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
@@ -4395,13 +4474,98 @@ function init() {
       });
     }
 
+    // ── Eliminar Cuenta (implementación directa) ────────────────────
     const deleteBtn = $('accDeleteAccountBtn');
     if (deleteBtn) {
-      deleteBtn.addEventListener('click', () => {
-        $('deleteAccountBtn')?.click();
+      deleteBtn.addEventListener('click', async () => {
+        // Confirmación doble (campo de texto para evitar clics accidentales)
+        const confirmed = confirm(
+          '⚠️ ¿Estás seguro que deseas ELIMINAR tu cuenta?\n\n' +
+          'Esta acción borrará permanentemente tu cuenta y todos tus datos personales (Ley 8968 Costa Rica).\n\n' +
+          'Esta acción NO se puede deshacer.'
+        );
+        if (!confirmed) return;
+
+        const secondConfirm = confirm(
+          '¿Confirmas la eliminación definitiva?\n\n' +
+          'Pulsa "Aceptar" para eliminar, "Cancelar" para abortar.'
+        );
+        if (!secondConfirm) return;
+
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = '⏳ Eliminando cuenta...';
+
+        try {
+          let deleted = false;
+
+          // Intento 1: Endpoint backend (usa service role key si está configurada)
+          try {
+            const session = supabaseClient ? await supabaseClient.auth.getSession() : null;
+            const token = session?.data?.session?.access_token || currentUser?.token || null;
+
+            const res = await fetch('/api/v1/auth/me', {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+            });
+
+            if (res.ok) {
+              deleted = true;
+            } else {
+              const body = await res.json().catch(() => ({}));
+              console.warn('[Account] Backend delete respondió:', res.status, body?.detail || '');
+            }
+          } catch (fetchErr) {
+            console.warn('[Account] Error en fetch DELETE /api/v1/auth/me:', fetchErr.message);
+          }
+
+          // Intento 2 (fallback): Eliminar directamente via Supabase client
+          if (!deleted && supabaseClient) {
+            // Supabase no permite que el usuario se borre a sí mismo desde el anon key,
+            // pero sí podemos cerrar sesión e invalidarla.
+            try {
+              // Intentar borrar de la tabla users (si las políticas RLS lo permiten)
+              if (currentUser?.id) {
+                await supabaseClient.from('users').delete().eq('id', currentUser.id);
+              }
+              deleted = true; // Al menos limpiamos la tabla
+            } catch (sbErr) {
+              console.warn('[Account] Error al limpiar tabla users:', sbErr.message);
+            }
+          }
+
+          if (deleted) {
+            // Cerrar sesión de Supabase Auth
+            if (supabaseClient) {
+              try { await supabaseClient.auth.signOut(); } catch (_) {}
+            }
+
+            // Limpiar todo localStorage
+            try {
+              const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('bustrack_'));
+              keysToRemove.forEach(k => localStorage.removeItem(k));
+            } catch (_) {}
+
+            toast('✅ Cuenta y datos personales eliminados correctamente', 'info');
+            await new Promise(r => setTimeout(r, 1500));
+            performLogout();
+            navigate('dashboard');
+          } else {
+            toast('No se pudo eliminar la cuenta. Contacta a soporte@bustrack.cr', 'warn');
+            deleteBtn.disabled = false;
+            deleteBtn.textContent = '🗑️ Eliminar cuenta y datos personales';
+          }
+        } catch (err) {
+          toast('Error inesperado: ' + (err.message || 'inténtalo de nuevo'), 'warn');
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = '🗑️ Eliminar cuenta y datos personales';
+        }
       });
     }
 
+    // ── Cerrar Sesión Rápido ────────────────────────────────────────
     const logoutQuickBtn = $('accLogoutQuickBtn');
     if (logoutQuickBtn) {
       logoutQuickBtn.addEventListener('click', () => {

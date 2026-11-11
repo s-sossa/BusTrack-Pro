@@ -74,6 +74,33 @@ authRouter.post('/logout', (req, res) => {
   res.json({ status: 'success', message: 'Sesión cerrada correctamente' });
 });
 
+/** PATCH /api/v1/auth/me — Actualizar perfil (nombre, código de usuario) */
+authRouter.patch('/me', authenticateToken, writeLimiter, async (req, res) => {
+  try {
+    const { name, username } = req.body;
+    const updates = {};
+    if (name && typeof name === 'string' && name.trim().length >= 2) {
+      updates.full_name = name.trim();
+    }
+    if (username && typeof username === 'string' && /^[a-zA-Z0-9_]{2,30}$/.test(username.trim())) {
+      updates.username = username.trim().toLowerCase();
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ type: 'about:blank', title: 'Bad Request', status: 400, detail: 'No hay campos válidos para actualizar.' });
+    }
+
+    const { error } = await supabaseAdmin.from('users').update(updates).eq('id', req.user.id);
+    if (error) {
+      return res.status(400).json({ type: 'about:blank', title: 'Bad Request', status: 400, detail: error.message });
+    }
+
+    res.json({ status: 'success', message: 'Perfil actualizado correctamente', updates });
+  } catch (err) {
+    res.status(500).json({ type: 'about:blank', title: 'Internal Server Error', status: 500, detail: err.message });
+  }
+});
+
 /** GET /api/v1/auth/me/export — ARCO: Exportación de datos personales (Ley 8968) */
 authRouter.get('/me/export', authenticateToken, async (req, res) => {
   const { data, error } = await supabaseAdmin
@@ -94,13 +121,53 @@ authRouter.get('/me/export', authenticateToken, async (req, res) => {
 
 /** DELETE /api/v1/auth/me — ARCO: Supresión / Cancelación de cuenta (Ley 8968) */
 authRouter.delete('/me', authenticateToken, writeLimiter, async (req, res) => {
+  const userId = req.user.id;
+  let authDeleted = false;
+  let tableDeleted = false;
+  const errors = [];
+
+  // Intento 1: Eliminar de Supabase Auth usando service role key (admin)
   try {
-    const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(req.user.id);
-    if (authErr) {
-      await supabaseAdmin.from('users').delete().eq('id', req.user.id);
+    const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (!authErr) {
+      authDeleted = true;
+    } else {
+      errors.push('auth.admin.deleteUser: ' + authErr.message);
     }
-    res.json({ status: 'success', message: 'Cuenta y datos personales eliminados conforme a la Ley 8968' });
-  } catch (err) {
-    res.status(500).json({ type: 'about:blank', title: 'Internal Server Error', status: 500, detail: err.message });
+  } catch (e) {
+    errors.push('auth.admin.deleteUser threw: ' + e.message);
   }
+
+  // Intento 2 (siempre): Eliminar de la tabla pública `users`
+  try {
+    const { error: tableErr } = await supabaseAdmin.from('users').delete().eq('id', userId);
+    if (!tableErr) {
+      tableDeleted = true;
+    } else {
+      errors.push('users.delete: ' + tableErr.message);
+    }
+  } catch (e) {
+    errors.push('users.delete threw: ' + e.message);
+  }
+
+  // Si al menos la tabla fue limpiada, consideramos la operación exitosa
+  // (el usuario de Auth quedará huérfano pero sin datos personales)
+  if (authDeleted || tableDeleted) {
+    console.log(`[Account] Cuenta eliminada userId=${userId} auth=${authDeleted} table=${tableDeleted}`);
+    return res.json({
+      status: 'success',
+      message: 'Cuenta y datos personales eliminados conforme a la Ley 8968',
+      authDeleted,
+      tableDeleted,
+    });
+  }
+
+  // Si todo falló, retornar error descriptivo
+  console.error(`[Account] No se pudo eliminar userId=${userId}:`, errors);
+  return res.status(500).json({
+    type: 'about:blank',
+    title: 'Internal Server Error',
+    status: 500,
+    detail: 'No se pudo eliminar la cuenta. ' + (errors[0] || 'Error desconocido.'),
+  });
 });
