@@ -625,14 +625,14 @@
 
   <main class="auth-main">
     <div class="auth-card">
-      <h1 class="auth-title">Crear Cuenta</h1>
-      <p class="auth-subtitle">Completa el formulario para registrarte en BusTrack Pro</p>
+      <h1 class="auth-title">¡Creá tu cuenta, compa! 🚌</h1>
+      <p class="auth-subtitle">Llená estos datos en un toque y unite a BusTrack Pro</p>
 
       <div class="auth-alert" id="authAlert" role="alert" aria-live="assertive">
         <svg class="auth-alert-icon" width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
         </svg>
-        <span id="authAlertText">Hubo un error al registrar tu cuenta</span>
+        <span id="authAlertText">Hubo un colocho al registrar tu cuenta, dale de nuevo</span>
       </div>
 
       <form id="registerForm" autocomplete="on" novalidate>
@@ -644,7 +644,7 @@
               id="regName" 
               name="name"
               class="form-control" 
-              placeholder="Juan Carlos Pérez" 
+              placeholder="Ej. Juan Carlos Vargas Mora" 
               required 
               autocomplete="name"
               autofocus
@@ -663,7 +663,7 @@
               id="regEmail" 
               name="email"
               class="form-control" 
-              placeholder="juan.perez@empresa.com" 
+              placeholder="juan.vargas@empresa.cr" 
               required 
               autocomplete="email"
             />
@@ -682,7 +682,7 @@
               id="regPassword" 
               name="password"
               class="form-control" 
-              placeholder="Mínimo 8 caracteres" 
+              placeholder="Mínimo 8 caracteres, bien socada" 
               required 
               minlength="8"
               autocomplete="new-password"
@@ -714,7 +714,7 @@
               id="regConfirmPassword" 
               name="confirmPassword"
               class="form-control" 
-              placeholder="Repite tu contraseña" 
+              placeholder="Repetí tu contraseña, que calce bien" 
               required 
               minlength="8"
               autocomplete="new-password"
@@ -745,12 +745,12 @@
 
         <button type="submit" class="btn-submit" id="submitBtn">
           <span class="spinner" id="btnSpinner"></span>
-          <span id="btnText">Crear Cuenta</span>
+          <span id="btnText">¡Crear mi cuenta! 🚀</span>
         </button>
       </form>
 
       <div class="auth-footer">
-        ¿Ya tienes una cuenta? <a href="login.html">Inicia sesión aquí</a>
+        ¿Ya tenés cuenta? <a href="login.html">¡Llegale e iniciá sesión!</a>
       </div>
     </div>
   </main>
@@ -867,39 +867,39 @@
       const confirmPassword = confirmPasswordInput.value;
 
       if (!name) {
-        showError('Por favor ingresa tu nombre y apellidos.', nameInput);
+        showError('Diay compa, poné tu nombre y apellidos.', nameInput);
         return;
       }
 
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showError('Por favor ingresa un correo electrónico válido.', emailInput);
+        showError('Poné un correo de verdad, que tenga buen formato.', emailInput);
         return;
       }
 
       if (!password || password.length < 8) {
-        showError('La contraseña debe tener al menos 8 caracteres.', passwordInput);
+        showError('Esa clave está muy corta, mae. Mínimo 8 caracteres.', passwordInput);
         return;
       }
 
       if (password !== confirmPassword) {
-        showError('Las contraseñas no coinciden. Verifícalas e inténtalo de nuevo.', confirmPasswordInput);
+        showError('¡Nombres! Esas contraseñas no pegan ni con goma. Revisalas de nuevo.', confirmPasswordInput);
         return;
       }
 
       if (!consentTerms.checked) {
-        showError('Debes aceptar los Términos y Condiciones para registrarte.');
+        showError('Tenés que darle el visto bueno a los Términos y Condiciones.');
         consentTerms.focus();
         return;
       }
 
       if (!consentPrivacy.checked) {
-        showError('Debes aceptar la Política de Privacidad para registrarte.');
+        showError('Falta aceptar la Política de Privacidad, pura vida.');
         consentPrivacy.focus();
         return;
       }
 
       if (!consentAge.checked) {
-        showError('Debes confirmar que eres mayor de 18 años para registrarte.');
+        showError('Confirmá que tenés más de 18 años, compa.');
         consentAge.focus();
         return;
       }
@@ -907,7 +907,7 @@
       // Estado de carga
       submitBtn.disabled = true;
       btnSpinner.style.display = 'inline-block';
-      btnText.textContent = 'Registrando en Supabase…';
+      btnText.textContent = 'Alistando tu cuenta en Supabase…';
 
       function completeRegistration(user) {
         localStorage.setItem('bustrack_user', JSON.stringify({
@@ -916,7 +916,7 @@
           avatarUrl: user.avatarUrl
         }));
 
-        btnText.textContent = '¡Cuenta creada! Entrando…';
+        btnText.textContent = '¡Listo el pollo! Entrando…';
         btnSpinner.style.display = 'none';
         submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
 

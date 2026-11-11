@@ -69,8 +69,8 @@
           </svg>
         </span>
         <h1 class="home-title">BusTrack <span>Pro</span></h1>
-        <p class="home-sub">Elegí por dónde querés empezar</p>
-        <p class="home-status"><span class="pulse-dot small"></span><span id="homeStatus">Cargando flota…</span></p>
+        <p class="home-sub">¡Pura vida! ¿Por dónde arrancamos hoy? 🚍</p>
+        <p class="home-status"><span class="pulse-dot small"></span><span id="homeStatus">Cargando la flota, un toque…</span></p>
       </header>
  
       <nav class="home-grid" aria-label="Menú principal">
@@ -83,7 +83,7 @@
           </span>
           <span class="home-tile-text">
             <span class="home-tile-name">Panel Principal</span>
-            <span class="home-tile-desc">Resumen del día y estado general</span>
+            <span class="home-tile-desc">¿Cómo va la cosa? Resumen del día 📊</span>
           </span>
           <span class="home-chip" id="chipDashboard">—</span>
         </button>
@@ -98,7 +98,7 @@
           </span>
           <span class="home-tile-text">
             <span class="home-tile-name">Mapa en Vivo</span>
-            <span class="home-tile-desc">Posición de cada unidad en ruta</span>
+            <span class="home-tile-desc">¿Dónde andan los buses ahorita? 📍</span>
           </span>
           <span class="home-chip live" id="chipMap">VIVO</span>
         </button>
@@ -111,7 +111,7 @@
           </span>
           <span class="home-tile-text">
             <span class="home-tile-name">Horarios</span>
-            <span class="home-tile-desc">Horarios de referencia, frecuencias y tarifas</span>
+            <span class="home-tile-desc">Salidas, frecuencias y tarifas de las rutas 🕐</span>
           </span>
           <span class="home-chip" id="chipSchedules">10 Rutas</span>
         </button>
@@ -125,7 +125,7 @@
           </span>
           <span class="home-tile-text">
             <span class="home-tile-name">Rutas</span>
-            <span class="home-tile-desc">Cobertura y paradas por recorrido</span>
+            <span class="home-tile-desc">Recorridos, paradas y cobertura nacional 🗺️</span>
           </span>
           <span class="home-chip" id="chipRoutes">—</span>
         </button>
@@ -140,7 +140,7 @@
           </span>
           <span class="home-tile-text">
             <span class="home-tile-name">Reportes</span>
-            <span class="home-tile-desc">Gráficos, resumen e impresión</span>
+            <span class="home-tile-desc">Números, gráficos e impresión — todo en orden 📋</span>
           </span>
           <span class="home-chip" id="chipReports">—</span>
         </button>
@@ -154,7 +154,7 @@
           </span>
           <span class="home-tile-text">
             <span class="home-tile-name">Conductores</span>
-            <span class="home-tile-desc">Turnos, viajes y calificación</span>
+            <span class="home-tile-desc">Turnos, viajes y el rendimiento de cada mae 🧑‍✈️</span>
           </span>
           <span class="home-chip" id="chipDrivers">—</span>
         </button>
@@ -377,7 +377,7 @@
           <div class="stat-content">
             <p class="stat-value" id="activeCount">0</p>
             <p class="stat-label">Buses en circulación</p>
-            <p class="stat-change positive">+4 esta semana</p>
+            <p class="stat-change positive">+4 esta semana — ¡tuanis!</p>
           </div>
           <canvas class="stat-sparkline" id="sparkline1" width="80" height="40" aria-hidden="true"></canvas>
         </article>
@@ -389,7 +389,7 @@
           <div class="stat-content">
             <p class="stat-value" id="routeCount">4</p>
             <p class="stat-label">Rutas operando</p>
-            <p class="stat-change positive">100% operativas</p>
+            <p class="stat-change positive">¡Todas a full! 💯</p>
           </div>
           <canvas class="stat-sparkline" id="sparkline2" width="80" height="40" aria-hidden="true"></canvas>
         </article>
@@ -401,7 +401,7 @@
           <div class="stat-content">
             <p class="stat-value" id="passengersToday">2.847</p>
             <p class="stat-label">Pasajeros hoy</p>
-            <p class="stat-change positive">+12,4% vs ayer</p>
+            <p class="stat-change positive">+12,4% que ayer — ¡qué macha!</p>
           </div>
           <canvas class="stat-sparkline" id="sparkline3" width="80" height="40" aria-hidden="true"></canvas>
         </article>
@@ -413,7 +413,7 @@
           <div class="stat-content">
             <p class="stat-value" id="avgDelay">2,3<small>min</small></p>
             <p class="stat-label">Retraso promedio</p>
-            <p class="stat-change positive">−0,8 min vs ayer</p>
+            <p class="stat-change positive">−0,8 min — ¡vamos bien diay!</p>
           </div>
           <canvas class="stat-sparkline" id="sparkline4" width="80" height="40" aria-hidden="true"></canvas>
         </article>
@@ -529,10 +529,10 @@
       </div>
 
       <div class="schedules-meta-bar">
-        <p class="results-note" id="schedulesCount">Cargando rutas y horarios oficiales…</p>
+        <p class="results-note" id="schedulesCount">Cargando horarios y rutas… un toque 🕐</p>
         <div class="schedules-quick-actions">
           <button class="btn-ghost btn-sm" id="schedulesPrintBtn" title="Imprimir / Exportar horarios">🖨️ Imprimir / PDF</button>
-          <button class="btn-ghost btn-sm" id="schedulesResetBtn">Limpiar filtros</button>
+          <button class="btn-ghost btn-sm" id="schedulesResetBtn">Borrar filtros</button>
         </div>
       </div>
 
@@ -577,7 +577,7 @@
             </div>
             <div class="user-location-bar" id="userLocationBar" hidden>
               <span class="user-loc-icon">📍</span>
-              <span id="userLocationText">Adaptando mapa a tu ubicación...</span>
+              <span id="userLocationText">Encontrando tu ubicación, mae…</span>
               <button class="btn-sm btn-ghost" id="recenterUserBtn" style="padding: 2px 8px; font-size:11px;">Centrar</button>
             </div>
             <div class="map-controls map-controls-top">
@@ -602,10 +602,10 @@
     <section class="view" id="view-reports">
       <div class="reports-container">
         <div class="reports-header">
-          <h2>Reportes y analíticas</h2>
+          <h2>Reportes y analíticas — a ver cómo vamos</h2>
           <div class="report-actions">
             <button class="btn-ghost" id="printReportBtn">Imprimir / PDF</button>
-            <button class="btn-primary" id="generateReportBtn">Generar reporte</button>
+            <button class="btn-primary" id="generateReportBtn">¡Generar reporte!</button>
           </div>
         </div>
         <div class="report-summary" id="reportSummary" hidden></div>

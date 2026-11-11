@@ -195,12 +195,12 @@
       <path d="M8 18l7 7 13-14" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </div>
-  <h1>¡Acción completada!</h1>
+  <h1>¡Pura vida, todo listo!</h1>
   <p class="subtitle" id="thanksMessage">
-    La operación se realizó correctamente.
+    La jugada salió al toque y sin bronca.
   </p>
   <div class="actions">
-    <a href="index.html" class="btn-primary" id="thanksCta">Volver al panel</a>
+    <a href="index.html" class="btn-primary" id="thanksCta">Jalemos al panel</a>
   </div>
 
   <script>
@@ -212,10 +212,10 @@
     const ctaEl = document.getElementById('thanksCta');
 
     const messages = {
-      bus_added: `El bus ${name || ''} fue registrado exitosamente en la flota.`,
-      status_updated: `El estado del bus ${name || ''} fue actualizado.`,
-      report_generated: 'El reporte fue generado y está listo para descargar.',
-      alert_created: 'La alerta fue creada y notificada al equipo.',
+      bus_added: `¡Buenísimo! El bus ${name || ''} quedó matriculado y listo en la flota.`,
+      status_updated: `Quedó al día el estado del bus ${name || ''}, tuanis.`,
+      report_generated: 'El reporte quedó listo y calientito para descargar.',
+      alert_created: 'La alerta quedó montada y avisada a todo el equipo.',
     };
 
     if (action && messages[action]) {

@@ -289,9 +289,6 @@ button, input, select { font-family: inherit; }
   font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 20px;
   background: rgba(255,255,255,0.08); color: var(--text);
 }
-
-  to   { transform: scale(1); opacity: 1; }
-}
 .nav-count.live-pulse {
   background: color-mix(in srgb, var(--ok) 20%, transparent); color: #6fd7b2;
   font-size: 9px; letter-spacing: 0.5px; animation: badgeFade 2.4s ease-in-out infinite;
@@ -953,45 +950,6 @@ html[data-theme="light"] .map-btn-geo.active:hover {
   color: var(--brand-300); border-color: var(--line-brand);
 }
 .empty-state { padding: 34px; text-align: center; color: var(--text-soft); font-size: 13px; }
- 
-
-
-
-
-
-
-
-
-
-
-
-}
-
-
-
-}
-
-
-
-
-
-
-
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-}
  
 /* ============ MAPA COMPLETO ============ */
 #view-map { overflow: hidden; }

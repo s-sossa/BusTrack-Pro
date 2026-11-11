@@ -1369,8 +1369,8 @@ function renderSchedules() {
       const text = `🚌 Horario Referencial: ${route.concession} - ${route.name}\nOperador: ${route.operator}\nTarifa Aprox.: ${route.tariffRegular}\nOrigen: ${route.originTerminal}\nDestino: ${route.destinationTerminal}\nPrimer bus: ${dayData.firstBus} | Último bus: ${dayData.lastBus}\nFrecuencia: ${dayData.peakFreq}\nSalidas:\n${departures.join(', ')}\n(Nota: Sujeto a variaciones de la empresa operadora)`;
       if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => {
-          toast(`📋 Itinerario de ${route.concession} copiado al portapapeles`, 'ok');
-        }).catch(() => toast('No se pudo copiar el texto', 'warn'));
+          toast('📋 Itinerario de ' + route.concession + ' copiado, listo el pollo 👌', 'ok');
+        }).catch(() => toast('No se pudo copiar el texto, mae', 'warn'));
       } else {
         toast(`Ruta ${route.concession}: ${departures.length} salidas programadas`, 'info');
       }
@@ -1459,7 +1459,7 @@ function setupSchedulesEventListeners() {
     resetBtn._bound = true;
     resetBtn.addEventListener('click', () => {
       resetSchedulesFilters();
-      toast('Filtros de horarios restablecidos', 'info');
+      toast('¡Listo! Filtros de horarios borrados, mae', 'info');
     });
   }
 
@@ -1576,7 +1576,7 @@ if ($('fleetTableBody')) {
     if (!bus) return;
     applyBusStatus(bus, sel.value);
     refreshAfterStatusChange(bus);
-    toast('Estado de ' + bus.id + ' actualizado a ' + statusLabel(bus.status), 'ok');
+    toast('¡Listo el cambio! El bus ' + bus.id + ' ahora está ' + statusLabel(bus.status).toLowerCase(), 'ok');
   });
 }
 if ($('resetFiltersBtn')) {
@@ -1587,7 +1587,7 @@ if ($('resetFiltersBtn')) {
     state.sort = { key: 'id', dir: 1 };
     $$('.fleet-table th').forEach(th => th.classList.remove('sorted', 'desc'));
     renderFleet();
-    toast('Filtros restablecidos');
+    toast('Filtros en cero, pura vida');
   });
 }
 $$('.fleet-table th[data-sort]').forEach(th => {
@@ -1616,7 +1616,7 @@ if ($('exportCsvBtn')) {
       .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';'))
       .join('\r\n');
     if (typeof URL === 'undefined' || !URL.createObjectURL) {
-      toast('Este navegador no permite descargar el archivo', 'warn');
+      toast('Diay, este navegador no nos deja descargar el archivo', 'warn');
       return;
     }
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -1628,7 +1628,7 @@ if ($('exportCsvBtn')) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast('Archivo CSV generado y descargado', 'ok');
+    toast('¡Descarga lista! Archivo CSV guardado, compa', 'ok');
   });
 }
  
@@ -2405,7 +2405,7 @@ function focusBus(busId) {
   renderMapBusList();
   drawMapMarkers(true);
   updateTrackingBanner();
-  toast('Siguiendo ' + busId + ' · Ruta ' + ((bus.route && bus.route.id) || ''), 'info');
+  toast('Siguiendo la pista a ' + busId + ' · Ruta ' + ((bus.route && bus.route.id) || ''), 'info');
 }
 
 function focusRouteOnMap(route) {
@@ -2729,10 +2729,10 @@ function handlePositionUpdate(position, isInitial = false) {
 
 function requestUserLocation(userInitiated = true) {
   if (!('geolocation' in navigator)) {
-    if (userInitiated) toast('Tu navegador no soporta geolocalización', 'warn');
+    if (userInitiated) toast('Tu navegador no soporta geolocalización, mae', 'warn');
     return;
   }
-  toast('Solicitando permiso de ubicación al navegador...', 'info');
+  toast('Solicitando permiso de ubicación al navegador, un toque...', 'info');
   const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 };
   navigator.geolocation.getCurrentPosition(
     (position) => {
@@ -2752,13 +2752,13 @@ function requestUserLocation(userInitiated = true) {
       const geoSwitch = document.getElementById('geoSwitch');
       if (geoSwitch) geoSwitch.setAttribute('aria-checked', 'false');
       if (error.code === error.PERMISSION_DENIED) {
-        toast('⚠️ Permiso de ubicación denegado. Permite el acceso en la barra de direcciones de tu navegador.', 'warn');
+        toast('⚠️ Permiso de ubicación denegado, mae. Permitilo en la barra de tu navegador.', 'warn');
       } else if (error.code === error.POSITION_UNAVAILABLE) {
-        toast('⚠️ Posición GPS no disponible en este dispositivo.', 'warn');
+        toast('⚠️ Posición GPS no disponible en este dispositivo, diay.', 'warn');
       } else if (error.code === error.TIMEOUT) {
-        toast('⏱️ Tiempo de espera agotado al obtener el GPS.', 'warn');
+        toast('⏱️ Se agotó el tiempo buscando el GPS, un toque y dale de nuevo.', 'warn');
       } else if (userInitiated) {
-        toast('No se pudo acceder a tu ubicación actual.', 'warn');
+        toast('No se pudo acceder a tu ubicación, compa. Intentá de nuevo.', 'warn');
       }
     },
     options
@@ -2908,12 +2908,12 @@ $('generateReportBtn').addEventListener('click', () => {
       <div class="summary-cell"><b>${combustibleBajo}</b><span>Combustible bajo 20%</span></div>
     </div>`;
   if (box.scrollIntoView) box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  toast('Reporte generado con los datos actuales', 'ok');
+  toast('¡Reporte calientito y listo con los datos de hoy!', 'ok');
 });
  
 $('printReportBtn').addEventListener('click', () => {
   if ($('reportSummary').hidden) $('generateReportBtn').click();
-  toast('Abriendo el diálogo de impresión');
+  toast('Abriendo la ventana para imprimir… un toque');
   setTimeout(() => window.print(), 350);
 });
  
@@ -2994,7 +2994,7 @@ $('trackBusBtn').addEventListener('click', () => {
  
 $('contactDriverBtn').addEventListener('click', () => {
   const b = buses.find(x => x.id === busModal.currentBusId);
-  if (b) toast('Llamando a ' + b.driver.name + ' (' + b.id + ')…');
+  if (b) toast('Pegándole una llamada a ' + b.driver.name + ' (' + b.id + ')…');
 });
  
 $('modalStatusSelect').addEventListener('change', async function () {
@@ -3013,7 +3013,7 @@ $('modalStatusSelect').addEventListener('change', async function () {
     }
   }
 
-  toast('Estado de ' + b.id + ' actualizado a ' + statusLabel(b.status), 'ok');
+  toast('¡Listo! El bus ' + b.id + ' quedó en estado: ' + statusLabel(b.status) + ' 👌', 'ok');
 });
  
 document.addEventListener('keydown', e => {
@@ -3049,7 +3049,7 @@ on('accentPicker', 'click', e => {
   if (state.view === 'fleet') renderFleet();
   if (state.view === 'routes') renderRoutes();
   if (state.view === 'drivers') renderDrivers();
-  toast('Acento actualizado');
+  toast('¡Acento cambiado, quedó chiva! 🎨');
 });
  
 function bindSwitch(id, onChange) {
@@ -3064,7 +3064,7 @@ function bindSwitch(id, onChange) {
  
 bindSwitch('motionSwitch', v => {
   prefs.motion = v;
-  toast(v ? 'Movimiento activado' : 'Movimiento en pausa');
+  toast(v ? '¡Movimiento activado, todo en acción! 🚌' : 'Movimiento en pausa, mae');
 });
 bindSwitch('liveSwitch', v => {
   prefs.live = v;
@@ -3106,7 +3106,7 @@ $('resetDataBtn').addEventListener('click', () => {
   renderMapBusList();
   drawMapMarkers(true);
   if (state.view === 'routes') renderRoutes();
-  toast('Flota regenerada con datos nuevos', 'ok');
+  toast('¡Flota refrescada y con datos fresquitos!', 'ok');
 });
  
 function openSettings() {
@@ -3161,7 +3161,7 @@ $('globalSearch').addEventListener('keydown', function (e) {
   $('routeFilter').value = '';
   renderFleet();
   const n = visibleBuses().length;
-  toast(n ? n + ' resultados para "' + q + '"' : 'Sin resultados para "' + q + '"', n ? 'ok' : 'warn');
+  toast(n ? n + ' resultado' + (n !== 1 ? 's' : '') + ' para "' + q + '" 🔍' : 'Diay mae, sin resultados para "' + q + '"', n ? 'ok' : 'warn');
 });
  
 $('mobileSearchBtn').addEventListener('click', e => {
@@ -3586,7 +3586,7 @@ if (liveToggleBtn) {
     prefs.live = !prefs.live;
     syncLiveIndicator();
     savePrefs();
-    toast(prefs.live ? 'Actualización automática activada' : 'Actualización automática en pausa');
+    toast(prefs.live ? '¡Actualización automática activada, pura vida! 🔄' : 'Actualización automática en pausa, mae');
   });
 }
  
@@ -4207,7 +4207,7 @@ function init() {
     localStorage.removeItem('bustrack_user');
     sessionStorage.removeItem('bustrack_guest');
 
-    toast(`Hasta pronto, ${name}. Sesión cerrada correctamente. 👋`, 'info');
+    toast(`¡Nos vemos compa! Hasta luego, ${name}. Sesión cerrada. 👋`, 'info');
     updateAuthUserUI();
     if (authModal) authModal.classList.remove('active');
   }
@@ -4256,13 +4256,13 @@ function init() {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         if (res.ok) {
-          toast('Cuenta eliminada correctamente', 'info');
+          toast('¡Listo! Cuenta eliminada, compa 👋', 'info');
           await performLogout();
         } else {
-          toast('No se pudo eliminar la cuenta directamente. Contacte a soporte.', 'warn');
+          toast('Diay, no se pudo eliminar la cuenta. Contacta a soporte.', 'warn');
         }
       } catch (err) {
-        toast('Error al procesar la solicitud de eliminación', 'warn');
+        toast('Error al procesar la solicitud, dale otra vez', 'warn');
       }
     });
   }
@@ -4352,7 +4352,7 @@ function init() {
         if (!editInput) return;
         const newName = editInput.value.trim();
         if (!newName || newName.length < 2) {
-          toast('Por favor ingresa un nombre válido (al menos 2 caracteres)', 'warn');
+          toast('Diay compa, poné un nombre válido (mínimo 2 caracteres)', 'warn');
           return;
         }
         if (!currentUser) return;
@@ -4381,7 +4381,7 @@ function init() {
 
           updateAuthUserUI();
           renderAccountView();
-          toast('✅ Nombre actualizado y guardado en Supabase', 'ok');
+          toast('✅ ¡Listo! Nombre guardado, compa', 'ok');
         } catch (err) {
           toast('Error al guardar el nombre: ' + (err.message || ''), 'warn');
         } finally {
@@ -4398,11 +4398,11 @@ function init() {
         if (!codeInput) return;
         const rawCode = codeInput.value.trim().replace(/^@/, '');
         if (!rawCode || rawCode.length < 2) {
-          toast('El código debe tener al menos 2 caracteres', 'warn');
+          toast('Diay, el código debe tener al menos 2 caracteres, mae', 'warn');
           return;
         }
         if (!/^[a-zA-Z0-9_]+$/.test(rawCode)) {
-          toast('El código solo puede tener letras, números y guiones bajos (_)', 'warn');
+          toast('El código solo puede tener letras, números y guiones bajos (_), compa', 'warn');
           return;
         }
         if (!currentUser) return;
@@ -4433,7 +4433,7 @@ function init() {
           }
 
           codeInput.value = rawCode;
-          toast('✅ Código guardado: @' + rawCode, 'ok');
+          toast('✅ ¡Código guardado! @' + rawCode, 'ok');
         } catch (err) {
           toast('Error al guardar el código: ' + (err.message || ''), 'warn');
         } finally {
@@ -4449,9 +4449,9 @@ function init() {
         const idEl = $('accDisplayId');
         if (idEl && idEl.textContent) {
           navigator.clipboard?.writeText(idEl.textContent).then(() => {
-            toast('ID de usuario copiado al portapapeles', 'ok');
+            toast('ID copiado al portapapeles, listo el pollo 📋', 'ok');
           }).catch(() => {
-            toast('No se pudo copiar automáticamente', 'warn');
+            toast('No se pudo copiar automáticamente, mae', 'warn');
           });
         }
       });
@@ -4462,7 +4462,7 @@ function init() {
     if (toggleThemeBtn) {
       toggleThemeBtn.addEventListener('click', () => {
         toggleTheme();
-        toast(`Tema visual cambiado a ${prefs.theme === 'light' ? 'Claro' : 'Oscuro'}`, 'info');
+        toast(`¡Tema cambiado a ${prefs.theme === 'light' ? 'Claro ☀️' : 'Oscuro 🌙'}! ¿Quedó chiva?`, 'info');
       });
     }
 
@@ -4548,17 +4548,17 @@ function init() {
               keysToRemove.forEach(k => localStorage.removeItem(k));
             } catch (_) {}
 
-            toast('✅ Cuenta y datos personales eliminados correctamente', 'info');
+            toast('¡Todo borrado! Que le vaya bien, compa 👋', 'info');
             await new Promise(r => setTimeout(r, 1500));
             performLogout();
             navigate('dashboard');
           } else {
-            toast('No se pudo eliminar la cuenta. Contacta a soporte@bustrack.cr', 'warn');
+            toast('No se pudo eliminar la cuenta, mae. Contactá a soporte@bustrack.cr', 'warn');
             deleteBtn.disabled = false;
             deleteBtn.textContent = '🗑️ Eliminar cuenta y datos personales';
           }
         } catch (err) {
-          toast('Error inesperado: ' + (err.message || 'inténtalo de nuevo'), 'warn');
+          toast('Error inesperado: ' + (err.message || 'dale otra vez, mae'), 'warn');
           deleteBtn.disabled = false;
           deleteBtn.textContent = '🗑️ Eliminar cuenta y datos personales';
         }
@@ -4669,13 +4669,13 @@ function init() {
       const plateRegex = /^[A-Z0-9-]{1,10}$/;
 
       if (!busIdRegex.test(id)) {
-        toast('El ID del bus debe cumplir el formato BUS-000 (ej. BUS-015)', 'warn');
+        toast('Diay mae, el ID debe ir en formato BUS-000 (ej. BUS-015)', 'warn');
         $('newBusId')?.focus();
         return;
       }
 
       if (!plateRegex.test(plate)) {
-        toast('La placa solo puede contener letras, números y guion (máx. 10 caracteres)', 'warn');
+        toast('La placa solo puede tener letras, números y guion (máx. 10 caracteres), compa', 'warn');
         $('newBusPlate')?.focus();
         return;
       }
@@ -4712,7 +4712,7 @@ function init() {
 
       addBusModal.classList.remove('active');
       addBusForm.reset();
-      toast(`Bus ${id} registrado en la flota con éxito`, 'ok');
+      toast(`¡Bus ${id} registrado en la flota, listo el pollo! 🚌`, 'ok');
     });
   }
 
@@ -4725,7 +4725,7 @@ function init() {
       if (search) search.value = '';
       if (filter) filter.value = '';
       renderFleet();
-      toast('Filtros de la flota reiniciados', 'info');
+      toast('Filtros de la flota en cero, pura vida 👌', 'info');
     });
   }
 
@@ -4760,13 +4760,13 @@ function init() {
 
   if (callDriverBtn) {
     callDriverBtn.addEventListener('click', () => {
-      toast('📞 Conectando llamada con la cabina del conductor...', 'ok');
+      toast('📞 Llamando directo a la cabina del chofer...', 'ok');
       if (contactModal) contactModal.classList.remove('active');
     });
   }
   if (msgDriverBtn) {
     msgDriverBtn.addEventListener('click', () => {
-      toast('💬 Canal de mensajería enviado al terminal de abordo', 'ok');
+      toast('💬 ¡Mensaje enviado al terminal a bordo, mae!', 'ok');
       if (contactModal) contactModal.classList.remove('active');
     });
   }
@@ -4799,7 +4799,7 @@ function init() {
       e.preventDefault();
       localStorage.setItem('bustrack_cookie_consent', 'accepted');
       hideCookieBanner();
-      toast('Preferencias de almacenamiento guardadas', 'ok');
+      toast('Preferencias de almacenamiento guardadas, listo el pollo 💾', 'ok');
     });
   }
   if (cookieRejectBtn) {
@@ -4807,7 +4807,7 @@ function init() {
       e.preventDefault();
       localStorage.setItem('bustrack_cookie_consent', 'essential_only');
       hideCookieBanner();
-      toast('Solo se usará almacenamiento técnico esencial', 'info');
+      toast('Solo se usará lo técnico esencial, sin bronca', 'info');
     });
   }
 
@@ -4833,7 +4833,7 @@ function init() {
       else {
         userLocationState.active = false;
         updateUserLocationUI();
-        toast('Geolocalización desactivada', 'info');
+        toast('Geolocalización desactivada, mae', 'info');
       }
     });
   }
