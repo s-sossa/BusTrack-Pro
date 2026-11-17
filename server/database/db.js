@@ -75,6 +75,14 @@ export const SEED_STOPS = [
   { id: 'stop-moravia',            name: 'Moravia Centro / Lincoln Plaza',         subtext: null,                                                      province: 'San José',    isPrimary: 0, lat: 9.9632,  lon: -84.0482, pos_x: 310, pos_y: 130 },
   { id: 'stop-tibas',              name: 'Tibás Parque Central / Estadio Saprissa',subtext: null,                                                      province: 'San José',    isPrimary: 0, lat: 9.9582,  lon: -84.0812, pos_x: 245, pos_y: 135 },
   { id: 'stop-guadalupe',          name: 'Guadalupe (Goicoechea)',                 subtext: null,                                                      province: 'San José',    isPrimary: 0, lat: 9.9472,  lon: -84.0558, pos_x: 265, pos_y: 140 },
+  { id: 'stop-novacentro',         name: 'Novacentro (San Blas)',                  subtext: 'C.C. Novacentro — Guadalupe / Moravia',                   province: 'San José',    isPrimary: 0, lat: 9.9488,  lon: -84.0482, pos_x: 275, pos_y: 138 },
+  { id: 'stop-el-alto',            name: 'El Alto de Guadalupe',                   subtext: 'Goicoechea — Cruce a Purral e Ipís / Ruta 218',           province: 'San José',    isPrimary: 0, lat: 9.9572,  lon: -84.0385, pos_x: 285, pos_y: 135 },
+  { id: 'stop-purral',             name: 'Purral Centro',                          subtext: 'Goicoechea — Purral Arriba / Los Cuadros',                province: 'San José',    isPrimary: 0, lat: 9.9585,  lon: -84.0308, pos_x: 292, pos_y: 132 },
+  { id: 'stop-ipis',               name: 'Ipís (Residencial Facio)',               subtext: 'Goicoechea — Cruce a Coronado',                           province: 'San José',    isPrimary: 0, lat: 9.9655,  lon: -84.0252, pos_x: 305, pos_y: 128 },
+  { id: 'stop-mata-platano',       name: 'Mata de Plátano',                        subtext: 'Carmen de Goicoechea — Calle El Carmen / Tepeyac',        province: 'San José',    isPrimary: 0, lat: 9.9518,  lon: -84.0242, pos_x: 300, pos_y: 138 },
+  { id: 'stop-rancho-redondo',     name: 'Rancho Redondo',                         subtext: 'Goicoechea — Faldas Cordillera Central',                  province: 'San José',    isPrimary: 0, lat: 9.9592,  lon: -83.9850, pos_x: 335, pos_y: 135 },
+  { id: 'stop-los-sitios',         name: 'Los Sitios',                             subtext: 'Moravia — Conexión Calle Blancos y El Alto',              province: 'San José',    isPrimary: 0, lat: 9.9610,  lon: -84.0410, pos_x: 295, pos_y: 130 },
+  { id: 'stop-calle-blancos',      name: 'Calle Blancos',                          subtext: 'Goicoechea — Zona Industrial / Parque del Este',          province: 'San José',    isPrimary: 0, lat: 9.9495,  lon: -84.0680, pos_x: 255, pos_y: 138 },
   { id: 'stop-coronado',           name: 'Vázquez de Coronado (San Isidro)',       subtext: null,                                                      province: 'San José',    isPrimary: 0, lat: 9.9765,  lon: -84.0092, pos_x: 330, pos_y: 125 },
   { id: 'stop-puriscal',           name: 'Santiago de Puriscal',                   subtext: null,                                                      province: 'San José',    isPrimary: 0, lat: 9.8495,  lon: -84.3125, pos_x: 60,  pos_y: 240 },
   { id: 'stop-perez-zeledon',      name: 'Terminal San Isidro de El General',      subtext: 'Pérez Zeledón — Tracopa y Musoc',                         province: 'San José',    isPrimary: 1, lat: 9.3735,  lon: -83.7042, pos_x: 350, pos_y: 480 },
@@ -366,26 +374,23 @@ export class Database {
       }
     }
 
-    // 4. Seed Stops
-    const stopCount = this.sqlite.prepare('SELECT COUNT(*) as count FROM stops').get();
-    if (stopCount.count === 0) {
-      const insertStop = this.sqlite.prepare(`
-        INSERT INTO stops (id, name, subtext, is_primary, lat, lon, routes_json, pos_x, pos_y, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-      `);
-      for (const s of SEED_STOPS) {
-        insertStop.run(
-          s.id || `stop-${s.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-          s.name,
-          s.subtext || null,
-          s.isPrimary || 0,
-          s.lat || 9.9333,
-          s.lon || -84.0833,
-          JSON.stringify(s.routes || []),
-          s.pos_x || s.x || 400,
-          s.pos_y || s.y || 225
-        );
-      }
+    // 4. Seed Stops (INSERT OR IGNORE asegura que nuevas paradas se añadan incluso con BD preexistente)
+    const insertStop = this.sqlite.prepare(`
+      INSERT OR IGNORE INTO stops (id, name, subtext, is_primary, lat, lon, routes_json, pos_x, pos_y, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    `);
+    for (const s of SEED_STOPS) {
+      insertStop.run(
+        s.id || `stop-${s.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+        s.name,
+        s.subtext || null,
+        s.isPrimary || 0,
+        s.lat || 9.9333,
+        s.lon || -84.0833,
+        JSON.stringify(s.routes || []),
+        s.pos_x || s.x || 400,
+        s.pos_y || s.y || 225
+      );
     }
 
     // 5. Seed Buses (12 operational units)

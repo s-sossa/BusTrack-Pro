@@ -92,6 +92,25 @@ test('Transit Routes — GET /api/v1/routes', async () => {
   assert.ok(typeof routeSjo.coveragePercent === 'number');
 });
 
+test('Transit Stops — GET /api/v1/stops (includes El Alto, Mata de Plátano, Purral)', async () => {
+  const res = await request('/api/v1/stops');
+  assert.equal(res.status, 200);
+  assert.ok(Array.isArray(res.body));
+  assert.ok(res.body.length >= 45);
+
+  const elAlto = res.body.find((s) => s.id === 'stop-el-alto');
+  assert.ok(elAlto, 'Parada El Alto debe existir');
+  assert.equal(elAlto.name, 'El Alto de Guadalupe');
+
+  const mataPlatano = res.body.find((s) => s.id === 'stop-mata-platano');
+  assert.ok(mataPlatano, 'Parada Mata de Plátano debe existir');
+  assert.equal(mataPlatano.name, 'Mata de Plátano');
+
+  const purral = res.body.find((s) => s.id === 'stop-purral');
+  assert.ok(purral, 'Parada Purral debe existir');
+  assert.equal(purral.name, 'Purral Centro');
+});
+
 test('Drivers Roster — GET /api/v1/drivers', async () => {
   const res = await request('/api/v1/drivers');
   assert.equal(res.status, 200);

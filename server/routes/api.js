@@ -67,6 +67,11 @@ apiRouter.get('/routes/:id', (req, res, next) => {
   }
 });
 
+// --- 2.5 STOPS ---
+apiRouter.get('/stops', (req, res) => {
+  res.json(db.getAllStops());
+});
+
 // --- 3. DRIVERS ---
 // ⛔ ítem #8: /drivers requiere autenticación para proteger datos sensibles
 apiRouter.get('/drivers', authenticateToken, requireRole('admin'), (req, res) => {
