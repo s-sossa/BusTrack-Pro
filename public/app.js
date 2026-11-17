@@ -1853,18 +1853,23 @@ let dashboardMarkers = {
 
 // Generador de capas base de mapas 100% gratuitas, sin marcas de agua y sin bloqueos 403
 function createArcGisLayers() {
-  // Capa 1: Oscuro Pro — CARTO Dark Matter (nativo oscuro, sin bloqueos de OpenStreetMap)
-  const osmDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd',
-    maxZoom: 20,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
+  // Capa 1: Oscuro Pro — Esri World Dark Gray Canvas (100% libre, sin API key, sin marcas de agua)
+  const darkBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    maxNativeZoom: 16,
+    maxZoom: 19,
+    attribution: '&copy; Esri &copy; OpenStreetMap contributors'
   });
+  const darkRef = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    maxNativeZoom: 16,
+    maxZoom: 19
+  });
+  const darkLayer = L.layerGroup([darkBase, darkRef]);
 
-  // Capa 2: Calles y Vías — CARTO Voyager (optimizado para transporte público y navegación)
-  const streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd',
-    maxZoom: 20,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
+  // Capa 2: Calles y Vías — Esri World Street Map (alta definición urbana, sin API key)
+  const streetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    maxNativeZoom: 19,
+    maxZoom: 19,
+    attribution: '&copy; Esri &copy; OpenStreetMap contributors'
   });
 
   // Capa 3: Satelital Real de alta resolución (ArcGIS World Imagery — sin API key)
@@ -1875,7 +1880,7 @@ function createArcGisLayers() {
   });
 
   return [
-    { id: 'dark', icon: '🌙', name: 'Oscuro Pro', layer: osmDark },
+    { id: 'dark', icon: '🌙', name: 'Oscuro Pro', layer: darkLayer },
     { id: 'streets', icon: '🗺️', name: 'Calles y Vías', layer: streetLayer },
     { id: 'sat', icon: '🛰️', name: 'Satelital Real', layer: satLayer },
   ];
