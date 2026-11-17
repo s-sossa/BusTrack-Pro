@@ -1853,17 +1853,18 @@ let dashboardMarkers = {
 
 // Generador de capas base de mapas 100% gratuitas, sin marcas de agua y sin bloqueos 403
 function createArcGisLayers() {
-  // Capa 1: Oscuro Pro — OSM tiles con filtro CSS invertido (no requiere API key)
-  const osmDark = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
-    className: 'map-tiles-dark'
+  // Capa 1: Oscuro Pro — CARTO Dark Matter (nativo oscuro, sin bloqueos de OpenStreetMap)
+  const osmDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd',
+    maxZoom: 20,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
   });
 
-  // Capa 2: Calles y Vías (OpenStreetMap estándar)
-  const streetLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+  // Capa 2: Calles y Vías — CARTO Voyager (optimizado para transporte público y navegación)
+  const streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd',
+    maxZoom: 20,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
   });
 
   // Capa 3: Satelital Real de alta resolución (ArcGIS World Imagery — sin API key)
