@@ -724,7 +724,7 @@
     // Inicialización del cliente Supabase en el navegador
     const SUPABASE_URL = 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
-    const supaClient = (typeof supabase !== 'undefined' && supabase.createClient)
+    let supaClient = (typeof supabase !== 'undefined' && supabase.createClient)
       ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       : null;
 
@@ -744,7 +744,7 @@
       // Estado de carga
       submitBtn.disabled = true;
       btnSpinner.style.display = 'inline-block';
-      btnText.textContent = 'Iniciando sesión con Supabase…';
+      btnText.textContent = 'Iniciando sesión…';
 
       function completeLogin(user) {
         localStorage.setItem('bustrack_user', JSON.stringify({
@@ -763,7 +763,14 @@
         }, 500);
       }
 
-      // 1) Autenticación oficial directa con Supabase Auth (Backend en la nube)
+      // Verificar si supabase está disponible en el momento de envío
+      if (!supaClient && typeof supabase !== 'undefined' && supabase.createClient) {
+        try {
+          supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (_) {}
+      }
+
+      // 1) Autenticación oficial directa con Supabase Auth (Cliente en navegador)
       if (supaClient) {
         try {
           const { data, error } = await supaClient.auth.signInWithPassword({
@@ -780,13 +787,13 @@
               btnText.textContent = 'Iniciar Sesión';
               return;
             } else if (msg.includes('Email not confirmed')) {
-              showError('Debes confirmar tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.');
+              showError('Debes confirmar tu correo antes de iniciar sesión. Revisa tu bandeja de entrada o desactiva "Confirm email" en Supabase.');
               submitBtn.disabled = false;
               btnSpinner.style.display = 'none';
               btnText.textContent = 'Iniciar Sesión';
               return;
             } else {
-              showError('No se pudo iniciar sesión: ' + msg);
+              showError('Error de acceso: ' + msg);
               submitBtn.disabled = false;
               btnSpinner.style.display = 'none';
               btnText.textContent = 'Iniciar Sesión';
@@ -807,15 +814,31 @@
           return;
 
         } catch (supaErr) {
-          console.warn('[Supabase Direct Login Error]', supaErr);
-          showError('Error de conexión con el servicio de autenticación.');
+          console.warn('[Supabase Direct Login Error - Intentando fallback]', supaErr);
+        }
+      }
+
+      // 2) Fallback secundario: Endpoint API de BusTrack (/api/v1/auth/login)
+      try {
+        btnText.textContent = 'Verificando credenciales…';
+        const res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const json = await res.json();
+        if (res.ok && json.user) {
+          completeLogin(json.user);
+          return;
+        } else {
+          showError(json.detail || json.message || 'Correo o contraseña incorrectos.');
           submitBtn.disabled = false;
           btnSpinner.style.display = 'none';
           btnText.textContent = 'Iniciar Sesión';
           return;
         }
-      } else {
-        showError('Servicio de autenticación no disponible en este momento.');
+      } catch (backendErr) {
+        showError('No se pudo conectar con el servidor de autenticación. Verifica tu conexión.');
         submitBtn.disabled = false;
         btnSpinner.style.display = 'none';
         btnText.textContent = 'Iniciar Sesión';

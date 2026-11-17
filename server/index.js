@@ -39,6 +39,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: [
         "'self'",
+        "'unsafe-inline'",
         'https://unpkg.com',
         'https://cdn.jsdelivr.net',
         'https://cdnjs.cloudflare.com',
@@ -64,6 +65,8 @@ app.use(helmet({
         'https://*.basemaps.cartocdn.com',
         'https://basemaps.cartocdn.com',
         'https://api.dicebear.com',
+        'https://ui-avatars.com',
+        'https://images.unsplash.com',
         'https://unpkg.com',
         'https://cdnjs.cloudflare.com',
       ],
@@ -111,7 +114,7 @@ app.use(cors({
     if (!isProd && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
       return callback(null, true);
     }
-    if (rawOrigins.includes(origin)) {
+    if (rawOrigins.includes(origin) || (isProd && (origin.endsWith('.up.railway.app') || origin.endsWith('.railway.app')))) {
       return callback(null, true);
     }
     if (!isProd && rawOrigins.includes('*')) {

@@ -907,7 +907,7 @@
       // Estado de carga
       submitBtn.disabled = true;
       btnSpinner.style.display = 'inline-block';
-      btnText.textContent = 'Registrando en Supabase…';
+      btnText.textContent = 'Creando cuenta…';
 
       function completeRegistration(user) {
         localStorage.setItem('bustrack_user', JSON.stringify({
@@ -916,13 +916,20 @@
           avatarUrl: user.avatarUrl
         }));
 
-        btnText.textContent = '¡Cuenta creada! Entrando…';
+        btnText.textContent = '¡Cuenta lista! Redirigiendo…';
         btnSpinner.style.display = 'none';
         submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
 
         setTimeout(() => {
           window.location.href = 'index.html';
         }, 600);
+      }
+
+      // Verificar si supabase está disponible en el momento de envío
+      if (!supaClient && typeof supabase !== 'undefined' && supabase.createClient) {
+        try {
+          supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (_) {}
       }
 
       // 1) Registro oficial directo con Supabase Auth (Backend en la nube)
@@ -960,7 +967,7 @@
             btnText.textContent = '¡Confirmación enviada!';
             btnSpinner.style.display = 'none';
             submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-            showError('¡Cuenta creada! Revisa tu correo electrónico para confirmar la cuenta antes de iniciar sesión.');
+            showError('¡Cuenta creada! Revisa tu correo electrónico para confirmar la cuenta antes de iniciar sesión. (O desactiva "Confirm email" en Supabase).');
             setTimeout(() => {
               window.location.href = 'login.html';
             }, 3000);
@@ -984,15 +991,45 @@
             return;
           }
         } catch (supaErr) {
-          console.warn('[Supabase Signup Error]', supaErr);
-          showError('Error de conexión con el servicio de autenticación.');
+          console.warn('[Supabase Signup Error - Intentando fallback]', supaErr);
+        }
+      }
+
+      // 2) Fallback secundario: Endpoint API (/api/v1/auth/register)
+      try {
+        btnText.textContent = 'Registrando en servidor…';
+        const res = await fetch('/api/v1/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+            consentTerms: true,
+            consentPrivacy: true
+          })
+        });
+        const json = await res.json();
+        if (res.ok) {
+          if (json.status === 'pending') {
+            btnText.textContent = '¡Confirmación enviada!';
+            btnSpinner.style.display = 'none';
+            submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            showError('¡Cuenta creada! Revisa tu correo electrónico para confirmar antes de ingresar.');
+            setTimeout(() => { window.location.href = 'login.html'; }, 3000);
+            return;
+          }
+          completeRegistration(json.user || { name, email, avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) });
+          return;
+        } else {
+          showError(json.detail || json.message || 'No se pudo crear la cuenta.');
           submitBtn.disabled = false;
           btnSpinner.style.display = 'none';
           btnText.textContent = 'Crear Cuenta';
           return;
         }
-      } else {
-        showError('Servicio de autenticación no disponible en este momento.');
+      } catch (backendErr) {
+        showError('No se pudo conectar con el servidor.');
         submitBtn.disabled = false;
         btnSpinner.style.display = 'none';
         btnText.textContent = 'Crear Cuenta';

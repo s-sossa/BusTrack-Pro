@@ -589,14 +589,14 @@
 
   <main class="auth-main">
     <div class="auth-card">
-      <h1 class="auth-title">¡Bienvenido de vuelta! 👋</h1>
-      <p class="auth-subtitle">Ingresá tus datos para entrar a la plataforma</p>
+      <h1 class="auth-title">Iniciar Sesión</h1>
+      <p class="auth-subtitle">Ingresa tus credenciales para acceder a la plataforma</p>
 
       <div class="auth-alert" id="authAlert" role="alert" aria-live="assertive">
         <svg class="auth-alert-icon" width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
         </svg>
-        <span id="authAlertText">Correo o contraseña incorrectos, diay. Intentá de nuevo.</span>
+        <span id="authAlertText">Correo o contraseña inválidos, intentelo de nuevo</span>
       </div>
 
       <form id="loginForm" autocomplete="on" novalidate>
@@ -654,12 +654,12 @@
 
         <button type="submit" class="btn-submit" id="submitBtn">
           <span class="spinner" id="btnSpinner"></span>
-          <span id="btnText">¡Entrar!</span>
+          <span id="btnText">Iniciar Sesión</span>
         </button>
       </form>
 
       <div class="auth-footer">
-        ¿Todavía no tenés cuenta? <a href="register.html">Registrate aquí, mae</a>
+        ¿Aún no tienes cuenta? <a href="register.html">Regístrate aquí</a>
       </div>
     </div>
   </main>
@@ -724,7 +724,7 @@
     // Inicialización del cliente Supabase en el navegador
     const SUPABASE_URL = 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
-    const supaClient = (typeof supabase !== 'undefined' && supabase.createClient)
+    let supaClient = (typeof supabase !== 'undefined' && supabase.createClient)
       ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       : null;
 
@@ -737,14 +737,14 @@
 
       // Validación de contraseña de al menos 8 caracteres y correo válido
       if (!email || !password || password.length < 8) {
-        showError('Diay compa, correo o contraseña inválidos. Fíjate bien y dale de nuevo.');
+        showError('Correo o contraseña inválidos, intentelo de nuevo');
         return;
       }
 
       // Estado de carga
       submitBtn.disabled = true;
       btnSpinner.style.display = 'inline-block';
-      btnText.textContent = 'Entrando a Supabase, un toque…';
+      btnText.textContent = 'Iniciando sesión…';
 
       function completeLogin(user) {
         localStorage.setItem('bustrack_user', JSON.stringify({
@@ -753,7 +753,7 @@
           avatarUrl: user.avatarUrl
         }));
 
-        btnText.textContent = '¡Pura vida! Entrando…';
+        btnText.textContent = '¡Bienvenido! Entrando…';
         btnSpinner.style.display = 'none';
         submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
 
@@ -763,7 +763,14 @@
         }, 500);
       }
 
-      // 1) Autenticación oficial directa con Supabase Auth (Backend en la nube)
+      // Verificar si supabase está disponible en el momento de envío
+      if (!supaClient && typeof supabase !== 'undefined' && supabase.createClient) {
+        try {
+          supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (_) {}
+      }
+
+      // 1) Autenticación oficial directa con Supabase Auth (Cliente en navegador)
       if (supaClient) {
         try {
           const { data, error } = await supaClient.auth.signInWithPassword({
@@ -774,22 +781,22 @@
           if (error) {
             const msg = error.message || '';
             if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
-              showError('¡Nombres! El correo o la contraseña no calzan, mae.');
+              showError('Correo o contraseña incorrectos.');
               submitBtn.disabled = false;
               btnSpinner.style.display = 'none';
-              btnText.textContent = '¡Entrar!';
+              btnText.textContent = 'Iniciar Sesión';
               return;
             } else if (msg.includes('Email not confirmed')) {
-              showError('Tenés que confirmar el correo antes de tirarte a pista. Revisá la bandeja.');
+              showError('Debes confirmar tu correo antes de iniciar sesión. Revisa tu bandeja de entrada o desactiva "Confirm email" en Supabase.');
               submitBtn.disabled = false;
               btnSpinner.style.display = 'none';
-              btnText.textContent = '¡Entrar!';
+              btnText.textContent = 'Iniciar Sesión';
               return;
             } else {
-              showError('No se pudo iniciar sesión: ' + msg);
+              showError('Error de acceso: ' + msg);
               submitBtn.disabled = false;
               btnSpinner.style.display = 'none';
-              btnText.textContent = '¡Entrar!';
+              btnText.textContent = 'Iniciar Sesión';
               return;
             }
           }
@@ -807,18 +814,34 @@
           return;
 
         } catch (supaErr) {
-          console.warn('[Supabase Direct Login Error]', supaErr);
-          showError('Error de conexión con el servicio de autenticación.');
+          console.warn('[Supabase Direct Login Error - Intentando fallback]', supaErr);
+        }
+      }
+
+      // 2) Fallback secundario: Endpoint API de BusTrack (/api/v1/auth/login)
+      try {
+        btnText.textContent = 'Verificando credenciales…';
+        const res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const json = await res.json();
+        if (res.ok && json.user) {
+          completeLogin(json.user);
+          return;
+        } else {
+          showError(json.detail || json.message || 'Correo o contraseña incorrectos.');
           submitBtn.disabled = false;
           btnSpinner.style.display = 'none';
-          btnText.textContent = '¡Entrar!';
+          btnText.textContent = 'Iniciar Sesión';
           return;
         }
-      } else {
-        showError('Servicio de autenticación no disponible en este momento.');
+      } catch (backendErr) {
+        showError('No se pudo conectar con el servidor de autenticación. Verifica tu conexión.');
         submitBtn.disabled = false;
         btnSpinner.style.display = 'none';
-        btnText.textContent = '¡Entrar!';
+        btnText.textContent = 'Iniciar Sesión';
       }
     });
   </script>
