@@ -69,7 +69,17 @@ apiRouter.get('/routes/:id', (req, res, next) => {
 
 // --- 2.5 STOPS ---
 apiRouter.get('/stops', (req, res) => {
-  res.json(db.getAllStops());
+  const { bbox, limit, primaryOnly } = req.query;
+  const filters = {};
+  if (primaryOnly === 'true' || primaryOnly === '1') filters.primaryOnly = true;
+  if (limit) filters.limit = Math.min(Number(limit) || 1000, 5000);
+  if (bbox) {
+    const parts = bbox.split(',').map(Number);
+    if (parts.length === 4 && parts.every(n => !isNaN(n))) {
+      filters.bbox = parts;
+    }
+  }
+  res.json(db.getAllStops(filters));
 });
 
 // --- 3. DRIVERS ---

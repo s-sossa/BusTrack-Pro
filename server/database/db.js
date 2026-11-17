@@ -83,6 +83,23 @@ export const SEED_STOPS = [
   { id: 'stop-rancho-redondo',     name: 'Rancho Redondo',                         subtext: 'Goicoechea — Faldas Cordillera Central',                  province: 'San José',    isPrimary: 0, lat: 9.9592,  lon: -83.9850, pos_x: 335, pos_y: 135 },
   { id: 'stop-los-sitios',         name: 'Los Sitios',                             subtext: 'Moravia — Conexión Calle Blancos y El Alto',              province: 'San José',    isPrimary: 0, lat: 9.9610,  lon: -84.0410, pos_x: 295, pos_y: 130 },
   { id: 'stop-calle-blancos',      name: 'Calle Blancos',                          subtext: 'Goicoechea — Zona Industrial / Parque del Este',          province: 'San José',    isPrimary: 0, lat: 9.9495,  lon: -84.0680, pos_x: 255, pos_y: 138 },
+  { id: 'stop-guadalupe-cruce',    name: 'El Cruce de Guadalupe',                  subtext: 'Av. Central Goicoechea — Cruce Moravia',                  province: 'San José',    isPrimary: 0, lat: 9.9465,  lon: -84.0530, pos_x: 270, pos_y: 139 },
+  { id: 'stop-moravia-san-vicente',name: 'San Vicente de Moravia (Parque)',        subtext: 'Parroquia San Vicente Ferrer',                            province: 'San José',    isPrimary: 0, lat: 9.9620,  lon: -84.0495, pos_x: 308, pos_y: 131 },
+  { id: 'stop-coronado-las-nubes', name: 'Las Nubes de Coronado',                  subtext: 'Coronado — Cordillera Volcánica Central',                 province: 'San José',    isPrimary: 0, lat: 10.0125, lon: -83.9785, pos_x: 340, pos_y: 120 },
+  { id: 'stop-sabanilla-parque',   name: 'Sabanilla Parque Central',               subtext: 'Montes de Oca — San Pedro Este',                          province: 'San José',    isPrimary: 0, lat: 9.9442,  lon: -84.0385, pos_x: 280, pos_y: 145 },
+  { id: 'stop-granadilla-norte',   name: 'Granadilla Norte',                       subtext: 'Curridabat / Montes de Oca',                              province: 'San José',    isPrimary: 0, lat: 9.9385,  lon: -84.0250, pos_x: 295, pos_y: 155 },
+  { id: 'stop-cipreses-curridabat',name: 'Los Cipreses de Curridabat',             subtext: 'Ruta hacia Tres Ríos',                                    province: 'San José',    isPrimary: 0, lat: 9.9215,  lon: -84.0320, pos_x: 292, pos_y: 178 },
+  { id: 'stop-pinares-walmart',    name: 'Pinares / Walmart Curridabat',           subtext: 'Autopista Florencio del Castillo',                        province: 'San José',    isPrimary: 0, lat: 9.9180,  lon: -84.0210, pos_x: 298, pos_y: 182 },
+  { id: 'stop-desamparados-san-antonio', name: 'San Antonio de Desamparados',      subtext: 'Comercio y Transbordo',                                   province: 'San José',    isPrimary: 0, lat: 9.9042,  lon: -84.0585, pos_x: 302, pos_y: 348 },
+  { id: 'stop-desamparados-san-rafael',  name: 'San Rafael de Desamparados',       subtext: 'San Rafael Abajo',                                        province: 'San José',    isPrimary: 0, lat: 9.8925,  lon: -84.0755, pos_x: 298, pos_y: 352 },
+  { id: 'stop-escazu-san-rafael',  name: 'San Rafael de Escazú',                   subtext: 'Plaza Maynard / Calle Vieja',                             province: 'San José',    isPrimary: 0, lat: 9.9325,  lon: -84.1350, pos_x: 125, pos_y: 205 },
+  { id: 'stop-escazu-guachipelin', name: 'Guachipelín de Escazú',                  subtext: 'Rotonda Multiplaza Norte',                                province: 'San José',    isPrimary: 0, lat: 9.9520,  lon: -84.1530, pos_x: 118, pos_y: 198 },
+  { id: 'stop-santa-ana-pozos',    name: 'Pozos de Santa Ana',                     subtext: 'Ruta 27 / Lindora Sur',                                   province: 'San José',    isPrimary: 0, lat: 9.9450,  lon: -84.1810, pos_x: 98,  pos_y: 208 },
+  { id: 'stop-santa-ana-piedades', name: 'Piedades de Santa Ana',                  subtext: 'Ruta hacia Mora',                                         province: 'San José',    isPrimary: 0, lat: 9.9280,  lon: -84.2085, pos_x: 90,  pos_y: 215 },
+  { id: 'stop-uruca-pozuelo',      name: 'La Pozuelo / La Uruca',                  subtext: 'Radial La Uruca — Inicio Autopista General Cañas',        province: 'San José',    isPrimary: 0, lat: 9.9485,  lon: -84.1160, pos_x: 192, pos_y: 142 },
+  { id: 'stop-tibas-cuatro-reinas',name: 'Cuatro Reinas de Tibás',                 subtext: 'Paso elevado hacia Heredia',                              province: 'San José',    isPrimary: 0, lat: 9.9510,  lon: -84.0815, pos_x: 242, pos_y: 136 },
+  { id: 'stop-tibas-llorente',     name: 'Llorente de Tibás',                      subtext: 'Clínica Clorito Picado / Cruce Moravia',                  province: 'San José',    isPrimary: 0, lat: 9.9615,  lon: -84.0725, pos_x: 250, pos_y: 132 },
+  { id: 'stop-hatillo-centro',     name: 'Hatillo Centro (Circunvalación)',        subtext: 'Paso a desnivel Hatillo 4',                               province: 'San José',    isPrimary: 0, lat: 9.9185,  lon: -84.0980, pos_x: 190, pos_y: 180 },
   { id: 'stop-coronado',           name: 'Vázquez de Coronado (San Isidro)',       subtext: null,                                                      province: 'San José',    isPrimary: 0, lat: 9.9765,  lon: -84.0092, pos_x: 330, pos_y: 125 },
   { id: 'stop-puriscal',           name: 'Santiago de Puriscal',                   subtext: null,                                                      province: 'San José',    isPrimary: 0, lat: 9.8495,  lon: -84.3125, pos_x: 60,  pos_y: 240 },
   { id: 'stop-perez-zeledon',      name: 'Terminal San Isidro de El General',      subtext: 'Pérez Zeledón — Tracopa y Musoc',                         province: 'San José',    isPrimary: 1, lat: 9.3735,  lon: -83.7042, pos_x: 350, pos_y: 480 },
@@ -96,6 +113,11 @@ export const SEED_STOPS = [
   { id: 'stop-aeropuerto-sjo',     name: 'Aeropuerto Juan Santamaría (SJO)',       subtext: 'Terminal Internacional de Pasajeros',                     province: 'Alajuela',    isPrimary: 1, lat: 10.0004, lon: -84.2141, pos_x: 600, pos_y: 225 },
   { id: 'stop-city-mall',          name: 'City Mall Alajuela',                     subtext: 'Radial Francisco J. Orlich',                              province: 'Alajuela',    isPrimary: 0, lat: 10.0094, lon: -84.2102, pos_x: 570, pos_y: 200 },
   { id: 'stop-coyol',              name: 'Zona Franca El Coyol',                   subtext: 'Parque Médico y Logístico',                               province: 'Alajuela',    isPrimary: 0, lat: 9.9965,  lon: -84.2698, pos_x: 620, pos_y: 250 },
+  { id: 'stop-alajuela-rio-segundo', name: 'Río Segundo de Alajuela',              subtext: 'Cervecería Costa Rica / Autopista',                       province: 'Alajuela',    isPrimary: 0, lat: 9.9910,  lon: -84.1880, pos_x: 585, pos_y: 215 },
+  { id: 'stop-alajuela-villa-bonita',name: 'Villa Bonita de Alajuela',             subtext: 'Cruce Autopista Bernardo Soto',                           province: 'Alajuela',    isPrimary: 0, lat: 10.0055, lon: -84.2285, pos_x: 565, pos_y: 185 },
+  { id: 'stop-alajuela-san-rafael',name: 'San Rafael de Alajuela (Ojo de Agua)',   subtext: 'Balneario Ojo de Agua / Belén',                           province: 'Alajuela',    isPrimary: 0, lat: 9.9785,  lon: -84.1985, pos_x: 575, pos_y: 220 },
+  { id: 'stop-grecia-tacares',     name: 'Tacares de Grecia',                      subtext: 'Ruta 107',                                                province: 'Alajuela',    isPrimary: 0, lat: 10.0525, lon: -84.2685, pos_x: 630, pos_y: 255 },
+  { id: 'stop-san-carlos-florencia', name: 'Florencia de San Carlos',              subtext: 'Cruce a Muelle y Fortuna',                                province: 'Alajuela',    isPrimary: 0, lat: 10.3625, lon: -84.4725, pos_x: 705, pos_y: 325 },
   { id: 'stop-la-garita',          name: 'La Garita / Viveros',                    subtext: null,                                                      province: 'Alajuela',    isPrimary: 0, lat: 10.0085, lon: -84.3215, pos_x: 580, pos_y: 230 },
   { id: 'stop-grecia',             name: 'Terminal Grecia Centro',                 subtext: 'Mercado Municipal de Grecia',                             province: 'Alajuela',    isPrimary: 1, lat: 10.0735, lon: -84.3115, pos_x: 640, pos_y: 260 },
   { id: 'stop-sarchi',             name: 'Sarchí Centro (Artesanías)',              subtext: null,                                                      province: 'Alajuela',    isPrimary: 0, lat: 10.0915, lon: -84.3475, pos_x: 650, pos_y: 265 },
@@ -121,6 +143,12 @@ export const SEED_STOPS = [
   { id: 'stop-parque-heredia',     name: 'Parque Central Nicolás Ulloa (Heredia)', subtext: null,                                                      province: 'Heredia',     isPrimary: 0, lat: 9.9975,  lon: -84.1182, pos_x: 348, pos_y: 122 },
   { id: 'stop-oxigeno',            name: 'Mall Oxígeno Human Playground',          subtext: 'San Francisco de Heredia',                                province: 'Heredia',     isPrimary: 0, lat: 9.9882,  lon: -84.1332, pos_x: 340, pos_y: 130 },
   { id: 'stop-belen',              name: 'San Antonio de Belén',                   subtext: 'Centro y Pedregal',                                       province: 'Heredia',     isPrimary: 0, lat: 9.9812,  lon: -84.1878, pos_x: 320, pos_y: 140 },
+  { id: 'stop-heredia-paseo-flores',name: 'Paseo de las Flores / U Latina',        subtext: 'Entrada a Heredia Sur',                                   province: 'Heredia',     isPrimary: 0, lat: 9.9890,  lon: -84.1030, pos_x: 358, pos_y: 124 },
+  { id: 'stop-heredia-pirro',      name: 'El Pirro (Entrada Heredia)',             subtext: 'Puente Pirro / Ruta 3',                                   province: 'Heredia',     isPrimary: 0, lat: 9.9950,  lon: -84.1070, pos_x: 352, pos_y: 121 },
+  { id: 'stop-heredia-la-valencia',name: 'La Valencia de Heredia',                 subtext: 'Zona Industrial / Cruce Pozuelo',                         province: 'Heredia',     isPrimary: 0, lat: 9.9750,  lon: -84.1225, pos_x: 338, pos_y: 135 },
+  { id: 'stop-heredia-barreal',    name: 'Barreal de Heredia',                     subtext: 'CENAT / Zona Franca Metro',                               province: 'Heredia',     isPrimary: 0, lat: 9.9765,  lon: -84.1565, pos_x: 325, pos_y: 138 },
+  { id: 'stop-heredia-la-aurora',  name: 'La Aurora de Heredia',                   subtext: 'Global Park / Zona Franca América',                       province: 'Heredia',     isPrimary: 0, lat: 9.9825,  lon: -84.1685, pos_x: 322, pos_y: 136 },
+  { id: 'stop-heredia-santa-barbara', name: 'Santa Bárbara de Heredia',            subtext: 'Parque Central Santa Bárbara',                            province: 'Heredia',     isPrimary: 0, lat: 10.0385, lon: -84.1595, pos_x: 340, pos_y: 105 },
   { id: 'stop-san-joaquin',        name: 'San Joaquín de Flores',                  subtext: null,                                                      province: 'Heredia',     isPrimary: 0, lat: 10.0052, lon: -84.1565, pos_x: 335, pos_y: 128 },
   { id: 'stop-santo-domingo',      name: 'Santo Domingo de Heredia',               subtext: 'Parque Central',                                          province: 'Heredia',     isPrimary: 0, lat: 9.9805,  lon: -84.0915, pos_x: 360, pos_y: 125 },
   { id: 'stop-san-pablo',          name: 'San Pablo de Heredia',                   subtext: null,                                                      province: 'Heredia',     isPrimary: 0, lat: 9.9932,  lon: -84.0985, pos_x: 355, pos_y: 122 },
@@ -138,6 +166,12 @@ export const SEED_STOPS = [
   { id: 'stop-hospital-cartago',   name: 'Hospital Max Peralta de Cartago',        subtext: null,                                                      province: 'Cartago',     isPrimary: 0, lat: 9.8615,  lon: -83.9242, pos_x: 445, pos_y: 352 },
   { id: 'stop-metrocentro-cartago',name: 'Paseo Metrópoli / Taras',                subtext: null,                                                      province: 'Cartago',     isPrimary: 0, lat: 9.8695,  lon: -83.9425, pos_x: 435, pos_y: 340 },
   { id: 'stop-tres-rios',          name: 'Tres Ríos Parque Central (La Unión)',    subtext: 'Conexión Florencio del Castillo',                         province: 'Cartago',     isPrimary: 0, lat: 9.9075,  lon: -83.9878, pos_x: 420, pos_y: 320 },
+  { id: 'stop-la-union-san-diego', name: 'San Diego de La Unión',                  subtext: 'Ruta 2 Florencio del Castillo',                           province: 'Cartago',     isPrimary: 0, lat: 9.9120,  lon: -83.9980, pos_x: 415, pos_y: 325 },
+  { id: 'stop-cartago-ochomogo',   name: 'Alto de Ochomogo / RECOPE',              subtext: 'Divisoria Continental de Aguas',                          province: 'Cartago',     isPrimary: 0, lat: 9.8970,  lon: -83.9550, pos_x: 430, pos_y: 335 },
+  { id: 'stop-cartago-taras',      name: 'Taras de Cartago (Cruce)',               subtext: 'Entrada a Cartago / Pista',                               province: 'Cartago',     isPrimary: 0, lat: 9.8770,  lon: -83.9350, pos_x: 440, pos_y: 345 },
+  { id: 'stop-cartago-el-tejar',   name: 'El Tejar del Guarco',                    subtext: 'Parque Central El Tejar',                                 province: 'Cartago',     isPrimary: 0, lat: 9.8450,  lon: -83.9380, pos_x: 448, pos_y: 355 },
+  { id: 'stop-cartago-birrisito',  name: 'Birrisito de Paraíso',                   subtext: 'Ruta 10 hacia Cervantes',                                 province: 'Cartago',     isPrimary: 0, lat: 9.8620,  lon: -83.8220, pos_x: 502, pos_y: 378 },
+  { id: 'stop-cartago-juan-vinas', name: 'Juan Viñas (Jiménez)',                   subtext: 'Ruta 10 Azucarera / Turrialba',                           province: 'Cartago',     isPrimary: 0, lat: 9.8940,  lon: -83.7450, pos_x: 515, pos_y: 379 },
   { id: 'stop-paraiso',            name: 'Paraíso de Cartago — Parque Central',   subtext: null,                                                      province: 'Cartago',     isPrimary: 0, lat: 9.8385,  lon: -83.8655, pos_x: 495, pos_y: 375 },
   { id: 'stop-cervantes',          name: 'Cervantes de Alvarado',                  subtext: null,                                                      province: 'Cartago',     isPrimary: 0, lat: 9.8825,  lon: -83.8215, pos_x: 505, pos_y: 380 },
   { id: 'stop-pacayas',            name: 'Pacayas (Alvarado)',                     subtext: null,                                                      province: 'Cartago',     isPrimary: 0, lat: 9.9142,  lon: -83.8055, pos_x: 512, pos_y: 375 },
@@ -150,9 +184,13 @@ export const SEED_STOPS = [
   // ==========================================
   { id: 'stop-puntarenas-centro',  name: 'Terminal Central Puntarenas',            subtext: 'Paseo de los Turistas / Empresarios Unidos',               province: 'Puntarenas',  isPrimary: 1, lat: 9.9765,  lon: -84.8295, pos_x: 160, pos_y: 395 },
   { id: 'stop-puntarenas-ferry',   name: 'Terminal Ferry Puntarenas (Paquera)',    subtext: 'Embarcadero Tambor y Paquera',                            province: 'Puntarenas',  isPrimary: 1, lat: 9.9774,  lon: -84.8488, pos_x: 150, pos_y: 400 },
+  { id: 'stop-puntarenas-chacarita', name: 'Chacarita de Puntarenas',              subtext: 'Entrada Angostura',                                       province: 'Puntarenas',  isPrimary: 0, lat: 9.9830,  lon: -84.8080, pos_x: 165, pos_y: 392 },
+  { id: 'stop-puntarenas-angostura', name: 'La Angostura (Puntarenas)',            subtext: 'Paso estrecho hacia la Península',                        province: 'Puntarenas',  isPrimary: 0, lat: 9.9815,  lon: -84.7950, pos_x: 168, pos_y: 391 },
   { id: 'stop-el-roble',           name: 'El Roble de Puntarenas',                 subtext: 'Hospital Monseñor Sanabria',                              province: 'Puntarenas',  isPrimary: 0, lat: 9.9795,  lon: -84.7565, pos_x: 170, pos_y: 390 },
   { id: 'stop-barranca',           name: 'Barranca / Cruce Interamericana',        subtext: null,                                                      province: 'Puntarenas',  isPrimary: 0, lat: 9.9882,  lon: -84.7312, pos_x: 175, pos_y: 385 },
   { id: 'stop-caldera',            name: 'Puerto Caldera',                          subtext: 'Ruta 27 / Entrada Portuaria',                             province: 'Puntarenas',  isPrimary: 0, lat: 9.9185,  lon: -84.7175, pos_x: 180, pos_y: 380 },
+  { id: 'stop-puntarenas-tárcoles',  name: 'Puente Río Tárcoles (Cocodrilos)',     subtext: 'Ruta 34 Costanera Sur',                                   province: 'Puntarenas',  isPrimary: 0, lat: 9.7995,  lon: -84.6055, pos_x: 195, pos_y: 410 },
+  { id: 'stop-puntarenas-esterillos',name: 'Esterillos Este y Oeste',              subtext: 'Ruta Costanera Sur',                                      province: 'Puntarenas',  isPrimary: 0, lat: 9.5485,  lon: -84.4550, pos_x: 210, pos_y: 428 },
   { id: 'stop-esparza',            name: 'Esparza Centro — Parque Pérez',          subtext: null,                                                      province: 'Puntarenas',  isPrimary: 0, lat: 9.9942,  lon: -84.6675, pos_x: 185, pos_y: 375 },
   { id: 'stop-jaco',               name: 'Terminal Jacó Centro',                   subtext: 'Avenida Pastor Díaz — Playa Jacó',                        province: 'Puntarenas',  isPrimary: 1, lat: 9.6152,  lon: -84.6295, pos_x: 200, pos_y: 420 },
   { id: 'stop-herradura',          name: 'Playa Herradura / Los Sueños',           subtext: null,                                                      province: 'Puntarenas',  isPrimary: 0, lat: 9.6482,  lon: -84.6415, pos_x: 198, pos_y: 415 },
@@ -175,6 +213,9 @@ export const SEED_STOPS = [
   { id: 'stop-pulmitan-liberia',   name: 'Terminal Pulmitan Liberia',              subtext: 'Conexión San José y Playas',                              province: 'Guanacaste',  isPrimary: 1, lat: 10.6342, lon: -85.4412, pos_x: 98,  pos_y: 78  },
   { id: 'stop-aeropuerto-lir',     name: 'Aeropuerto Guanacaste (LIR)',            subtext: 'Daniel Oduber Quirós',                                    province: 'Guanacaste',  isPrimary: 1, lat: 10.5935, lon: -85.5442, pos_x: 90,  pos_y: 75  },
   { id: 'stop-canas',              name: 'Terminal Cañas Centro',                  subtext: null,                                                      province: 'Guanacaste',  isPrimary: 1, lat: 10.4312, lon: -85.0945, pos_x: 125, pos_y: 95  },
+  { id: 'stop-guanacaste-limonal', name: 'Limonal (Cruce Puente La Amistad)',      subtext: 'Ruta 1 con Ruta 18 hacia Nicoya',                         province: 'Guanacaste',   isPrimary: 0, lat: 10.2980, lon: -84.9850, pos_x: 130, pos_y: 102 },
+  { id: 'stop-guanacaste-belen-carrillo', name: 'Belén de Carrillo',               subtext: 'Cruce hacia Playas Flamingo y Tamarindo',                 province: 'Guanacaste',   isPrimary: 0, lat: 10.4045, lon: -85.5895, pos_x: 105, pos_y: 92 },
+  { id: 'stop-guanacaste-huacas',  name: 'Huacas (Cruce Conchal / Tamarindo)',     subtext: 'Ruta Costera Santa Cruz',                                 province: 'Guanacaste',   isPrimary: 0, lat: 10.3525, lon: -85.7895, pos_x: 85,  pos_y: 95 },
   { id: 'stop-bagaces',            name: 'Bagaces Parque Central',                 subtext: null,                                                      province: 'Guanacaste',  isPrimary: 0, lat: 10.5285, lon: -85.2582, pos_x: 115, pos_y: 88  },
   { id: 'stop-santa-cruz',         name: 'Terminal Santa Cruz',                    subtext: 'Ciudad Folclórica — Plaza Los Mangos',                    province: 'Guanacaste',  isPrimary: 1, lat: 10.2625, lon: -85.5862, pos_x: 110, pos_y: 110 },
   { id: 'stop-nicoya',             name: 'Terminal Nicoya Colonial',               subtext: 'Parque Recaredo Briceño',                                 province: 'Guanacaste',  isPrimary: 1, lat: 10.1448, lon: -85.4525, pos_x: 120, pos_y: 130 },
@@ -196,6 +237,9 @@ export const SEED_STOPS = [
   { id: 'stop-liverpool',          name: 'Liverpool de Limón',                      subtext: null,                                                      province: 'Limón',       isPrimary: 0, lat: 10.0095, lon: -83.1315, pos_x: 730, pos_y: 205 },
   { id: 'stop-siquirres',          name: 'Terminal Central Siquirres',              subtext: 'Conexión Ruta 32 Caribe',                                 province: 'Limón',       isPrimary: 1, lat: 10.0982, lon: -83.5075, pos_x: 680, pos_y: 180 },
   { id: 'stop-guapiles',           name: 'Terminal Pococí / Guápiles',             subtext: 'Ruta 32 / Centro de Guápiles',                            province: 'Limón',       isPrimary: 1, lat: 10.2152, lon: -83.7845, pos_x: 650, pos_y: 160 },
+  { id: 'stop-limon-zurqui',       name: 'Túnel Zurquí (Ruta 32)',                 subtext: 'Parque Nacional Braulio Carrillo',                        province: 'Limón',        isPrimary: 0, lat: 10.0520, lon: -84.0120, pos_x: 630, pos_y: 150 },
+  { id: 'stop-limon-rio-sucio',    name: 'Cruce Río Sucio (Ruta 32 / Ruta 4)',     subtext: 'Bifurcación hacia Sarapiquí y Caribe',                    province: 'Limón',        isPrimary: 0, lat: 10.1530, lon: -83.9520, pos_x: 640, pos_y: 155 },
+  { id: 'stop-limon-guácimo-africa', name: 'África de Guácimo',                    subtext: 'Ruta 32',                                                 province: 'Limón',        isPrimary: 0, lat: 10.2050, lon: -83.6350, pos_x: 670, pos_y: 172 },
   { id: 'stop-guacimo',            name: 'Guácimo Centro',                          subtext: null,                                                      province: 'Limón',       isPrimary: 0, lat: 10.2115, lon: -83.6845, pos_x: 665, pos_y: 170 },
   { id: 'stop-batan',              name: 'Batán de Matina',                         subtext: null,                                                      province: 'Limón',       isPrimary: 0, lat: 10.0842, lon: -83.3345, pos_x: 700, pos_y: 195 },
   { id: 'stop-cahuita',            name: 'Parque Nacional Cahuita (Playa Blanca)', subtext: null,                                                      province: 'Limón',       isPrimary: 1, lat: 9.7395,  lon: -82.8445, pos_x: 770, pos_y: 250 },
@@ -246,6 +290,7 @@ export class Database {
 
   _initPragmas() {
     this.sqlite.exec('PRAGMA foreign_keys = ON;');
+    this.sqlite.exec('PRAGMA busy_timeout = 5000;');
     if (this.filePath !== ':memory:') {
       this.sqlite.exec('PRAGMA journal_mode = WAL;');
       this.sqlite.exec('PRAGMA synchronous = NORMAL;');
@@ -374,23 +419,30 @@ export class Database {
       }
     }
 
-    // 4. Seed Stops (INSERT OR IGNORE asegura que nuevas paradas se añadan incluso con BD preexistente)
+    // 4. Seed Stops (INSERT OR IGNORE en bloque atómico)
     const insertStop = this.sqlite.prepare(`
       INSERT OR IGNORE INTO stops (id, name, subtext, is_primary, lat, lon, routes_json, pos_x, pos_y, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
     `);
-    for (const s of SEED_STOPS) {
-      insertStop.run(
-        s.id || `stop-${s.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-        s.name,
-        s.subtext || null,
-        s.isPrimary || 0,
-        s.lat || 9.9333,
-        s.lon || -84.0833,
-        JSON.stringify(s.routes || []),
-        s.pos_x || s.x || 400,
-        s.pos_y || s.y || 225
-      );
+    this.sqlite.exec('BEGIN IMMEDIATE;');
+    try {
+      for (const s of SEED_STOPS) {
+        insertStop.run(
+          s.id || `stop-${s.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+          s.name,
+          s.subtext || null,
+          s.isPrimary || 0,
+          s.lat || 9.9333,
+          s.lon || -84.0833,
+          JSON.stringify(s.routes || []),
+          s.pos_x || s.x || 400,
+          s.pos_y || s.y || 225
+        );
+      }
+      this.sqlite.exec('COMMIT;');
+    } catch (err) {
+      try { this.sqlite.exec('ROLLBACK;'); } catch (_) {}
+      throw err;
     }
 
     // 5. Seed Buses (12 operational units)
@@ -604,8 +656,28 @@ export class Database {
   }
 
   // --- STOPS API ---
-  getAllStops() {
-    const rows = this.stmts.selectAllStops.all();
+  getAllStops(filters = {}) {
+    let query = 'SELECT id, name, subtext, is_primary as isPrimary, lat, lon, routes_json, pos_x as x, pos_y as y FROM stops WHERE 1=1';
+    const params = [];
+
+    if (filters.primaryOnly) {
+      query += ' AND is_primary = 1';
+    }
+    if (filters.bbox && Array.isArray(filters.bbox) && filters.bbox.length === 4) {
+      // bbox: [minLon, minLat, maxLon, maxLat]
+      query += ' AND lon >= ? AND lat >= ? AND lon <= ? AND lat <= ?';
+      params.push(filters.bbox[0], filters.bbox[1], filters.bbox[2], filters.bbox[3]);
+    }
+    query += ' ORDER BY rowid ASC';
+    if (filters.limit && Number.isInteger(Number(filters.limit))) {
+      query += ' LIMIT ?';
+      params.push(Number(filters.limit));
+    }
+
+    const rows = params.length
+      ? this.sqlite.prepare(query).all(...params)
+      : this.stmts.selectAllStops.all();
+
     return rows.map(r => ({
       id: r.id,
       name: r.name,
