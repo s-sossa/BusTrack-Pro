@@ -3872,7 +3872,11 @@ async function initSupabaseData() {
           refreshCounters();
         }
       })
-      .subscribe();
+      .subscribe(status => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.info('[Supabase Realtime] Canal realtime_buses en reposo (tabla remota sin publicación activa).');
+        }
+      });
   } catch (err) {
     console.warn('[Supabase Realtime] Error en suscripción:', err);
   }
