@@ -2151,11 +2151,11 @@ function paintLayerRoutesAndStops(mapInstance, markersStore, isMini) {
     // Modo provincia: paradas de esa provincia
     stopsToRender = STOPS.filter(s => s.province === activeProvince);
   } else if (isMini) {
-    // Dashboard mini: solo terminales principales
+    // Dashboard mini: terminales principales
     stopsToRender = STOPS.filter(s => s.isPrimary);
   } else {
-    // Vista nacional "all": solo terminales principales para no saturar
-    stopsToRender = STOPS.filter(s => s.isPrimary);
+    // Vista nacional / Ver todas: mostrar TODAS las paradas del país
+    stopsToRender = STOPS;
   }
 
   // 3. Colocar marcadores de paradas filtradas
@@ -2212,21 +2212,34 @@ function showRouteBanner(route) {
   const text = document.getElementById('routeBannerText');
   if (dot) dot.style.background = route.color;
   if (text) text.innerHTML = '<b>' + esc(route.concession || route.id) + '</b> — ' + esc(route.name) + ' <small style="opacity:.7">(' + (route.stopIds ? route.stopIds.length : '?') + ' paradas)</small>';
-  banner.hidden = false;
+  banner.removeAttribute('hidden');
+  banner.style.setProperty('display', 'flex', 'important');
 }
 
 function hideRouteBanner() {
   const banner = document.getElementById('routeBanner');
-  if (banner) banner.hidden = true;
+  if (banner) {
+    banner.setAttribute('hidden', '');
+    banner.style.setProperty('display', 'none', 'important');
+  }
+  const pill = document.getElementById('mapRouteFocusPill');
+  if (pill) pill.remove();
 }
 
 function clearRouteFocus() {
   mapFilterState.routeId = null;
+  mapFilterState.province = 'all';
+  const provSelect = document.getElementById('provinceSelect');
+  if (provSelect) provSelect.value = 'all';
+
   hideRouteBanner();
+  resetMapRouteHighlight();
   paintRealStopsAndRoutes();
-  const p = CR_PROVINCES[mapFilterState.province] || CR_PROVINCES.all;
-  if (realLeafletMap) realLeafletMap.flyTo(p.center, p.zoom, { duration: 1.2 });
-  toast('Mostrando todas las rutas y paradas', 'info');
+
+  if (realLeafletMap) {
+    realLeafletMap.flyTo(CR_PROVINCES.all.center, CR_PROVINCES.all.zoom, { duration: 1.2 });
+  }
+  toast('Mostrando todas las paradas y rutas del país', 'info');
 }
 
 function paintRealStopsAndRoutes() {
@@ -3355,6 +3368,15 @@ document.addEventListener('click', e => {
   // hasta él y vuelva a disparar una acción de apertura.
   if (e.target.closest('.modal-overlay')) return;
  
+  // Botón de limpiar filtro de ruta en el banner
+  const clearBtn = e.target.closest('#clearRouteFilterBtn');
+  if (clearBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    clearRouteFocus();
+    return;
+  }
+
   const track = e.target.closest('[data-track]');
   if (track) { focusBus(track.dataset.track); return; }
  

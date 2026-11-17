@@ -4250,3 +4250,8 @@ html[data-theme="light"] .account-uuid-box {
 .leaflet-tooltip-pane {
   filter: none !important;
 }
+
+.route-banner[hidden],
+#routeBanner[hidden] {
+  display: none !important;
+}
