@@ -598,12 +598,6 @@ export class Database {
     return this.getActivities();
   }
 
-  get stops() {
-    return this.getAllStops();
-  }
-
-
-
   // --- STOPS API ---
   getAllStops() {
     const rows = this.stmts.selectAllStops.all();
@@ -957,7 +951,7 @@ export class Database {
       dialect: 'sqlite',
       connected: true,
       storage: this.filePath === ':memory:' ? 'in_memory_sqlite' : 'persistent_file',
-      filePath: this.filePath,
+      // filePath omitido para evitar revelar rutas internas del servidor (B-001)
       fileSizeBytes: sizeBytes,
       fileSizeFormatted: `${(sizeBytes / 1024).toFixed(1)} KB`,
       totalRows,

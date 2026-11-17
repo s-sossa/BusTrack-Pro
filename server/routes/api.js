@@ -84,17 +84,17 @@ apiRouter.get('/drivers/:id', authenticateToken, requireRole('admin'), (req, res
 });
 
 // --- 4. FLEET BUSES ---
-// ⛔ punto #5/6: La lista pública de buses omite la licencia del conductor (Ley 8968)
+// ⛔ punto #5/6: La lista pública de buses omite datos personales del conductor (Ley 8968 — M-006)
 apiRouter.get('/buses', (req, res) => {
   const { route, status, search } = req.query;
   const buses = FleetService.getBuses({ route, status, search });
   const authHeader = req.headers['authorization'];
   const isAuthenticated = Boolean(authHeader && authHeader.startsWith('Bearer '));
   if (!isAuthenticated) {
-    // Strip driver license for unauthenticated callers
+    // Strip driver license and name for unauthenticated callers
     const sanitized = buses.map(b => {
-      if (b.driver && b.driver.license !== undefined) {
-        const { license: _license, ...safeDriver } = b.driver;
+      if (b.driver) {
+        const { license: _license, name: _name, ...safeDriver } = b.driver;
         return { ...b, driver: safeDriver };
       }
       return b;
@@ -124,8 +124,8 @@ apiRouter.get('/buses/:id', (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const isAuthenticated = Boolean(authHeader && authHeader.startsWith('Bearer '));
     if (!isAuthenticated && bus.driver) {
-      // Strip sensitive personal data for public/unauthenticated callers
-      const { license: _license, ...safeDriver } = bus.driver;
+      // Strip sensitive personal data for public/unauthenticated callers (Ley 8968 — M-006)
+      const { license: _license, name: _name, ...safeDriver } = bus.driver;
       return res.json({ ...bus, driver: safeDriver });
     }
     res.json(bus);

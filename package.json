@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "test": "node --test test/database.test.js test/auth.test.js test/api.test.js"
+    "test": "node --test test/database.test.js test/auth.test.js test/api.test.js test/production.test.js"
   },
   "keywords": [
     "transit",

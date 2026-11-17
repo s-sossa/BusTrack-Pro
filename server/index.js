@@ -230,23 +230,13 @@ wss.on('close', () => clearInterval(wsHeartbeat));
 // Rate-limit: track message counts per client
 const wsMessageCounts = new WeakMap();
 
-wss.on('connection', (ws, req) => {
+wss.on('connection', (ws) => {
   ws.isAlive = true;
   ws.on('pong', () => { ws.isAlive = true; });
 
-  let isAdmin = false;
-  try {
-    const urlObj = new URL(req.url, 'http://localhost');
-    const token = urlObj.searchParams.get('token');
-    if (token) {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      if (decoded && (decoded.role === 'admin' || decoded.role === 'dispatcher')) {
-        isAdmin = true;
-      }
-    }
-  } catch {
-    isAdmin = false;
-  }
+  // ✅ A-005: No se acepta token por URL query string para evitar exposición en logs y proxies.
+  // La autenticación se realiza mediante mensaje { action: 'authenticate', token: '...' } sobre el socket.
+  const isAdmin = false;
 
   telemetryEngine.registerClient(ws, isAdmin);
   wsMessageCounts.set(ws, { count: 0, resetAt: Date.now() + 60_000 });

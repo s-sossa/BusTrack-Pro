@@ -53,7 +53,8 @@ export class TelemetryEngine {
       ? rawBuses
       : rawBuses.map(b => ({
           ...b,
-          driver: b.driver ? { id: b.driver.id, name: b.driver.name, initials: b.driver.initials } : null,
+          // ✅ Ley 8968: Omitir nombre y licencia del conductor para clientes no admin
+          driver: b.driver ? { id: b.driver.id, initials: b.driver.initials } : null,
         }));
 
     // Send initial snapshot on connect
@@ -197,9 +198,9 @@ export class TelemetryEngine {
     const bus = pick(buses);
     const stop = pick(SEED_STOPS);
     const templates = [
-      { text: `${bus.id} arribó a la parada ${stop.name}`, type: 'info' },
-      { text: `${bus.id} reportó velocidad crucero de ${bus.speed} km/h`, type: 'ok' },
-      { text: `${bus.driver.name} actualizó estado de viaje en Ruta ${bus.route.id}`, type: 'info' },
+      { text: `Unidad ${bus.id} arribó a la parada ${stop.name}`, type: 'info' },
+      { text: `Unidad ${bus.id} reportó velocidad crucero de ${bus.speed} km/h`, type: 'ok' },
+      { text: `Unidad ${bus.id} actualizó estado de viaje en Ruta ${bus.route.id}`, type: 'info' },
     ];
     const picked = pick(templates);
     const act = db.pushActivity(picked.text, picked.type);

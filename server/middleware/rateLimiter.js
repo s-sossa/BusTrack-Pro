@@ -35,3 +35,24 @@ export const writeLimiter = rateLimit({
     detail: 'Write operation limit reached. Please slow down and try again.',
   },
 });
+
+/** Auth-specific rate limit: max 10 intentos de autenticación por IP por 15 minutos.
+ * Más estricto que writeLimiter para prevenir fuerza bruta en credenciales.
+ * Se aplica en /auth/login y /auth/register.
+ */
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDev ? 50 : 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
+  keyGenerator: (req) => `${req.ip}:${req.path}`,
+  message: {
+    type: 'https://bustrackpro.cr/errors/auth-rate-limit',
+    title: 'Too Many Authentication Attempts',
+    status: 429,
+    detail: 'Demasiados intentos de autenticación. Espera 15 minutos antes de intentarlo nuevamente.',
+  },
+  skipSuccessfulRequests: false,
+});
+

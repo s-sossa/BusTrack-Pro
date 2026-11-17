@@ -6,13 +6,13 @@
 import { Router } from 'express';
 import { AuthService } from '../services/authService.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { writeLimiter } from '../middleware/rateLimiter.js';
+import { writeLimiter, authLimiter } from '../middleware/rateLimiter.js';
 import { supabaseAdmin } from '../supabase.js';
 
 export const authRouter = Router();
 
 /** POST /api/v1/auth/register — Email Registration */
-authRouter.post('/register', writeLimiter, async (req, res) => {
+authRouter.post('/register', authLimiter, writeLimiter, async (req, res) => {
   try {
     const { email, password, name, consentTerms, consentPrivacy } = req.body;
     const result = await AuthService.registerWithEmail({ email, password, name, consentTerms, consentPrivacy });
@@ -29,7 +29,7 @@ authRouter.post('/register', writeLimiter, async (req, res) => {
 });
 
 /** POST /api/v1/auth/login — Email Login */
-authRouter.post('/login', writeLimiter, async (req, res) => {
+authRouter.post('/login', authLimiter, writeLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     const result = await AuthService.loginWithEmail({ email, password });
@@ -103,9 +103,10 @@ authRouter.patch('/me', authenticateToken, writeLimiter, async (req, res) => {
 
 /** GET /api/v1/auth/me/export — ARCO: Exportación de datos personales (Ley 8968) */
 authRouter.get('/me/export', authenticateToken, async (req, res) => {
+  // ✅ ARCO export: solo campos que el usuario puede ver (nunca password_hash, tokens internos, metadata de admin)
   const { data, error } = await supabaseAdmin
     .from('users')
-    .select('*')
+    .select('id, email, full_name, role, auth_provider, avatar_url, username, created_at, updated_at')
     .eq('id', req.user.id)
     .maybeSingle();
   if (error || !data) {

@@ -951,9 +951,6 @@
               avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff'
             };
 
-            // Guardar también copia local por resiliencia
-            saveLocalAccount(email, password, userObj);
-
             if (data.session?.access_token) {
               completeRegistration(userObj);
               return;
@@ -977,43 +974,30 @@
               showError('Si el correo no está registrado recibirás confirmación; de lo contrario inicia sesión.');
               submitBtn.disabled = false;
               btnSpinner.style.display = 'none';
-              btnText.textContent = 'Crear Cuenta';
+              btnText.textContent = '¡Crear mi cuenta! 🚀';
               return;
             }
-            // En caso de cualquier otro error de red, indisponibilidad o conexión externa:
-            console.warn('[Supabase signUp notice - Procediendo con cuenta local resiliente]:', msg);
+            showError('No se pudo registrar la cuenta: ' + msg);
+            submitBtn.disabled = false;
+            btnSpinner.style.display = 'none';
+            btnText.textContent = '¡Crear mi cuenta! 🚀';
+            return;
           }
         } catch (supaErr) {
-          console.warn('[Supabase Signup Error - Usando fallback local]', supaErr);
+          console.warn('[Supabase Signup Error]', supaErr);
+          showError('Error de conexión con el servicio de autenticación.');
+          submitBtn.disabled = false;
+          btnSpinner.style.display = 'none';
+          btnText.textContent = '¡Crear mi cuenta! 🚀';
+          return;
         }
+      } else {
+        showError('Servicio de autenticación no disponible en este momento.');
+        submitBtn.disabled = false;
+        btnSpinner.style.display = 'none';
+        btnText.textContent = '¡Crear mi cuenta! 🚀';
       }
-
-      // 2) Fallback local transparente e inmediato (sin bloqueo)
-      const localUser = {
-        id: 'LOCAL-' + Date.now(),
-        name: name,
-        email: email,
-        avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff'
-      };
-      saveLocalAccount(email, password, localUser);
-      completeRegistration(localUser);
     });
-
-    function saveLocalAccount(email, password, userObj) {
-      try {
-        const raw = localStorage.getItem('bustrack_local_accounts');
-        const list = raw ? JSON.parse(raw) : [];
-        const existingIdx = list.findIndex(a => a.email.toLowerCase() === email.toLowerCase());
-        if (existingIdx >= 0) {
-          list[existingIdx] = { email, password, user: userObj };
-        } else {
-          list.push({ email, password, user: userObj });
-        }
-        localStorage.setItem('bustrack_local_accounts', JSON.stringify(list));
-      } catch (err) {
-        console.warn('No se pudo guardar la cuenta localmente:', err);
-      }
-    }
   </script>
 
   <script>

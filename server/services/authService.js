@@ -50,6 +50,9 @@ export class AuthService {
     if (!consentTerms) throw new Error('Debes aceptar los Términos y Condiciones para registrarte.');
     if (consentPrivacy !== true) throw new Error('Debes aceptar la Política de Privacidad para registrarte.');
     if (!email || !password || !name) throw new Error('Todos los campos son obligatorios.');
+    // ✅ Validación de formato de email en servidor — nunca confiar solo en frontend (M-008)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(email)) throw new Error('El formato del correo electrónico no es válido.');
     if (password.length < 8) throw new Error('La contraseña debe tener al menos 8 caracteres.');
     if (!isSupabaseConfigured) throw new Error('El servicio de cuentas no está configurado.');
 

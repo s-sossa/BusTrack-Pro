@@ -4,16 +4,17 @@ services:
     container_name: bustrack-postgres
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: bustrack_password_2026
-      POSTGRES_DB: bustrack_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD debe estar definida en el archivo .env}
+      POSTGRES_DB: ${POSTGRES_DB:-bustrack_db}
     ports:
-      - "5432:5432"
+      # ⛔ Limitar al host local en desarrollo para evitar exposición en redes públicas
+      - "127.0.0.1:5432:5432"
     volumes:
       - bustrack_pg_data:/var/lib/postgresql/data
       - ./server/database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d bustrack_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-bustrack_db}"]
       interval: 5s
       timeout: 5s
       retries: 5

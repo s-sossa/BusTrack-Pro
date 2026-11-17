@@ -12,6 +12,20 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
+// ⛔ Validar entropía y evitar placeholders en producción
+if (process.env.JWT_SECRET.length < 32) {
+  console.error('[SECURITY] FATAL: JWT_SECRET es demasiado corto (mínimo 32 caracteres). Genera uno seguro con: openssl rand -base64 64');
+  process.exit(1);
+}
+if (process.env.JWT_SECRET.includes('change_me') || process.env.JWT_SECRET.includes('secret_key') || process.env.JWT_SECRET.includes('bustrack_pro_production')) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[SECURITY] FATAL: JWT_SECRET contiene valores placeholder predecibles. Reemplázalo antes de iniciar en producción.');
+    process.exit(1);
+  } else {
+    console.warn('[SECURITY] ADVERTENCIA: JWT_SECRET contiene valores placeholder. Genera uno seguro para producción: openssl rand -base64 64');
+  }
+}
+
 const JWT_SECRET = process.env.JWT_SECRET;
 
 /** Middleware: Authenticate Request via Bearer Token or Cookie */
