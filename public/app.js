@@ -69,26 +69,26 @@ function esc(str) {
  
 const ROUTES = [
   // Rutas interprovinciales reales de Costa Rica — concesiones CTP/ARESEP
-  { id: 'SJO-201', name: 'San José – Alajuela vía Aeropuerto Juan Santamaría',        operator: 'TUASA (Transportes Unidos Alajuelenses S.A.)',          concession: 'SJO-201', varName: '--route-a', color: '#5b6ef5', stops: 8,  length: 22,
-    stopIds: ['stop-central-sjo', 'stop-coca-cola', 'stop-sabana', 'stop-escazu-centro', 'stop-santa-ana-centro', 'stop-city-mall', 'stop-aeropuerto-sjo', 'stop-alajuela-fecosa'] },
-  { id: 'SJO-300', name: 'San José – Heredia vía Tibás y Santo Domingo',              operator: 'Transportes Unidos La 400 S.A.',                        concession: 'SJO-300', varName: '--route-b', color: '#7c4ddb', stops: 6,  length: 18,
-    stopIds: ['stop-central-sjo', 'stop-7-10', 'stop-parque-central-sjo', 'stop-heredia-central', 'stop-santo-domingo', 'stop-san-pablo'] },
-  { id: 'SJO-400', name: 'San José – Cartago vía Autopista Florencio del Castillo',   operator: 'Auto Transportes Lumaca S.A.',                          concession: 'SJO-400', varName: '--route-c', color: '#2aa3c4', stops: 7,  length: 25,
-    stopIds: ['stop-central-sjo', 'stop-hospital-sanjuan', 'stop-san-pedro-centro', 'stop-ucr', 'stop-curridabat', 'stop-tres-rios', 'stop-metrocentro-cartago'] },
-  { id: 'SJO-401', name: 'San José – Turrialba vía Cartago y Paraíso',                operator: 'TRANSTUSA (Transportes Turrialba S.A.)',                 concession: 'SJO-401', varName: '--route-d', color: '#2bb885', stops: 6,  length: 90,
-    stopIds: ['stop-central-sjo', 'stop-metrocentro-cartago', 'stop-tres-rios', 'stop-paraiso', 'stop-cervantes', 'stop-turrialba'] },
-  { id: 'SJO-402', name: 'Cartago – San José Servicio Express Ciudad Jardín',         operator: 'Auto Transportes Lumaca S.A.',                          concession: 'SJO-402', varName: '--route-e', color: '#f5a623', stops: 5,  length: 24,
-    stopIds: ['stop-metrocentro-cartago', 'stop-tres-rios', 'stop-curridabat', 'stop-san-pedro-centro', 'stop-central-sjo'] },
-  { id: 'SJO-600', name: 'San José – Desamparados – Aserrí',                          operator: 'Autotransportes Desamparados S.A.',                     concession: 'SJO-600', varName: '--route-f', color: '#e24c6c', stops: 5,  length: 20,
-    stopIds: ['stop-central-sjo', 'stop-parque-central-sjo', 'stop-zapote', 'stop-desamparados', 'stop-aserri'] },
-  { id: 'SJO-601', name: 'San José – San Isidro de El General (Pérez Zeledón)',       operator: 'MUSOC (Empresa de Transportes M.U.S.O.C. S.A.)',         concession: 'SJO-601', varName: '--route-g', color: '#ff7043', stops: 5,  length: 120,
-    stopIds: ['stop-central-sjo', 'stop-hospital-sanjuan', 'stop-desamparados', 'stop-empalme', 'stop-perez-zeledon'] },
-  { id: 'PAC-327', name: 'San José – Puntarenas vía Esparza e Interamericana',        operator: 'Empresarios Unidos de Puntarenas S.A.',                 concession: 'PAC-327', varName: '--route-h', color: '#26c6da', stops: 5,  length: 110,
-    stopIds: ['stop-coca-cola', 'stop-san-ramon', 'stop-esparza', 'stop-puntarenas-ferry', 'stop-puntarenas-centro'] },
-  { id: 'GUA-900', name: 'San José – Liberia vía Cañas y Bagaces',                    operator: 'Pulmitan de Liberia S.A.',                              concession: 'GUA-900', varName: '--route-i', color: '#66bb6a', stops: 6,  length: 230,
-    stopIds: ['stop-coca-cola', 'stop-alajuela-fecosa', 'stop-coyol', 'stop-canas', 'stop-liberia-central', 'stop-la-cruz'] },
-  { id: 'CAR-32',  name: 'San José – Puerto Limón vía Guápiles (Ruta 32)',            operator: 'Autotransportes Caribeños S.A.',                        concession: 'CAR-32',  varName: '--route-j', color: '#ab47bc', stops: 6,  length: 160,
-    stopIds: ['stop-7-10', 'stop-metrocentro-cartago', 'stop-turrialba', 'stop-siquirres', 'stop-guapiles', 'stop-limon-centro'] },
+  { id: 'SJO-201', name: 'San José – Alajuela vía Aeropuerto Juan Santamaría',        operator: 'TUASA (Transportes Unidos Alajuelenses S.A.)',          concession: 'SJO-201', varName: '--route-a', color: '#5b6ef5', stops: 11, length: 22,
+    stopIds: ['stop-coca-cola', 'stop-paseo-colon', 'stop-sabana', 'stop-uruca-pozuelo', 'stop-hospital-mexico', 'stop-heredia-barreal', 'stop-alajuela-rio-segundo', 'stop-aeropuerto-sjo', 'stop-city-mall', 'stop-alajuela-villa-bonita', 'stop-alajuela-fecosa'] },
+  { id: 'SJO-300', name: 'San José – Heredia vía Tibás y Santo Domingo',              operator: 'Transportes Unidos La 400 S.A.',                        concession: 'SJO-300', varName: '--route-b', color: '#7c4ddb', stops: 11, length: 18,
+    stopIds: ['stop-7-10', 'stop-merced', 'stop-tibas-cuatro-reinas', 'stop-tibas', 'stop-tibas-llorente', 'stop-santo-domingo', 'stop-san-pablo', 'stop-heredia-paseo-flores', 'stop-heredia-pirro', 'stop-una', 'stop-heredia-central'] },
+  { id: 'SJO-400', name: 'San José – Cartago vía Autopista Florencio del Castillo',   operator: 'Auto Transportes Lumaca S.A.',                          concession: 'SJO-400', varName: '--route-c', color: '#2aa3c4', stops: 16, length: 25,
+    stopIds: ['stop-central-sjo', 'stop-lumaca-sjo', 'stop-los-yoses', 'stop-mall-sp', 'stop-san-pedro-centro', 'stop-ucr', 'stop-curridabat', 'stop-cipreses-curridabat', 'stop-pinares-walmart', 'stop-la-union-san-diego', 'stop-tres-rios', 'stop-cartago-ochomogo', 'stop-cartago-taras', 'stop-metrocentro-cartago', 'stop-cartago-central', 'stop-basilica'] },
+  { id: 'SJO-401', name: 'San José – Turrialba vía Cartago y Paraíso',                operator: 'TRANSTUSA (Transportes Turrialba S.A.)',                 concession: 'SJO-401', varName: '--route-d', color: '#2bb885', stops: 9,  length: 90,
+    stopIds: ['stop-central-sjo', 'stop-metrocentro-cartago', 'stop-cartago-central', 'stop-cartago-el-tejar', 'stop-paraiso', 'stop-cartago-birrisito', 'stop-cervantes', 'stop-cartago-juan-vinas', 'stop-turrialba'] },
+  { id: 'SJO-402', name: 'Cartago – San José Servicio Express Ciudad Jardín',         operator: 'Auto Transportes Lumaca S.A.',                          concession: 'SJO-402', varName: '--route-e', color: '#f5a623', stops: 8,  length: 24,
+    stopIds: ['stop-cartago-central', 'stop-basilica', 'stop-cartago-taras', 'stop-cartago-ochomogo', 'stop-tres-rios', 'stop-pinares-walmart', 'stop-curridabat', 'stop-central-sjo'] },
+  { id: 'SJO-600', name: 'San José – Desamparados – Aserrí',                          operator: 'Autotransportes Desamparados S.A.',                     concession: 'SJO-600', varName: '--route-f', color: '#e24c6c', stops: 7,  length: 20,
+    stopIds: ['stop-central-sjo', 'stop-parque-central-sjo', 'stop-zapote', 'stop-desamparados-san-antonio', 'stop-desamparados', 'stop-desamparados-san-rafael', 'stop-aserri'] },
+  { id: 'SJO-601', name: 'San José – San Isidro de El General (Pérez Zeledón)',       operator: 'MUSOC (Empresa de Transportes M.U.S.O.C. S.A.)',         concession: 'SJO-601', varName: '--route-g', color: '#ff7043', stops: 6,  length: 120,
+    stopIds: ['stop-musoc-sjo', 'stop-hospital-sanjuan', 'stop-cartago-el-tejar', 'stop-empalme', 'stop-perez-zeledon-división', 'stop-perez-zeledon'] },
+  { id: 'PAC-327', name: 'San José – Puntarenas vía Esparza e Interamericana',        operator: 'Empresarios Unidos de Puntarenas S.A.',                 concession: 'PAC-327', varName: '--route-h', color: '#26c6da', stops: 14, length: 110,
+    stopIds: ['stop-coca-cola', 'stop-sabana', 'stop-escazu-multiplaza', 'stop-santa-ana-pozos', 'stop-orotina', 'stop-caldera', 'stop-puntarenas-tárcoles', 'stop-esparza', 'stop-barranca', 'stop-el-roble', 'stop-puntarenas-angostura', 'stop-puntarenas-chacarita', 'stop-puntarenas-centro', 'stop-puntarenas-ferry'] },
+  { id: 'GUA-900', name: 'San José – Liberia vía Cañas y Bagaces',                    operator: 'Pulmitan de Liberia S.A.',                              concession: 'GUA-900', varName: '--route-i', color: '#66bb6a', stops: 12, length: 230,
+    stopIds: ['stop-coca-cola', 'stop-alajuela-fecosa', 'stop-coyol', 'stop-palmares', 'stop-san-ramon', 'stop-guanacaste-limonal', 'stop-canas', 'stop-bagaces', 'stop-liberia-central', 'stop-pulmitan-liberia', 'stop-aeropuerto-lir', 'stop-la-cruz'] },
+  { id: 'CAR-32',  name: 'San José – Puerto Limón vía Guápiles (Ruta 32)',            operator: 'Autotransportes Caribeños S.A.',                        concession: 'CAR-32',  varName: '--route-j', color: '#ab47bc', stops: 12, length: 160,
+    stopIds: ['stop-7-10', 'stop-hospital-calderon', 'stop-limon-zurqui', 'stop-limon-rio-sucio', 'stop-guapiles', 'stop-guacimo', 'stop-limon-guácimo-africa', 'stop-siquirres', 'stop-batan', 'stop-liverpool', 'stop-moin', 'stop-limon-centro'] },
 ];
 
  
@@ -1421,8 +1421,8 @@ function renderSchedules() {
       const text = `🚌 Horario Referencial: ${route.concession} - ${route.name}\nOperador: ${route.operator}\nTarifa Aprox.: ${route.tariffRegular}\nOrigen: ${route.originTerminal}\nDestino: ${route.destinationTerminal}\nPrimer bus: ${dayData.firstBus} | Último bus: ${dayData.lastBus}\nFrecuencia: ${dayData.peakFreq}\nSalidas:\n${departures.join(', ')}\n(Nota: Sujeto a variaciones de la empresa operadora)`;
       if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => {
-          toast('📋 Itinerario de ' + route.concession + ' copiado, listo el pollo 👌', 'ok');
-        }).catch(() => toast('No se pudo copiar el texto, mae', 'warn'));
+          toast(`📋 Itinerario de ${route.concession} copiado al portapapeles`, 'ok');
+        }).catch(() => toast('No se pudo copiar el texto', 'warn'));
       } else {
         toast(`Ruta ${route.concession}: ${departures.length} salidas programadas`, 'info');
       }
@@ -1511,7 +1511,7 @@ function setupSchedulesEventListeners() {
     resetBtn._bound = true;
     resetBtn.addEventListener('click', () => {
       resetSchedulesFilters();
-      toast('¡Listo! Filtros de horarios borrados, mae', 'info');
+      toast('Filtros de horarios restablecidos', 'info');
     });
   }
 
@@ -1628,7 +1628,7 @@ if ($('fleetTableBody')) {
     if (!bus) return;
     applyBusStatus(bus, sel.value);
     refreshAfterStatusChange(bus);
-    toast('¡Listo el cambio! El bus ' + bus.id + ' ahora está ' + statusLabel(bus.status).toLowerCase(), 'ok');
+    toast('Estado de ' + bus.id + ' actualizado a ' + statusLabel(bus.status), 'ok');
   });
 }
 if ($('resetFiltersBtn')) {
@@ -1639,7 +1639,7 @@ if ($('resetFiltersBtn')) {
     state.sort = { key: 'id', dir: 1 };
     $$('.fleet-table th').forEach(th => th.classList.remove('sorted', 'desc'));
     renderFleet();
-    toast('Filtros en cero, pura vida');
+    toast('Filtros restablecidos');
   });
 }
 $$('.fleet-table th[data-sort]').forEach(th => {
@@ -1668,7 +1668,7 @@ if ($('exportCsvBtn')) {
       .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';'))
       .join('\r\n');
     if (typeof URL === 'undefined' || !URL.createObjectURL) {
-      toast('Diay, este navegador no nos deja descargar el archivo', 'warn');
+      toast('Este navegador no permite descargar el archivo', 'warn');
       return;
     }
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -1680,7 +1680,7 @@ if ($('exportCsvBtn')) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast('¡Descarga lista! Archivo CSV guardado, compa', 'ok');
+    toast('Archivo CSV generado y descargado', 'ok');
   });
 }
  
@@ -1903,6 +1903,11 @@ let dashboardMarkers = {
   highlightLayer: null,
 };
 
+let mapFilterState = {
+  province: 'San José',
+  routeId: null
+};
+
 // Generador de capas base de mapas 100% gratuitas, sin marcas de agua y sin bloqueos 403
 function createArcGisLayers() {
   // Capa 1: Oscuro Pro — Esri World Dark Gray Canvas (100% libre, sin API key, sin marcas de agua)
@@ -1981,11 +1986,22 @@ function initRealLeafletMap() {
     if (provSelect && !provSelect._bound) {
       provSelect._bound = true;
       provSelect.addEventListener('change', (e) => {
-        resetMapRouteHighlight();
+        mapFilterState.province = e.target.value;
+        mapFilterState.routeId = null;
+        hideRouteBanner();
+        paintRealStopsAndRoutes();
         const p = CR_PROVINCES[e.target.value] || CR_PROVINCES.all;
         realLeafletMap.flyTo(p.center, p.zoom, { duration: 1.5 });
-        toast('🇨🇷 Enfocando región: ' + p.name, 'info');
+        const provLabel = e.target.value === 'all' ? 'terminales principales del país' : 'paradas de ' + p.name;
+        toast('🇨🇷 Mostrando ' + provLabel, 'info');
       });
+    }
+
+    // Botón de limpiar filtro de ruta en el banner
+    const clearRouteBtn = document.getElementById('clearRouteFilterBtn');
+    if (clearRouteBtn && !clearRouteBtn._bound) {
+      clearRouteBtn._bound = true;
+      clearRouteBtn.addEventListener('click', () => { clearRouteFocus(); });
     }
 
     realLeafletMap.on('dragstart', () => {
@@ -2079,48 +2095,138 @@ function initDashboardLeafletMap() {
 function paintLayerRoutesAndStops(mapInstance, markersStore, isMini) {
   if (!mapInstance) return;
 
+  // 0. Limpiar capas anteriores para repintar con nuevos filtros
+  if (markersStore.stops) {
+    Object.values(markersStore.stops).forEach(m => { if (m && mapInstance.hasLayer(m)) mapInstance.removeLayer(m); });
+    markersStore.stops = {};
+  }
+  if (markersStore.routes) {
+    Object.values(markersStore.routes).forEach(p => { if (p && mapInstance.hasLayer(p)) mapInstance.removeLayer(p); });
+    markersStore.routes = {};
+  }
+
+  // Determinar filtros activos (solo para el mapa completo, no el mini dashboard)
+  const activeRouteId = !isMini ? mapFilterState.routeId : null;
+  const activeProvince = !isMini ? mapFilterState.province : 'all';
+  const activeRoute = activeRouteId ? ROUTES.find(r => r.id === activeRouteId) : null;
+  const routeStopSet = activeRoute ? new Set(activeRoute.stopIds || []) : null;
+
   // 1. Trazar líneas de ruta GPS
   ROUTES.forEach(r => {
     const coords = ROUTE_GPS_PATHS[r.id];
     if (coords && coords.length) {
+      const isFocused = activeRouteId === r.id;
+      const isDimmed = activeRouteId && !isFocused;
       const poly = L.polyline(coords, {
         color: r.color,
-        weight: isMini ? 3 : 4,
-        opacity: 0.85,
-        dashArray: '8, 8'
+        weight: isMini ? 3 : (isFocused ? 6 : (isDimmed ? 2 : 4)),
+        opacity: isDimmed ? 0.1 : 0.85,
+        dashArray: isFocused ? null : '8, 8'
       }).addTo(mapInstance);
       poly.bindTooltip('<b>' + esc(r.concession || r.id) + '</b> ' + esc(r.name) + (r.operator ? '<br><small style="opacity:.8">' + esc(r.operator) + '</small>' : ''), { sticky: true, className: 'route-tooltip' });
+      // Click en polyline activa el filtro de ruta (solo mapa completo)
+      if (!isMini) {
+        poly.on('click', () => {
+          mapFilterState.routeId = r.id;
+          paintRealStopsAndRoutes();
+          const rc = ROUTE_GPS_PATHS[r.id];
+          if (rc && rc.length) {
+            try { realLeafletMap.fitBounds(L.latLngBounds(rc), { padding: [50, 50], maxZoom: 14 }); } catch (_) {}
+          }
+          showRouteBanner(r);
+          toast('🗺️ Ruta ' + r.id + ': ' + r.name, 'info');
+        });
+      }
+      if (isFocused && poly.bringToFront) poly.bringToFront();
       markersStore.routes[r.id] = poly;
     }
   });
 
-  // 2. Colocar marcadores de paradas nacionales
-  STOPS.forEach(s => {
+  // 2. Determinar qué paradas mostrar
+  let stopsToRender;
+  if (activeRouteId && routeStopSet) {
+    // Modo ruta: solo las paradas de esa ruta
+    stopsToRender = STOPS.filter(s => routeStopSet.has(s.id));
+  } else if (activeProvince && activeProvince !== 'all') {
+    // Modo provincia: paradas de esa provincia
+    stopsToRender = STOPS.filter(s => s.province === activeProvince);
+  } else if (isMini) {
+    // Dashboard mini: solo terminales principales
+    stopsToRender = STOPS.filter(s => s.isPrimary);
+  } else {
+    // Vista nacional "all": solo terminales principales para no saturar
+    stopsToRender = STOPS.filter(s => s.isPrimary);
+  }
+
+  // 3. Colocar marcadores de paradas filtradas
+  const stopOrderMap = {};
+  if (activeRoute && activeRoute.stopIds) {
+    activeRoute.stopIds.forEach((sid, i) => { stopOrderMap[sid] = i + 1; });
+  }
+
+  stopsToRender.forEach(s => {
+    const stopNum = stopOrderMap[s.id];
+    const hasNum = activeRouteId && typeof stopNum === 'number';
     const icon = L.divIcon({
       className: 'real-stop-div-icon',
-      html: '<div class="real-stop-icon-inner" style="' + (isMini ? 'width:12px;height:12px;' : '') + '" title="' + esc(s.name) + '"></div>',
+      html: hasNum
+        ? '<div class="real-stop-icon-inner real-stop-numbered" style="' + (isMini ? 'width:12px;height:12px;font-size:7px;' : 'background:' + (activeRoute ? activeRoute.color : '#f59e0b') + ';color:#fff;font-weight:700;font-size:10px;display:flex;align-items:center;justify-content:center;') + '" title="' + esc(s.name) + '">' + stopNum + '</div>'
+        : '<div class="real-stop-icon-inner" style="' + (isMini ? 'width:12px;height:12px;' : '') + '" title="' + esc(s.name) + '"></div>',
       iconSize: isMini ? [16, 16] : [20, 20],
       iconAnchor: isMini ? [8, 8] : [10, 10]
     });
 
     const marker = L.marker([s.lat, s.lon], { icon }).addTo(mapInstance);
+    // Rutas que pasan por esta parada
+    const routesAtStop = ROUTES.filter(r => (r.stopIds || []).includes(s.id));
+    const routeBadges = routesAtStop.length > 0
+      ? '<div style="margin-top:6px;">' + routesAtStop.map(r => '<span style="display:inline-block;padding:1px 6px;margin:2px 2px;border-radius:8px;font-size:9px;font-weight:600;background:' + r.color + ';color:#fff;">' + esc(r.id) + '</span>').join('') + '</div>'
+      : '';
     marker.bindPopup(
       '<div style="font-family:Inter, sans-serif;">' +
         '<strong style="color:var(--text-strong); font-size:12.5px;">🚏 ' + esc(s.name) + '</strong>' +
+        (hasNum ? '<span style="float:right;background:' + (activeRoute ? activeRoute.color : '#f59e0b') + ';color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">' + stopNum + '</span>' : '') +
         '<p style="margin:4px 0 0; color:var(--text-soft); font-size:11px;">' + esc(s.subtext || s.province || 'Parada oficial') + '</p>' +
         (isMini ? '' : '<span class="badge" style="margin-top:6px; display:inline-block; font-size:10px;">' + esc(s.province || 'Costa Rica') + '</span>') +
+        routeBadges +
       '</div>'
     );
     markersStore.stops[s.id || s.name] = marker;
   });
 
-  // 3. Leyendas
+  // 4. Leyendas
   const stopColor = '#f59e0b';
-  const legend = ROUTES.map(r =>
+  const displayedRoutes = activeRouteId ? ROUTES.filter(r => r.id === activeRouteId) : ROUTES;
+  const legend = displayedRoutes.map(r =>
     '<span class="legend-item"><span class="legend-dot" style="background:' + r.color + '"></span>Ruta ' + r.id + '</span>').join('')
-    + '<span class="legend-item"><span class="legend-dot" style="background:' + stopColor + '"></span>Paradas</span>';
+    + '<span class="legend-item"><span class="legend-dot" style="background:' + stopColor + '"></span>Paradas (' + stopsToRender.length + ')</span>';
   const legEl = document.getElementById(isMini ? 'miniLegend' : 'fullLegend');
   if (legEl) legEl.innerHTML = legend;
+}
+
+// Muestra el banner flotante de ruta activa
+function showRouteBanner(route) {
+  const banner = document.getElementById('routeBanner');
+  if (!banner) return;
+  const dot = document.getElementById('routeBannerDot');
+  const text = document.getElementById('routeBannerText');
+  if (dot) dot.style.background = route.color;
+  if (text) text.innerHTML = '<b>' + esc(route.concession || route.id) + '</b> — ' + esc(route.name) + ' <small style="opacity:.7">(' + (route.stopIds ? route.stopIds.length : '?') + ' paradas)</small>';
+  banner.hidden = false;
+}
+
+function hideRouteBanner() {
+  const banner = document.getElementById('routeBanner');
+  if (banner) banner.hidden = true;
+}
+
+function clearRouteFocus() {
+  mapFilterState.routeId = null;
+  hideRouteBanner();
+  paintRealStopsAndRoutes();
+  const p = CR_PROVINCES[mapFilterState.province] || CR_PROVINCES.all;
+  if (realLeafletMap) realLeafletMap.flyTo(p.center, p.zoom, { duration: 1.2 });
+  toast('Mostrando todas las rutas y paradas', 'info');
 }
 
 function paintRealStopsAndRoutes() {
@@ -2463,7 +2569,7 @@ function focusBus(busId) {
   renderMapBusList();
   drawMapMarkers(true);
   updateTrackingBanner();
-  toast('Siguiendo la pista a ' + busId + ' · Ruta ' + ((bus.route && bus.route.id) || ''), 'info');
+  toast('Siguiendo ' + busId + ' · Ruta ' + ((bus.route && bus.route.id) || ''), 'info');
 }
 
 function focusRouteOnMap(route) {
@@ -2787,10 +2893,10 @@ function handlePositionUpdate(position, isInitial = false) {
 
 function requestUserLocation(userInitiated = true) {
   if (!('geolocation' in navigator)) {
-    if (userInitiated) toast('Tu navegador no soporta geolocalización, mae', 'warn');
+    if (userInitiated) toast('Tu navegador no soporta geolocalización', 'warn');
     return;
   }
-  toast('Solicitando permiso de ubicación al navegador, un toque...', 'info');
+  toast('Solicitando permiso de ubicación al navegador...', 'info');
   const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 };
   navigator.geolocation.getCurrentPosition(
     (position) => {
@@ -2810,13 +2916,13 @@ function requestUserLocation(userInitiated = true) {
       const geoSwitch = document.getElementById('geoSwitch');
       if (geoSwitch) geoSwitch.setAttribute('aria-checked', 'false');
       if (error.code === error.PERMISSION_DENIED) {
-        toast('⚠️ Permiso de ubicación denegado, mae. Permitilo en la barra de tu navegador.', 'warn');
+        toast('⚠️ Permiso de ubicación denegado. Permite el acceso en la barra de direcciones de tu navegador.', 'warn');
       } else if (error.code === error.POSITION_UNAVAILABLE) {
-        toast('⚠️ Posición GPS no disponible en este dispositivo, diay.', 'warn');
+        toast('⚠️ Posición GPS no disponible en este dispositivo.', 'warn');
       } else if (error.code === error.TIMEOUT) {
-        toast('⏱️ Se agotó el tiempo buscando el GPS, un toque y dale de nuevo.', 'warn');
+        toast('⏱️ Tiempo de espera agotado al obtener el GPS.', 'warn');
       } else if (userInitiated) {
-        toast('No se pudo acceder a tu ubicación, compa. Intentá de nuevo.', 'warn');
+        toast('No se pudo acceder a tu ubicación actual.', 'warn');
       }
     },
     options
@@ -2834,6 +2940,10 @@ function setupMapControls() {
       if (action === 'out') realLeafletMap.zoomOut();
       if (action === 'reset') {
         stopTracking('Vista nacional restablecida');
+        mapFilterState.routeId = null;
+        mapFilterState.province = 'all';
+        hideRouteBanner();
+        paintRealStopsAndRoutes();
         resetMapRouteHighlight();
         realLeafletMap.flyTo(CR_PROVINCES.all.center, CR_PROVINCES.all.zoom, { duration: 1.2 });
         const provSelect = document.getElementById('provinceSelect');
@@ -2904,14 +3014,21 @@ function renderRoutes() {
   }).join('');
 }
  
-// Al tocar una ruta se abre la flota ya filtrada por esa ruta
+// Al tocar una ruta se enfoca en el mapa con sus paradas
 function openRoute(id) {
-  navigate('fleet');
-  $('routeFilter').value = id;
-  $('fleetSearch').value = '';
-  $('statusFilter').value = '';
-  renderFleet();
-  toast('Mostrando los buses de la Ruta ' + id);
+  const route = ROUTES.find(r => r.id === id);
+  if (!route) return;
+  mapFilterState.routeId = id;
+  navigate('map');
+  setTimeout(() => {
+    paintRealStopsAndRoutes();
+    const coords = ROUTE_GPS_PATHS[id];
+    if (coords && coords.length && realLeafletMap) {
+      try { realLeafletMap.fitBounds(L.latLngBounds(coords), { padding: [50, 50], maxZoom: 14 }); } catch (_) {}
+    }
+    showRouteBanner(route);
+    toast('🗺️ Ruta ' + id + ': ' + route.name, 'info');
+  }, 150);
 }
 
 function renderDrivers() {
@@ -2966,12 +3083,12 @@ $('generateReportBtn').addEventListener('click', () => {
       <div class="summary-cell"><b>${combustibleBajo}</b><span>Combustible bajo 20%</span></div>
     </div>`;
   if (box.scrollIntoView) box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  toast('¡Reporte calientito y listo con los datos de hoy!', 'ok');
+  toast('Reporte generado con los datos actuales', 'ok');
 });
  
 $('printReportBtn').addEventListener('click', () => {
   if ($('reportSummary').hidden) $('generateReportBtn').click();
-  toast('Abriendo la ventana para imprimir… un toque');
+  toast('Abriendo el diálogo de impresión');
   setTimeout(() => window.print(), 350);
 });
  
@@ -3052,7 +3169,7 @@ $('trackBusBtn').addEventListener('click', () => {
  
 $('contactDriverBtn').addEventListener('click', () => {
   const b = buses.find(x => x.id === busModal.currentBusId);
-  if (b) toast('Pegándole una llamada a ' + b.driver.name + ' (' + b.id + ')…');
+  if (b) toast('Llamando a ' + b.driver.name + ' (' + b.id + ')…');
 });
  
 $('modalStatusSelect').addEventListener('change', async function () {
@@ -3071,7 +3188,7 @@ $('modalStatusSelect').addEventListener('change', async function () {
     }
   }
 
-  toast('¡Listo! El bus ' + b.id + ' quedó en estado: ' + statusLabel(b.status) + ' 👌', 'ok');
+  toast('Estado de ' + b.id + ' actualizado a ' + statusLabel(b.status), 'ok');
 });
  
 document.addEventListener('keydown', e => {
@@ -3107,7 +3224,7 @@ on('accentPicker', 'click', e => {
   if (state.view === 'fleet') renderFleet();
   if (state.view === 'routes') renderRoutes();
   if (state.view === 'drivers') renderDrivers();
-  toast('¡Acento cambiado, quedó chiva! 🎨');
+  toast('Acento actualizado');
 });
  
 function bindSwitch(id, onChange) {
@@ -3122,7 +3239,7 @@ function bindSwitch(id, onChange) {
  
 bindSwitch('motionSwitch', v => {
   prefs.motion = v;
-  toast(v ? '¡Movimiento activado, todo en acción! 🚌' : 'Movimiento en pausa, mae');
+  toast(v ? 'Movimiento activado' : 'Movimiento en pausa');
 });
 bindSwitch('liveSwitch', v => {
   prefs.live = v;
@@ -3164,7 +3281,7 @@ $('resetDataBtn').addEventListener('click', () => {
   renderMapBusList();
   drawMapMarkers(true);
   if (state.view === 'routes') renderRoutes();
-  toast('¡Flota refrescada y con datos fresquitos!', 'ok');
+  toast('Flota regenerada con datos nuevos', 'ok');
 });
  
 function openSettings() {
@@ -3219,7 +3336,7 @@ $('globalSearch').addEventListener('keydown', function (e) {
   $('routeFilter').value = '';
   renderFleet();
   const n = visibleBuses().length;
-  toast(n ? n + ' resultado' + (n !== 1 ? 's' : '') + ' para "' + q + '" 🔍' : 'Diay mae, sin resultados para "' + q + '"', n ? 'ok' : 'warn');
+  toast(n ? n + ' resultados para "' + q + '"' : 'Sin resultados para "' + q + '"', n ? 'ok' : 'warn');
 });
  
 $('mobileSearchBtn').addEventListener('click', e => {
@@ -3644,7 +3761,7 @@ if (liveToggleBtn) {
     prefs.live = !prefs.live;
     syncLiveIndicator();
     savePrefs();
-    toast(prefs.live ? '¡Actualización automática activada, pura vida! 🔄' : 'Actualización automática en pausa, mae');
+    toast(prefs.live ? 'Actualización automática activada' : 'Actualización automática en pausa');
   });
 }
  
@@ -4265,7 +4382,7 @@ function init() {
     localStorage.removeItem('bustrack_user');
     sessionStorage.removeItem('bustrack_guest');
 
-    toast(`¡Nos vemos compa! Hasta luego, ${name}. Sesión cerrada. 👋`, 'info');
+    toast(`Hasta pronto, ${name}. Sesión cerrada correctamente. 👋`, 'info');
     updateAuthUserUI();
     if (authModal) authModal.classList.remove('active');
   }
@@ -4314,13 +4431,13 @@ function init() {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         if (res.ok) {
-          toast('¡Listo! Cuenta eliminada, compa 👋', 'info');
+          toast('Cuenta eliminada correctamente', 'info');
           await performLogout();
         } else {
-          toast('Diay, no se pudo eliminar la cuenta. Contacta a soporte.', 'warn');
+          toast('No se pudo eliminar la cuenta directamente. Contacte a soporte.', 'warn');
         }
       } catch (err) {
-        toast('Error al procesar la solicitud, dale otra vez', 'warn');
+        toast('Error al procesar la solicitud de eliminación', 'warn');
       }
     });
   }
@@ -4410,7 +4527,7 @@ function init() {
         if (!editInput) return;
         const newName = editInput.value.trim();
         if (!newName || newName.length < 2) {
-          toast('Diay compa, poné un nombre válido (mínimo 2 caracteres)', 'warn');
+          toast('Por favor ingresa un nombre válido (al menos 2 caracteres)', 'warn');
           return;
         }
         if (!currentUser) return;
@@ -4439,7 +4556,7 @@ function init() {
 
           updateAuthUserUI();
           renderAccountView();
-          toast('✅ ¡Listo! Nombre guardado, compa', 'ok');
+          toast('✅ Nombre actualizado y guardado en Supabase', 'ok');
         } catch (err) {
           toast('Error al guardar el nombre: ' + (err.message || ''), 'warn');
         } finally {
@@ -4456,11 +4573,11 @@ function init() {
         if (!codeInput) return;
         const rawCode = codeInput.value.trim().replace(/^@/, '');
         if (!rawCode || rawCode.length < 2) {
-          toast('Diay, el código debe tener al menos 2 caracteres, mae', 'warn');
+          toast('El código debe tener al menos 2 caracteres', 'warn');
           return;
         }
         if (!/^[a-zA-Z0-9_]+$/.test(rawCode)) {
-          toast('El código solo puede tener letras, números y guiones bajos (_), compa', 'warn');
+          toast('El código solo puede tener letras, números y guiones bajos (_)', 'warn');
           return;
         }
         if (!currentUser) return;
@@ -4491,7 +4608,7 @@ function init() {
           }
 
           codeInput.value = rawCode;
-          toast('✅ ¡Código guardado! @' + rawCode, 'ok');
+          toast('✅ Código guardado: @' + rawCode, 'ok');
         } catch (err) {
           toast('Error al guardar el código: ' + (err.message || ''), 'warn');
         } finally {
@@ -4507,9 +4624,9 @@ function init() {
         const idEl = $('accDisplayId');
         if (idEl && idEl.textContent) {
           navigator.clipboard?.writeText(idEl.textContent).then(() => {
-            toast('ID copiado al portapapeles, listo el pollo 📋', 'ok');
+            toast('ID de usuario copiado al portapapeles', 'ok');
           }).catch(() => {
-            toast('No se pudo copiar automáticamente, mae', 'warn');
+            toast('No se pudo copiar automáticamente', 'warn');
           });
         }
       });
@@ -4520,7 +4637,7 @@ function init() {
     if (toggleThemeBtn) {
       toggleThemeBtn.addEventListener('click', () => {
         toggleTheme();
-        toast(`¡Tema cambiado a ${prefs.theme === 'light' ? 'Claro ☀️' : 'Oscuro 🌙'}! ¿Quedó chiva?`, 'info');
+        toast(`Tema visual cambiado a ${prefs.theme === 'light' ? 'Claro' : 'Oscuro'}`, 'info');
       });
     }
 
@@ -4606,17 +4723,17 @@ function init() {
               keysToRemove.forEach(k => localStorage.removeItem(k));
             } catch (_) {}
 
-            toast('¡Todo borrado! Que le vaya bien, compa 👋', 'info');
+            toast('✅ Cuenta y datos personales eliminados correctamente', 'info');
             await new Promise(r => setTimeout(r, 1500));
             performLogout();
             navigate('dashboard');
           } else {
-            toast('No se pudo eliminar la cuenta, mae. Contactá a soporte@bustrack.cr', 'warn');
+            toast('No se pudo eliminar la cuenta. Contacta a soporte@bustrack.cr', 'warn');
             deleteBtn.disabled = false;
             deleteBtn.textContent = '🗑️ Eliminar cuenta y datos personales';
           }
         } catch (err) {
-          toast('Error inesperado: ' + (err.message || 'dale otra vez, mae'), 'warn');
+          toast('Error inesperado: ' + (err.message || 'inténtalo de nuevo'), 'warn');
           deleteBtn.disabled = false;
           deleteBtn.textContent = '🗑️ Eliminar cuenta y datos personales';
         }
@@ -4727,13 +4844,13 @@ function init() {
       const plateRegex = /^[A-Z0-9-]{1,10}$/;
 
       if (!busIdRegex.test(id)) {
-        toast('Diay mae, el ID debe ir en formato BUS-000 (ej. BUS-015)', 'warn');
+        toast('El ID del bus debe cumplir el formato BUS-000 (ej. BUS-015)', 'warn');
         $('newBusId')?.focus();
         return;
       }
 
       if (!plateRegex.test(plate)) {
-        toast('La placa solo puede tener letras, números y guion (máx. 10 caracteres), compa', 'warn');
+        toast('La placa solo puede contener letras, números y guion (máx. 10 caracteres)', 'warn');
         $('newBusPlate')?.focus();
         return;
       }
@@ -4770,7 +4887,7 @@ function init() {
 
       addBusModal.classList.remove('active');
       addBusForm.reset();
-      toast(`¡Bus ${id} registrado en la flota, listo el pollo! 🚌`, 'ok');
+      toast(`Bus ${id} registrado en la flota con éxito`, 'ok');
     });
   }
 
@@ -4783,7 +4900,7 @@ function init() {
       if (search) search.value = '';
       if (filter) filter.value = '';
       renderFleet();
-      toast('Filtros de la flota en cero, pura vida 👌', 'info');
+      toast('Filtros de la flota reiniciados', 'info');
     });
   }
 
@@ -4818,13 +4935,13 @@ function init() {
 
   if (callDriverBtn) {
     callDriverBtn.addEventListener('click', () => {
-      toast('📞 Llamando directo a la cabina del chofer...', 'ok');
+      toast('📞 Conectando llamada con la cabina del conductor...', 'ok');
       if (contactModal) contactModal.classList.remove('active');
     });
   }
   if (msgDriverBtn) {
     msgDriverBtn.addEventListener('click', () => {
-      toast('💬 ¡Mensaje enviado al terminal a bordo, mae!', 'ok');
+      toast('💬 Canal de mensajería enviado al terminal de abordo', 'ok');
       if (contactModal) contactModal.classList.remove('active');
     });
   }
@@ -4857,7 +4974,7 @@ function init() {
       e.preventDefault();
       localStorage.setItem('bustrack_cookie_consent', 'accepted');
       hideCookieBanner();
-      toast('Preferencias de almacenamiento guardadas, listo el pollo 💾', 'ok');
+      toast('Preferencias de almacenamiento guardadas', 'ok');
     });
   }
   if (cookieRejectBtn) {
@@ -4865,7 +4982,7 @@ function init() {
       e.preventDefault();
       localStorage.setItem('bustrack_cookie_consent', 'essential_only');
       hideCookieBanner();
-      toast('Solo se usará lo técnico esencial, sin bronca', 'info');
+      toast('Solo se usará almacenamiento técnico esencial', 'info');
     });
   }
 
@@ -4891,7 +5008,7 @@ function init() {
       else {
         userLocationState.active = false;
         updateUserLocationUI();
-        toast('Geolocalización desactivada, mae', 'info');
+        toast('Geolocalización desactivada', 'info');
       }
     });
   }
