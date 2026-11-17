@@ -93,6 +93,14 @@ app.use(helmet({
 // ⛔ Nunca usar '*' con credentials:true ni permitir origin 'null'. Se exige whitelist explícita.
 const rawOrigins = (config.corsOrigin || '').split(',').map(o => o.trim()).filter(Boolean);
 
+// ✅ Compatibilidad con Railway & Cloudflare: incorporar automáticamente dominios inyectados por Railway
+if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+  rawOrigins.push(`https://${process.env.RAILWAY_PUBLIC_DOMAIN}`);
+}
+if (process.env.RAILWAY_STATIC_URL) {
+  rawOrigins.push(`https://${process.env.RAILWAY_STATIC_URL}`);
+}
+
 app.use(cors({
   origin: (origin, callback) => {
     // Permitir llamadas sin cabecera origin (curl, Postman, llamadas internas de servidor)
@@ -325,7 +333,7 @@ import { db } from './database/db.js';
 import { supabase, isSupabaseConfigured } from './supabase.js';
 
 if (isMain) {
-  server.listen(config.port, async () => {
+  server.listen(config.port, '0.0.0.0', async () => {
     if (config.databaseUrl) {
       await initPostgresDatabase(config.databaseUrl);
     }
