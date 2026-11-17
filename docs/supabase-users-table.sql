@@ -16,12 +16,14 @@ create table if not exists public.users (
 
 alter table public.users enable row level security;
 
+drop policy if exists "Ver propio perfil" on public.users;
 create policy "Ver propio perfil" on public.users for select to authenticated
   using (auth.uid() = id);
 
+drop policy if exists "Actualizar propio perfil" on public.users;
 create policy "Actualizar propio perfil" on public.users for update to authenticated
   using (auth.uid() = id)
-  with check (auth.uid() = id and role = (select u.role from public.users u where u.id = auth.uid()));
+  with check (auth.uid() = id);
 
 create or replace function public.set_updated_at() returns trigger language plpgsql set search_path = '' as $$
 begin new.updated_at = now(); return new; end; $$;

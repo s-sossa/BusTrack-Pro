@@ -567,6 +567,13 @@ const VIEW_TITLES = {
   account: 'Mi Cuenta',
 };
 
+// Declaración en alcance superior para que navigate('account') siempre tenga acceso
+let renderAccountView = function() {
+  if (typeof window !== 'undefined' && typeof window.renderAccountView === 'function' && window.renderAccountView !== renderAccountView) {
+    window.renderAccountView();
+  }
+};
+
 function navigate(view) {
   if (view === 'fleet') view = 'schedules';
   if (!VIEW_TITLES[view]) return;
@@ -603,7 +610,9 @@ function navigate(view) {
   if (view === 'schedules' || view === 'fleet') renderSchedules();
   if (view === 'routes') renderRoutes();
   if (view === 'drivers') renderDrivers();
-  if (view === 'account') renderAccountView();
+  if (view === 'account') {
+    if (typeof renderAccountView === 'function') renderAccountView();
+  }
   if (view === 'map') {
     if (!realLeafletMap) {
       requestAnimationFrame(() => {
@@ -4467,7 +4476,7 @@ function init() {
   // ------------------------------------------------------------------
   // ACCOUNT / PROFILE VIEW (view-account)
   // ------------------------------------------------------------------
-  function renderAccountView() {
+  renderAccountView = function renderAccountView() {
     const heroCard = document.querySelector('.account-hero-card');
     const accountGrid = document.querySelector('.account-grid');
     const guestBox = $('accGuestBox');
@@ -4538,7 +4547,8 @@ function init() {
     if (geoStatus) {
       geoStatus.textContent = localStorage.getItem('bustrack_geolocate') === 'true' ? 'Activada' : 'Disponible';
     }
-  }
+  };
+  if (typeof window !== 'undefined') window.renderAccountView = renderAccountView;
 
   function initAccountViewListeners() {
     // ── Guardar Nombre ──────────────────────────────────────────────
