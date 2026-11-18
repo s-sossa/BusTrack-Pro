@@ -672,16 +672,19 @@
 
   <script>
     // Validar sesión activa en Supabase antes de redirigir (evita bypass por localStorage manipulado)
+    const SUPABASE_URL = 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
+    let supaClient = null;
+
     try {
-      if (window.supabase && window.supabase.createClient) {
-        const supaUrl = window.__SUPABASE_URL || 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
-        const supaKey = window.__SUPABASE_ANON_KEY || 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
-        const checkClient = window.supabase.createClient(supaUrl, supaKey);
-        checkClient.auth.getSession().then(({ data }) => {
+      const supaLib = (typeof supabase !== 'undefined' && supabase.createClient) ? supabase : (typeof window !== 'undefined' && window.supabase && window.supabase.createClient ? window.supabase : null);
+      if (supaLib) {
+        supaClient = supaLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supaClient.auth.getSession().then(({ data }) => {
           if (data?.session) {
             window.location.replace('index.html');
           }
-        });
+        }).catch(() => {});
       }
     } catch (_) {}
 
@@ -721,13 +724,6 @@
       input.addEventListener('input', clearError);
     });
 
-    // Inicialización del cliente Supabase en el navegador
-    const SUPABASE_URL = 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
-    let supaClient = (typeof supabase !== 'undefined' && supabase.createClient)
-      ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-      : null;
-
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       clearError();
@@ -763,13 +759,14 @@
         // Redirigir al panel principal
         setTimeout(() => {
           window.location.href = 'index.html';
-        }, 500);
+        }, 400);
       }
 
       // Verificar si supabase está disponible en el momento de envío
-      if (!supaClient && typeof supabase !== 'undefined' && supabase.createClient) {
+      if (!supaClient) {
         try {
-          supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          const supaLib = (typeof supabase !== 'undefined' && supabase.createClient) ? supabase : (typeof window !== 'undefined' && window.supabase && window.supabase.createClient ? window.supabase : null);
+          if (supaLib) supaClient = supaLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         } catch (_) {}
       }
 
@@ -796,26 +793,23 @@
               btnText.textContent = 'Iniciar Sesión';
               return;
             } else {
-              showError('Error de acceso: ' + msg);
-              submitBtn.disabled = false;
-              btnSpinner.style.display = 'none';
-              btnText.textContent = 'Iniciar Sesión';
-              return;
+              console.warn('[Supabase Auth Warning - Probando backend fallback]:', msg);
             }
+          } else if (data && data.user) {
+            const supaUser = data.user;
+            const name = supaUser?.user_metadata?.full_name || supaUser?.user_metadata?.name || email.split('@')[0];
+            const userObj = {
+              id: supaUser.id,
+              name: name,
+              email: supaUser.email,
+              avatarUrl: supaUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=5b6ef5&color=fff`,
+              token: data.session?.access_token || null,
+              provider: 'email'
+            };
+
+            completeLogin(userObj);
+            return;
           }
-
-          const supaUser = data.user;
-          const name = supaUser?.user_metadata?.full_name || supaUser?.user_metadata?.name || email.split('@')[0];
-          const userObj = {
-            id: supaUser.id,
-            name: name,
-            email: supaUser.email,
-            avatarUrl: supaUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=5b6ef5&color=fff`
-          };
-
-          completeLogin(userObj);
-          return;
-
         } catch (supaErr) {
           console.warn('[Supabase Direct Login Error - Intentando fallback]', supaErr);
         }
@@ -830,8 +824,17 @@
           body: JSON.stringify({ email, password })
         });
         const json = await res.json();
-        if (res.ok && json.user) {
-          completeLogin(json.user);
+        if (res.ok && (json.user || json.data?.user)) {
+          const user = json.user || json.data?.user;
+          const token = json.token || json.session?.access_token || user.token || null;
+          completeLogin({
+            id: user.id,
+            name: user.name || user.full_name || email.split('@')[0],
+            email: user.email,
+            avatarUrl: user.avatarUrl || user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || email)}&background=5b6ef5&color=fff`,
+            token: token,
+            provider: user.provider || 'email'
+          });
           return;
         } else {
           showError(json.detail || json.message || 'Correo o contraseña incorrectos.');

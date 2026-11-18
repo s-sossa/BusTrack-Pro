@@ -243,6 +243,37 @@
       flex-shrink: 0;
       margin-top: 1px;
     }
+
+    /* Caja de éxito / confirmación */
+    .auth-success {
+      display: none;
+      align-items: flex-start;
+      gap: 0.75rem;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      margin-bottom: 1.25rem;
+      color: #34d399;
+      font-size: 0.875rem;
+      line-height: 1.45;
+    }
+    .auth-success.visible {
+      display: flex;
+    }
+    .auth-success-icon {
+      flex-shrink: 0;
+      margin-top: 1px;
+      color: #10b981;
+    }
+    .auth-success a {
+      color: #6ee7b7;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+    .auth-success a:hover {
+      color: #a7f3d0;
+    }
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
       20%, 60% { transform: translateX(-4px); }
@@ -635,6 +666,18 @@
         <span id="authAlertText">Hubo un error al registrar tu cuenta</span>
       </div>
 
+      <div class="auth-success" id="authSuccess" role="status" aria-live="polite">
+        <svg class="auth-success-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        <div>
+          <span id="authSuccessText">¡Tu cuenta ha sido creada exitosamente! Revisa tu bandeja de entrada o inicia sesión directamente.</span>
+          <div style="margin-top:6px;">
+            <a href="login.html" id="authSuccessLink">Ir a Iniciar Sesión ahora &rarr;</a>
+          </div>
+        </div>
+      </div>
+
       <form id="registerForm" autocomplete="on" novalidate>
         <div class="form-group">
           <label for="regName">Nombre y Apellidos</label>
@@ -789,6 +832,8 @@
     const btnText = document.getElementById('btnText');
     const authAlert = document.getElementById('authAlert');
     const authAlertText = document.getElementById('authAlertText');
+    const authSuccess = document.getElementById('authSuccess');
+    const authSuccessText = document.getElementById('authSuccessText');
     const toggleRegPwBtn = document.getElementById('toggleRegPwBtn');
     const pwStrengthBar = document.getElementById('pwStrengthBar');
     const pwStrengthLabel = document.getElementById('pwStrengthLabel');
@@ -831,7 +876,20 @@
       pwStrengthLabel.textContent = `Seguridad: ${labels[score] || 'Muy débil'}`;
     });
 
+    function showSuccess(message) {
+      clearError();
+      if (authSuccessText && message) authSuccessText.textContent = message;
+      if (authSuccess) {
+        authSuccess.classList.add('visible');
+        authSuccess.style.display = 'flex';
+      }
+    }
+
     function showError(message, focusEl) {
+      if (authSuccess) {
+        authSuccess.classList.remove('visible');
+        authSuccess.style.display = 'none';
+      }
       authAlertText.textContent = message;
       authAlert.classList.add('visible');
       if (focusEl) {
@@ -842,6 +900,10 @@
 
     function clearError() {
       authAlert.classList.remove('visible');
+      if (authSuccess) {
+        authSuccess.classList.remove('visible');
+        authSuccess.style.display = 'none';
+      }
       [nameInput, emailInput, passwordInput, confirmPasswordInput].forEach(el => el.classList.remove('input-error'));
     }
 
@@ -853,9 +915,11 @@
     // Inicialización del cliente Supabase en el navegador
     const SUPABASE_URL = 'https://jhuvaqrdhkzxqmvcrlws.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_YdweRSdqvXLG_Ai1GQVYQw_sOtK_hZ0';
-    const supaClient = (typeof supabase !== 'undefined' && supabase.createClient)
-      ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-      : null;
+    let supaClient = null;
+    try {
+      const supaLib = (typeof supabase !== 'undefined' && supabase.createClient) ? supabase : (typeof window !== 'undefined' && window.supabase && window.supabase.createClient ? window.supabase : null);
+      if (supaLib) supaClient = supaLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch (_) {}
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -911,24 +975,28 @@
 
       function completeRegistration(user) {
         localStorage.setItem('bustrack_user', JSON.stringify({
+          id: user.id || ('USR-' + Date.now()),
           name: user.name,
           email: user.email,
-          avatarUrl: user.avatarUrl
+          avatarUrl: user.avatarUrl,
+          provider: user.provider || 'email',
+          token: user.token || null
         }));
 
-        btnText.textContent = '¡Cuenta lista! Redirigiendo…';
+        btnText.textContent = '¡Cuenta Creada con Éxito!';
         btnSpinner.style.display = 'none';
         submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
 
         setTimeout(() => {
           window.location.href = 'index.html';
-        }, 600);
+        }, 800);
       }
 
       // Verificar si supabase está disponible en el momento de envío
-      if (!supaClient && typeof supabase !== 'undefined' && supabase.createClient) {
+      if (!supaClient) {
         try {
-          supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          const supaLib = (typeof supabase !== 'undefined' && supabase.createClient) ? supabase : (typeof window !== 'undefined' && window.supabase && window.supabase.createClient ? window.supabase : null);
+          if (supaLib) supaClient = supaLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         } catch (_) {}
       }
 
@@ -955,7 +1023,9 @@
               id: supaUser?.id || ('USR-' + Date.now()),
               name: name,
               email: email,
-              avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff'
+              avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff',
+              provider: 'email',
+              token: data.session?.access_token || null
             };
 
             if (data.session?.access_token) {
@@ -964,10 +1034,12 @@
             }
 
             // Si requiere confirmación previa por correo electrónico:
-            btnText.textContent = '¡Confirmación enviada!';
-            btnSpinner.style.display = 'none';
             submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-            showError('¡Cuenta creada! Revisa tu correo electrónico para confirmar la cuenta antes de iniciar sesión. (O desactiva "Confirm email" en Supabase).');
+            btnText.textContent = '¡Cuenta Creada con Éxito!';
+            btnSpinner.style.display = 'none';
+            submitBtn.disabled = true;
+
+            showSuccess('¡Tu cuenta ha sido creada exitosamente! Revisa tu bandeja de entrada o inicia sesión directamente.');
             setTimeout(() => {
               window.location.href = 'login.html';
             }, 3000);
@@ -1012,14 +1084,22 @@
         const json = await res.json();
         if (res.ok) {
           if (json.status === 'pending') {
-            btnText.textContent = '¡Confirmación enviada!';
-            btnSpinner.style.display = 'none';
             submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-            showError('¡Cuenta creada! Revisa tu correo electrónico para confirmar antes de ingresar.');
+            btnText.textContent = '¡Cuenta Creada con Éxito!';
+            btnSpinner.style.display = 'none';
+            submitBtn.disabled = true;
+
+            showSuccess('¡Tu cuenta ha sido creada exitosamente! Revisa tu bandeja de entrada o inicia sesión directamente.');
             setTimeout(() => { window.location.href = 'login.html'; }, 3000);
             return;
           }
-          completeRegistration(json.user || { name, email, avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) });
+          completeRegistration(json.user || {
+            name,
+            email,
+            avatarUrl: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=5b6ef5&color=fff',
+            provider: 'email',
+            token: json.token || null
+          });
           return;
         } else {
           showError(json.detail || json.message || 'No se pudo crear la cuenta.');

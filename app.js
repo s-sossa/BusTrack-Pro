@@ -4163,6 +4163,7 @@ function init() {
   const authClose        = $('authClose');
   const oauthPromptModal = $('oauthPromptModal');
   const oauthPromptClose = $('oauthPromptClose');
+  const oauthConfirmSubmitBtn = $('oauthConfirmSubmitBtn');
   const sidebarLoginBtn  = $('sidebarLoginBtn');
   const sidebarRegisterBtn = $('sidebarRegisterBtn');
   const authBtn          = $('authBtn');
@@ -4202,14 +4203,37 @@ function init() {
       navigate('account');
     });
   }
-  if (authClose)          authClose.addEventListener('click', () => authModal.classList.remove('active'));
+  if (authClose) authClose.addEventListener('click', () => {
+    authModal.classList.remove('active', 'open');
+    if (typeof closeModal === 'function') closeModal(authModal);
+  });
   if (oauthPromptClose && oauthPromptModal) {
-    oauthPromptClose.addEventListener('click', () => oauthPromptModal.classList.remove('active'));
+    oauthPromptClose.addEventListener('click', () => {
+      oauthPromptModal.classList.remove('open', 'active');
+      if (typeof closeModal === 'function') closeModal(oauthPromptModal);
+    });
+  }
+  if (oauthConfirmSubmitBtn && oauthPromptModal) {
+    oauthConfirmSubmitBtn.addEventListener('click', () => {
+      oauthPromptModal.classList.remove('open', 'active');
+      if (typeof closeModal === 'function') closeModal(oauthPromptModal);
+    });
   }
   // Close auth modal on overlay click
   if (authModal) {
     authModal.addEventListener('click', (e) => {
-      if (e.target === authModal) authModal.classList.remove('active');
+      if (e.target === authModal) {
+        authModal.classList.remove('active', 'open');
+        if (typeof closeModal === 'function') closeModal(authModal);
+      }
+    });
+  }
+  if (oauthPromptModal) {
+    oauthPromptModal.addEventListener('click', (e) => {
+      if (e.target === oauthPromptModal) {
+        oauthPromptModal.classList.remove('open', 'active');
+        if (typeof closeModal === 'function') closeModal(oauthPromptModal);
+      }
     });
   }
 
@@ -4493,7 +4517,8 @@ function init() {
     }
 
     if (deleteModal) {
-      deleteModal.classList.add('active');
+      deleteModal.classList.add('open', 'active');
+      if (typeof openModal === 'function') openModal(deleteModal);
       setTimeout(() => {
         if (isEmail && deletePwInput) deletePwInput.focus();
         else if (deletePhraseInput) deletePhraseInput.focus();
@@ -4502,7 +4527,10 @@ function init() {
   }
 
   function closeDeleteAccountModal() {
-    if (deleteModal) deleteModal.classList.remove('active');
+    if (deleteModal) {
+      deleteModal.classList.remove('open', 'active');
+      if (typeof closeModal === 'function') closeModal(deleteModal);
+    }
     if (deletePwInput) deletePwInput.value = '';
     if (deletePhraseInput) deletePhraseInput.value = '';
     if (deleteErrorMsg) { deleteErrorMsg.style.display = 'none'; deleteErrorMsg.textContent = ''; }
@@ -4511,6 +4539,11 @@ function init() {
 
   if (deleteClose) deleteClose.addEventListener('click', closeDeleteAccountModal);
   if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', closeDeleteAccountModal);
+  if (deleteModal) {
+    deleteModal.addEventListener('click', (e) => {
+      if (e.target === deleteModal) closeDeleteAccountModal();
+    });
+  }
 
   // Validación en tiempo real del input de confirmación
   if (deletePwInput) {
