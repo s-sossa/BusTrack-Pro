@@ -4116,6 +4116,7 @@ function init() {
     isGuestSession = false;
     // Guardar únicamente información cosmética; el rol se resuelve en el servidor/DB
     localStorage.setItem('bustrack_user', JSON.stringify({
+      id: user.id,
       name: user.name,
       email: user.email,
       avatarUrl: user.avatarUrl,
