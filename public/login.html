@@ -748,9 +748,12 @@
 
       function completeLogin(user) {
         localStorage.setItem('bustrack_user', JSON.stringify({
+          id: user.id,
           name: user.name,
           email: user.email,
-          avatarUrl: user.avatarUrl
+          avatarUrl: user.avatarUrl,
+          provider: user.provider || 'email',
+          token: user.token || null
         }));
 
         btnText.textContent = '¡Bienvenido! Entrando…';

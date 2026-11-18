@@ -1071,7 +1071,8 @@ html[data-theme="light"] .map-btn-geo.active:hover {
   background: rgba(4, 8, 16, 0.75); backdrop-filter: blur(6px);
   display: none; align-items: center; justify-content: center;
 }
-.modal-overlay.open { display: flex; animation: fade 0.2s ease; }
+.modal-overlay.open,
+.modal-overlay.active { display: flex !important; animation: fade 0.2s ease; }
 .modal-overlay.closing { display: flex; animation: fadeOut 0.2s ease forwards; }
 .modal-overlay.closing .modal { animation: modalOut 0.2s cubic-bezier(0.36, 0, 0.66, -0.56) forwards; }
 @keyframes fadeOut { to { opacity: 0; } }
