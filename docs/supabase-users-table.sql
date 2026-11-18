@@ -25,6 +25,10 @@ create policy "Actualizar propio perfil" on public.users for update to authentic
   using (auth.uid() = id)
   with check (auth.uid() = id);
 
+drop policy if exists "Eliminar propio perfil" on public.users;
+create policy "Eliminar propio perfil" on public.users for delete to authenticated
+  using (auth.uid() = id);
+
 create or replace function public.set_updated_at() returns trigger language plpgsql set search_path = '' as $$
 begin new.updated_at = now(); return new; end; $$;
 

@@ -955,6 +955,69 @@
     </div>
   </div>
 
+  <!-- ============ MODAL ELIMINAR CUENTA (SUPRESIÓN PERMANENTE LEY 8968 / GDPR) ============ -->
+  <div class="modal-overlay" id="deleteAccountModal">
+    <div class="modal modal-narrow" role="dialog" aria-modal="true" aria-labelledby="deleteAccountTitle">
+      <div class="modal-header" style="border-bottom: 1px solid rgba(239, 68, 68, 0.2);">
+        <div class="modal-title-area">
+          <h2 id="deleteAccountTitle" style="color: #ef4444; display: flex; align-items: center; gap: 8px;">
+            ⚠️ Eliminar cuenta definitivamente
+          </h2>
+          <p class="modal-subtitle">Cancelación permanente de datos personales (Ley 8968 / GDPR Art. 17)</p>
+        </div>
+        <button class="modal-close" id="deleteAccountClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="delete-warning-box" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: 0.85rem; color: var(--text-soft); line-height: 1.5;">
+          <strong style="color: #ef4444; display: block; margin-bottom: 4px;">Esta acción es irreversible y permanente:</strong>
+          <ul style="margin: 0; padding-left: 18px;">
+            <li>Perderás el acceso a tu cuenta de forma inmediata.</li>
+            <li>Se eliminarán tus datos personales de Supabase Auth y de la base de datos.</li>
+            <li>Se purgarán los archivos privados asociados en Supabase Storage.</li>
+            <li>No será posible recuperar tu cuenta ni tus datos mediante la aplicación.</li>
+          </ul>
+        </div>
+
+        <form id="deleteAccountForm" onsubmit="return false;">
+          <!-- Contenedor Reautenticación Contraseña (Email) -->
+          <div id="deleteReauthEmailContainer" class="form-group" style="margin-bottom: 14px;">
+            <label for="deleteAccountPassword" class="form-label" style="font-size: 0.82rem; font-weight: 600; color: var(--text-strong);">
+              Ingresa tu contraseña actual para confirmar:
+            </label>
+            <input type="password" id="deleteAccountPassword" class="form-input" placeholder="••••••••" autocomplete="current-password" />
+          </div>
+
+          <!-- Contenedor Reautenticación Frase (OAuth) -->
+          <div id="deleteReauthOAuthContainer" class="form-group" style="margin-bottom: 14px; display: none;">
+            <label for="deleteAccountConfirmPhrase" class="form-label" style="font-size: 0.82rem; font-weight: 600; color: var(--text-strong);">
+              Escribe exactamente <code style="color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 2px 4px; border-radius: 4px;">ELIMINAR MI CUENTA</code> para confirmar:
+            </label>
+            <input type="text" id="deleteAccountConfirmPhrase" class="form-input" placeholder="ELIMINAR MI CUENTA" />
+          </div>
+
+          <!-- Indicador de Progreso por Etapas -->
+          <div id="deleteProgressBox" style="display: none; margin-bottom: 14px; padding: 12px; background: rgba(15, 23, 42, 0.6); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span class="spinner" style="display: inline-block; width: 14px; height: 14px; border: 2px solid #ef4444; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+              <span id="deleteProgressText" style="font-size: 0.82rem; font-weight: 600; color: var(--text-strong);">Validando credenciales...</span>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-soft);" id="deleteProgressStage">Etapa 1 de 3</div>
+          </div>
+
+          <!-- Mensaje de Error en Modal -->
+          <div id="deleteErrorMessage" class="auth-error-banner" style="display: none; margin-bottom: 12px; font-size: 0.82rem; padding: 8px 12px; border-radius: 6px; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);"></div>
+
+          <div class="modal-actions" style="display: flex; gap: 10px; margin-top: 16px;">
+            <button type="button" class="btn-ghost" id="cancelDeleteAccountBtn" style="flex: 1;">Cancelar</button>
+            <button type="button" class="btn-primary" id="confirmFinalDeleteBtn" disabled style="flex: 1; background: #dc2626; border-color: #dc2626; color: #fff;">
+              Eliminar Definitivamente
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ COMMAND PALETTE (CTRL + K) ============ -->
   <div class="modal-overlay" id="commandPaletteModal">
     <div class="command-palette-box" role="dialog" aria-modal="true" aria-label="Búsqueda rápida y comandos">

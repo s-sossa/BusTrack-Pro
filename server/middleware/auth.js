@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
+import { supabaseAdmin, isSupabaseConfigured } from '../supabase.js';
 
 // ⛔ Validar o autogenerar JWT_SECRET con alta entropía (256-bit)
 let secret = process.env.JWT_SECRET;
@@ -22,8 +23,8 @@ if (!secret || secret.length < 32 || secret.includes('change_me') || secret.incl
 
 const JWT_SECRET = secret;
 
-/** Middleware: Authenticate Request via Bearer Token or Cookie */
-export function authenticateToken(req, res, next) {
+/** Middleware: Authenticate Request via Bearer Token (Local JWT or Supabase Auth) */
+export async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.startsWith('Bearer ')
     ? authHeader.split(' ')[1]
@@ -38,22 +39,46 @@ export function authenticateToken(req, res, next) {
     });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({
-        type: 'about:blank',
-        title: 'Forbidden',
-        status: 403,
-        detail: 'Token inválido o expirado. Por favor inicia sesión nuevamente.',
-      });
+  // 1. Intentar validar como JWT local emitido por Express
+  try {
+    const localUser = jwt.verify(token, JWT_SECRET);
+    req.user = localUser;
+    return next();
+  } catch (jwtErr) {
+    // 2. Si falla verificación local, intentar validar con Supabase Auth
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabaseAdmin.auth.getUser(token);
+        if (!error && data?.user) {
+          const u = data.user;
+          const role = u.app_metadata?.role || u.user_metadata?.role || 'passenger';
+          const provider = u.app_metadata?.provider || (u.identities?.[0]?.provider) || 'email';
+          req.user = {
+            id: u.id,
+            email: u.email,
+            role,
+            provider,
+            name: u.user_metadata?.full_name || u.user_metadata?.name || (u.email ? u.email.split('@')[0] : 'Usuario'),
+            authSource: 'supabase'
+          };
+          return next();
+        }
+      } catch (sbErr) {
+        // Falló verificación en Supabase
+      }
     }
-    req.user = user;
-    next();
-  });
+
+    return res.status(403).json({
+      type: 'about:blank',
+      title: 'Forbidden',
+      status: 403,
+      detail: 'Token inválido o expirado. Por favor inicia sesión nuevamente.',
+    });
+  }
 }
 
 /** Optional Auth: Attaches user if valid token present, doesn't block if missing */
-export function optionalAuth(req, res, next) {
+export async function optionalAuth(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.startsWith('Bearer ')
     ? authHeader.split(' ')[1]
@@ -64,7 +89,27 @@ export function optionalAuth(req, res, next) {
       const decoded = jwt.verify(token, JWT_SECRET);
       req.user = decoded;
     } catch {
-      req.user = null;
+      if (isSupabaseConfigured) {
+        try {
+          const { data, error } = await supabaseAdmin.auth.getUser(token);
+          if (!error && data?.user) {
+            const u = data.user;
+            req.user = {
+              id: u.id,
+              email: u.email,
+              role: u.app_metadata?.role || u.user_metadata?.role || 'passenger',
+              provider: u.app_metadata?.provider || (u.identities?.[0]?.provider) || 'email',
+              authSource: 'supabase'
+            };
+          } else {
+            req.user = null;
+          }
+        } catch {
+          req.user = null;
+        }
+      } else {
+        req.user = null;
+      }
     }
   } else {
     req.user = null;

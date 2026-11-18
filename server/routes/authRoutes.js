@@ -8,6 +8,7 @@ import { AuthService } from '../services/authService.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { writeLimiter, authLimiter } from '../middleware/rateLimiter.js';
 import { supabaseAdmin } from '../supabase.js';
+import { deleteUserAccount } from '../services/accountDeletionService.js';
 
 export const authRouter = Router();
 
@@ -120,55 +121,21 @@ authRouter.get('/me/export', authenticateToken, async (req, res) => {
   });
 });
 
-/** DELETE /api/v1/auth/me — ARCO: Supresión / Cancelación de cuenta (Ley 8968) */
+/** DELETE /api/v1/auth/me — ARCO: Supresión / Cancelación definitiva de cuenta (Ley 8968 / GDPR Art. 17) */
 authRouter.delete('/me', authenticateToken, writeLimiter, async (req, res) => {
-  const userId = req.user.id;
-  let authDeleted = false;
-  let tableDeleted = false;
-  const errors = [];
-
-  // Intento 1: Eliminar de Supabase Auth usando service role key (admin)
   try {
-    const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
-    if (!authErr) {
-      authDeleted = true;
-    } else {
-      errors.push('auth.admin.deleteUser: ' + authErr.message);
-    }
-  } catch (e) {
-    errors.push('auth.admin.deleteUser threw: ' + e.message);
-  }
-
-  // Intento 2 (siempre): Eliminar de la tabla pública `users`
-  try {
-    const { error: tableErr } = await supabaseAdmin.from('users').delete().eq('id', userId);
-    if (!tableErr) {
-      tableDeleted = true;
-    } else {
-      errors.push('users.delete: ' + tableErr.message);
-    }
-  } catch (e) {
-    errors.push('users.delete threw: ' + e.message);
-  }
-
-  // Si al menos la tabla fue limpiada, consideramos la operación exitosa
-  // (el usuario de Auth quedará huérfano pero sin datos personales)
-  if (authDeleted || tableDeleted) {
-    console.log(`[Account] Cuenta eliminada userId=${userId} auth=${authDeleted} table=${tableDeleted}`);
-    return res.json({
-      status: 'success',
-      message: 'Cuenta y datos personales eliminados conforme a la Ley 8968',
-      authDeleted,
-      tableDeleted,
+    const result = await deleteUserAccount({
+      user: req.user,
+      body: req.body,
+    });
+    return res.json(result);
+  } catch (err) {
+    const status = err.status || 500;
+    return res.status(status).json({
+      type: 'about:blank',
+      title: err.title || (status === 400 ? 'Bad Request' : status === 401 ? 'Unauthorized' : status === 409 ? 'Conflict' : 'Internal Server Error'),
+      status,
+      detail: err.message || 'Error al procesar la supresión definitiva de la cuenta.',
     });
   }
-
-  // Si todo falló, retornar error descriptivo
-  console.error(`[Account] No se pudo eliminar userId=${userId}:`, errors);
-  return res.status(500).json({
-    type: 'about:blank',
-    title: 'Internal Server Error',
-    status: 500,
-    detail: 'No se pudo eliminar la cuenta. ' + (errors[0] || 'Error desconocido.'),
-  });
 });

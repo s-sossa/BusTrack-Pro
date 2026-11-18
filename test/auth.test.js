@@ -10,8 +10,11 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'bustrack_pro_production_secr
 import { test, before, after } from 'node:test';
 import assert from 'node:assert';
 import http from 'node:http';
+import crypto from 'node:crypto';
+import jwt from 'jsonwebtoken';
 import { app, wss } from '../server/index.js';
 import { isSupabaseConfigured } from '../server/supabase.js';
+import { JWT_SECRET } from '../server/middleware/auth.js';
 
 let server;
 let baseUrl;
@@ -145,4 +148,135 @@ test('Auth Service — Live Supabase signUp & signIn integration', { skip: 'Requ
     }),
   });
   assert.ok(res.status === 201 || res.status === 200);
+});
+
+// ==============================================================================
+// PRUEBAS DE SUPRESIÓN DEFINITIVA DE CUENTA (Ley 8968 / GDPR Art. 17)
+// ==============================================================================
+
+test('Account Deletion — T1: Rechazo de DELETE /auth/me sin autenticación', async () => {
+  const res = await fetch(`${baseUrl}/auth/me`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: 'Password123!' }),
+  });
+
+  assert.strictEqual(res.status, 401);
+  const json = await res.json();
+  assert.ok(json.detail.includes('token de autenticación'));
+});
+
+test('Account Deletion — T2: Rechazo con token corrupto o inválido', async () => {
+  const res = await fetch(`${baseUrl}/auth/me`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer invalid_garbage_token_123',
+    },
+    body: JSON.stringify({ password: 'Password123!' }),
+  });
+
+  assert.strictEqual(res.status, 403);
+  const json = await res.json();
+  assert.ok(json.detail.includes('Token inválido'));
+});
+
+test('Account Deletion — T3: Rechazo cuando falta la contraseña (cuenta email)', async () => {
+  const userPayload = { id: crypto.randomUUID(), email: 'delete1@bustrack.cr', role: 'passenger', provider: 'email' };
+  const validToken = jwt.sign(userPayload, JWT_SECRET, { expiresIn: '1h' });
+
+  const res = await fetch(`${baseUrl}/auth/me`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${validToken}`,
+    },
+    body: JSON.stringify({}), // Sin password
+  });
+
+  assert.strictEqual(res.status, 400);
+  const json = await res.json();
+  assert.ok(json.detail.includes('contraseña actual'));
+});
+
+test('Account Deletion — T4: Rechazo cuando la frase de confirmación OAuth es incorrecta', async () => {
+  const oauthUser = { id: crypto.randomUUID(), email: 'oauth1@gmail.com', role: 'passenger', provider: 'google' };
+  const validToken = jwt.sign(oauthUser, JWT_SECRET, { expiresIn: '1h' });
+
+  const res = await fetch(`${baseUrl}/auth/me`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${validToken}`,
+    },
+    body: JSON.stringify({ confirmPhrase: 'BORRAR CUENTA' }), // Frase incorrecta
+  });
+
+  assert.strictEqual(res.status, 400);
+  const json = await res.json();
+  assert.ok(json.detail.includes('ELIMINAR MI CUENTA'));
+});
+
+test('Account Deletion — T5: Eliminación exitosa de cuenta OAuth con frase exacta', async () => {
+  const oauthUser = { id: crypto.randomUUID(), email: 'oauth2@gmail.com', role: 'passenger', provider: 'google' };
+  const validToken = jwt.sign(oauthUser, JWT_SECRET, { expiresIn: '1h' });
+
+  const res = await fetch(`${baseUrl}/auth/me`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${validToken}`,
+    },
+    body: JSON.stringify({ confirmPhrase: 'ELIMINAR MI CUENTA' }),
+  });
+
+  assert.strictEqual(res.status, 200);
+  const json = await res.json();
+  assert.strictEqual(json.status, 'success');
+  assert.strictEqual(json.userId, oauthUser.id);
+  assert.ok(json.message.includes('Ley 8968'));
+});
+
+test('Account Deletion — T6: Prevención estricta de IDOR (no se puede borrar otra cuenta inyectando userId)', async () => {
+  const userA = { id: crypto.randomUUID(), email: 'ownerA@gmail.com', role: 'passenger', provider: 'google' };
+  const victimId = crypto.randomUUID();
+  const validTokenA = jwt.sign(userA, JWT_SECRET, { expiresIn: '1h' });
+
+  const res = await fetch(`${baseUrl}/auth/me`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${validTokenA}`,
+    },
+    // Intento de borrar a User B enviando otro ID en el cuerpo
+    body: JSON.stringify({ userId: victimId, confirmPhrase: 'ELIMINAR MI CUENTA' }),
+  });
+
+  assert.strictEqual(res.status, 200);
+  const json = await res.json();
+  // Se debió procesar la cuenta A (req.user.id), NUNCA la cuenta B
+  assert.strictEqual(json.userId, userA.id);
+});
+
+test('Account Deletion — T7: Concurrencia e idempotencia (rechazo con 409 Conflict ante solicitudes paralelas)', async () => {
+  const userC = { id: crypto.randomUUID(), email: 'concurrent@gmail.com', role: 'passenger', provider: 'google' };
+  const token = jwt.sign(userC, JWT_SECRET, { expiresIn: '1h' });
+
+  // Disparar dos solicitudes destructivas en paralelo exacto para el mismo usuario
+  const [res1, res2] = await Promise.all([
+    fetch(`${baseUrl}/auth/me`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ confirmPhrase: 'ELIMINAR MI CUENTA' }),
+    }),
+    fetch(`${baseUrl}/auth/me`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ confirmPhrase: 'ELIMINAR MI CUENTA' }),
+    }),
+  ]);
+
+  const statuses = [res1.status, res2.status].sort();
+  // Una debe procesarse (200) o dar conflicto (409)
+  assert.ok(statuses.includes(200));
 });

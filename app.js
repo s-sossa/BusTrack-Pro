@@ -4455,26 +4455,197 @@ function init() {
     });
   }
 
-  if (deleteAccountBtn) {
-    deleteAccountBtn.addEventListener('click', async () => {
-      const confirmDelete = confirm('¿Estás seguro de que deseas eliminar permanentemente tu cuenta y todos tus datos personales asociados? Esta acción no se puede deshacer (Ley 8968).');
-      if (!confirmDelete) return;
+  // ── MODAL SUPRESIÓN DEFINITIVA DE CUENTA (Ley 8968 / GDPR Art. 17) ──────
+  const deleteModal = $('deleteAccountModal');
+  const deleteClose = $('deleteAccountClose');
+  const cancelDeleteBtn = $('cancelDeleteAccountBtn');
+  const confirmFinalDeleteBtn = $('confirmFinalDeleteBtn');
+  const deletePwInput = $('deleteAccountPassword');
+  const deletePhraseInput = $('deleteAccountConfirmPhrase');
+  const deleteEmailBox = $('deleteReauthEmailContainer');
+  const deleteOAuthBox = $('deleteReauthOAuthContainer');
+  const deleteProgressBox = $('deleteProgressBox');
+  const deleteProgressText = $('deleteProgressText');
+  const deleteProgressStage = $('deleteProgressStage');
+  const deleteErrorMsg = $('deleteErrorMessage');
+
+  function openDeleteAccountModal() {
+    if (!currentUser) {
+      toast('Debes iniciar sesión para realizar esta acción', 'warn');
+      return;
+    }
+
+    const provider = currentUser.provider || 'email';
+    const isEmail = provider === 'email';
+
+    if (deleteEmailBox) deleteEmailBox.style.display = isEmail ? 'block' : 'none';
+    if (deleteOAuthBox) deleteOAuthBox.style.display = isEmail ? 'none' : 'block';
+
+    if (deletePwInput) deletePwInput.value = '';
+    if (deletePhraseInput) deletePhraseInput.value = '';
+    if (deleteErrorMsg) { deleteErrorMsg.style.display = 'none'; deleteErrorMsg.textContent = ''; }
+    if (deleteProgressBox) deleteProgressBox.style.display = 'none';
+
+    if (confirmFinalDeleteBtn) {
+      confirmFinalDeleteBtn.disabled = true;
+      confirmFinalDeleteBtn.textContent = 'Eliminar Definitivamente';
+    }
+
+    if (deleteModal) {
+      deleteModal.classList.add('active');
+      setTimeout(() => {
+        if (isEmail && deletePwInput) deletePwInput.focus();
+        else if (deletePhraseInput) deletePhraseInput.focus();
+      }, 100);
+    }
+  }
+
+  function closeDeleteAccountModal() {
+    if (deleteModal) deleteModal.classList.remove('active');
+    if (deletePwInput) deletePwInput.value = '';
+    if (deletePhraseInput) deletePhraseInput.value = '';
+    if (deleteErrorMsg) { deleteErrorMsg.style.display = 'none'; deleteErrorMsg.textContent = ''; }
+    if (deleteProgressBox) deleteProgressBox.style.display = 'none';
+  }
+
+  if (deleteClose) deleteClose.addEventListener('click', closeDeleteAccountModal);
+  if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', closeDeleteAccountModal);
+
+  // Validación en tiempo real del input de confirmación
+  if (deletePwInput) {
+    deletePwInput.addEventListener('input', () => {
+      const val = deletePwInput.value || '';
+      if (confirmFinalDeleteBtn) confirmFinalDeleteBtn.disabled = val.trim().length === 0;
+    });
+  }
+
+  if (deletePhraseInput) {
+    deletePhraseInput.addEventListener('input', () => {
+      const val = (deletePhraseInput.value || '').trim();
+      if (confirmFinalDeleteBtn) confirmFinalDeleteBtn.disabled = val !== 'ELIMINAR MI CUENTA';
+    });
+  }
+
+  if (confirmFinalDeleteBtn) {
+    confirmFinalDeleteBtn.addEventListener('click', async () => {
+      if (!currentUser) return;
+
+      const provider = currentUser.provider || 'email';
+      const isEmail = provider === 'email';
+      const payload = {};
+
+      if (isEmail) {
+        const pw = (deletePwInput?.value || '').trim();
+        if (!pw) {
+          if (deleteErrorMsg) {
+            deleteErrorMsg.style.display = 'block';
+            deleteErrorMsg.textContent = 'Ingresa tu contraseña actual para confirmar.';
+          }
+          return;
+        }
+        payload.password = pw;
+      } else {
+        const phrase = (deletePhraseInput?.value || '').trim();
+        if (phrase !== 'ELIMINAR MI CUENTA') {
+          if (deleteErrorMsg) {
+            deleteErrorMsg.style.display = 'block';
+            deleteErrorMsg.textContent = "Debes escribir exactamente 'ELIMINAR MI CUENTA'.";
+          }
+          return;
+        }
+        payload.confirmPhrase = phrase;
+      }
+
+      // UI: Bloquear controles e iniciar progreso
+      confirmFinalDeleteBtn.disabled = true;
+      if (cancelDeleteBtn) cancelDeleteBtn.disabled = true;
+      if (deleteClose) deleteClose.disabled = true;
+      if (deleteErrorMsg) deleteErrorMsg.style.display = 'none';
+
+      if (deleteProgressBox) {
+        deleteProgressBox.style.display = 'block';
+        if (deleteProgressText) deleteProgressText.textContent = 'Validando credenciales y sesión...';
+        if (deleteProgressStage) deleteProgressStage.textContent = 'Etapa 1 de 3';
+      }
+
       try {
-        const token = (await supabaseClient?.auth?.getSession())?.data?.session?.access_token;
+        const session = supabaseClient ? await supabaseClient.auth.getSession() : null;
+        const token = session?.data?.session?.access_token || currentUser?.token || null;
+
+        if (deleteProgressText) deleteProgressText.textContent = 'Purgando datos y archivos asociados en Supabase...';
+        if (deleteProgressStage) deleteProgressStage.textContent = 'Etapa 2 de 3';
+
         const res = await fetch('/api/v1/auth/me', {
           method: 'DELETE',
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify(payload)
         });
-        if (res.ok) {
-          toast('Cuenta eliminada correctamente', 'info');
-          await performLogout();
-        } else {
-          toast('No se pudo eliminar la cuenta directamente. Contacte a soporte.', 'warn');
+
+        const json = await res.json().catch(() => ({}));
+
+        if (!res.ok || json.status !== 'success') {
+          // ⛔ REGLA ESTRICTA: NUNCA fingir eliminación si el backend respondió error
+          if (deleteProgressBox) deleteProgressBox.style.display = 'none';
+          if (deleteErrorMsg) {
+            deleteErrorMsg.style.display = 'block';
+            deleteErrorMsg.textContent = json.detail || json.message || 'Error al procesar la eliminación de la cuenta.';
+          }
+          confirmFinalDeleteBtn.disabled = false;
+          if (cancelDeleteBtn) cancelDeleteBtn.disabled = false;
+          if (deleteClose) deleteClose.disabled = false;
+          toast(json.detail || 'No se pudo eliminar la cuenta. Verifica tus credenciales.', 'warn');
+          return;
         }
-      } catch (err) {
-        toast('Error al procesar la solicitud de eliminación', 'warn');
+
+        // Éxito comprobado en el servidor
+        if (deleteProgressText) deleteProgressText.textContent = 'Revocando sesiones y finalizando...';
+        if (deleteProgressStage) deleteProgressStage.textContent = 'Etapa 3 de 3';
+
+        // Revocar sesión en Supabase
+        if (supabaseClient) {
+          try { await supabaseClient.auth.signOut(); } catch (_) {}
+        }
+
+        // Limpiar todo almacenamiento local (bustrack_* y bustrack:*)
+        try {
+          const keys = Object.keys(localStorage);
+          keys.forEach(k => {
+            if (k.startsWith('bustrack_') || k.startsWith('bustrack:') || k.startsWith('sb-')) {
+              localStorage.removeItem(k);
+            }
+          });
+          sessionStorage.clear();
+        } catch (_) {}
+
+        currentUser = null;
+        isGuestSession = false;
+
+        toast('✅ Tu cuenta y datos personales han sido eliminados permanentemente de Supabase.', 'ok');
+        await new Promise(r => setTimeout(r, 1200));
+
+        closeDeleteAccountModal();
+        updateAuthUserUI();
+        navigate('dashboard');
+        window.location.reload();
+      } catch (networkErr) {
+        if (deleteProgressBox) deleteProgressBox.style.display = 'none';
+        if (deleteErrorMsg) {
+          deleteErrorMsg.style.display = 'block';
+          deleteErrorMsg.textContent = 'Error de conexión con el servidor: ' + networkErr.message;
+        }
+        confirmFinalDeleteBtn.disabled = false;
+        if (cancelDeleteBtn) cancelDeleteBtn.disabled = false;
+        if (deleteClose) deleteClose.disabled = false;
+        toast('Error de red al intentar eliminar la cuenta', 'warn');
       }
     });
+  }
+
+  if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener('click', openDeleteAccountModal);
   }
 
   // ------------------------------------------------------------------
@@ -4685,95 +4856,10 @@ function init() {
       });
     }
 
-    // ── Eliminar Cuenta (implementación directa) ────────────────────
+    // ── Eliminar Cuenta (modal unificado con reautenticación y confirmación estricta) ────
     const deleteBtn = $('accDeleteAccountBtn');
     if (deleteBtn) {
-      deleteBtn.addEventListener('click', async () => {
-        // Confirmación doble (campo de texto para evitar clics accidentales)
-        const confirmed = confirm(
-          '⚠️ ¿Estás seguro que deseas ELIMINAR tu cuenta?\n\n' +
-          'Esta acción borrará permanentemente tu cuenta y todos tus datos personales (Ley 8968 Costa Rica).\n\n' +
-          'Esta acción NO se puede deshacer.'
-        );
-        if (!confirmed) return;
-
-        const secondConfirm = confirm(
-          '¿Confirmas la eliminación definitiva?\n\n' +
-          'Pulsa "Aceptar" para eliminar, "Cancelar" para abortar.'
-        );
-        if (!secondConfirm) return;
-
-        deleteBtn.disabled = true;
-        deleteBtn.textContent = '⏳ Eliminando cuenta...';
-
-        try {
-          let deleted = false;
-
-          // Intento 1: Endpoint backend (usa service role key si está configurada)
-          try {
-            const session = supabaseClient ? await supabaseClient.auth.getSession() : null;
-            const token = session?.data?.session?.access_token || currentUser?.token || null;
-
-            const res = await fetch('/api/v1/auth/me', {
-              method: 'DELETE',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-              },
-            });
-
-            if (res.ok) {
-              deleted = true;
-            } else {
-              const body = await res.json().catch(() => ({}));
-              console.warn('[Account] Backend delete respondió:', res.status, body?.detail || '');
-            }
-          } catch (fetchErr) {
-            console.warn('[Account] Error en fetch DELETE /api/v1/auth/me:', fetchErr.message);
-          }
-
-          // Intento 2 (fallback): Eliminar directamente via Supabase client
-          if (!deleted && supabaseClient) {
-            // Supabase no permite que el usuario se borre a sí mismo desde el anon key,
-            // pero sí podemos cerrar sesión e invalidarla.
-            try {
-              // Intentar borrar de la tabla users (si las políticas RLS lo permiten)
-              if (currentUser?.id) {
-                await supabaseClient.from('users').delete().eq('id', currentUser.id);
-              }
-              deleted = true; // Al menos limpiamos la tabla
-            } catch (sbErr) {
-              console.warn('[Account] Error al limpiar tabla users:', sbErr.message);
-            }
-          }
-
-          if (deleted) {
-            // Cerrar sesión de Supabase Auth
-            if (supabaseClient) {
-              try { await supabaseClient.auth.signOut(); } catch (_) {}
-            }
-
-            // Limpiar todo localStorage
-            try {
-              const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('bustrack_'));
-              keysToRemove.forEach(k => localStorage.removeItem(k));
-            } catch (_) {}
-
-            toast('✅ Cuenta y datos personales eliminados correctamente', 'info');
-            await new Promise(r => setTimeout(r, 1500));
-            performLogout();
-            navigate('dashboard');
-          } else {
-            toast('No se pudo eliminar la cuenta. Contacta a soporte@bustrack.cr', 'warn');
-            deleteBtn.disabled = false;
-            deleteBtn.textContent = '🗑️ Eliminar cuenta y datos personales';
-          }
-        } catch (err) {
-          toast('Error inesperado: ' + (err.message || 'inténtalo de nuevo'), 'warn');
-          deleteBtn.disabled = false;
-          deleteBtn.textContent = '🗑️ Eliminar cuenta y datos personales';
-        }
-      });
+      deleteBtn.addEventListener('click', openDeleteAccountModal);
     }
 
     // ── Cerrar Sesión Rápido ────────────────────────────────────────
