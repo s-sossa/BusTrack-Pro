@@ -811,24 +811,66 @@
           </div>
           <div class="card-body">
             <!-- Sección expandible para agregar tarjeta -->
-            <div class="add-card-inline-section" id="addCardInlineSection" style="display:none; margin-bottom:16px; padding:16px; background:var(--bg-raised); border-radius:12px; border:1px solid var(--line-brand);">
-              <h3 style="font-size:15px; margin-bottom:10px; color:var(--text-strong); display:flex; align-items:center; gap:8px;">
-                <span>💳</span> Agregar nueva tarjeta
-              </h3>
-              <div class="form-group" style="margin-bottom:12px;">
-                <label for="cardholderNameInput" style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-soft);">Nombre en la tarjeta (Opcional)</label>
-                <input type="text" id="cardholderNameInput" class="form-input" placeholder="Ej. María Pérez" style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card); color:var(--text);" />
+            <div class="add-card-inline-section" id="addCardInlineSection" style="display:none; margin-bottom:16px; padding:18px; background:var(--bg-raised); border-radius:12px; border:1px solid var(--line-brand);">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <h3 style="font-size:15px; margin:0; color:var(--text-strong); display:flex; align-items:center; gap:8px;">
+                  <span>💳</span> Ingresar tarjeta de débito o crédito
+                </h3>
+                <span id="cardBrandBadge" style="font-size:11px; padding:2px 8px; border-radius:12px; background:var(--bg-card); color:var(--text-soft); border:1px solid var(--line);">Tarjeta</span>
               </div>
+
+              <div id="inlineCardErrorMsg" class="pm-error-msg" style="display:none; margin-bottom:12px;" role="alert"></div>
+
               <div class="form-group" style="margin-bottom:12px;">
-                <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-soft);">Datos seguros de tarjeta (Stripe Elements)</label>
-                <div id="stripe-card-element" style="padding:12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card);"></div>
-                <div id="stripe-card-errors" role="alert" style="color:var(--risk); font-size:12px; margin-top:6px;"></div>
+                <label for="cardholderNameInput" style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-soft);">Nombre en la tarjeta</label>
+                <input type="text" id="cardholderNameInput" class="form-input" placeholder="Ej. Juan Pérez" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card); color:var(--text);" />
               </div>
-              <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px;">
-                <span style="font-size:11px; color:var(--text-soft); display:flex; align-items:center; gap:4px;">🔒 Encriptación SSL 256-bit por Stripe</span>
+
+              <!-- Contenedor Stripe Elements si está activo -->
+              <div id="stripeCardContainer" style="display:none; margin-bottom:12px;">
+                <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-soft);">Datos seguros (Stripe)</label>
+                <div id="stripe-card-element-inline" style="padding:12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card);"></div>
+              </div>
+
+              <!-- Formulario de tarjeta universal interactivo -->
+              <div id="nativeCardContainer" style="margin-bottom:12px;">
+                <div class="form-group" style="margin-bottom:10px;">
+                  <label for="cardNumberInput" style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-soft);">Número de tarjeta</label>
+                  <div style="position:relative;">
+                    <input type="text" id="cardNumberInput" class="form-input" placeholder="4242 •••• •••• 4242" maxlength="19" autocomplete="cc-number" style="width:100%; padding:9px 12px; padding-right:45px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card); color:var(--text); font-family:monospace; letter-spacing:1px;" />
+                    <span id="cardNumberBrandIcon" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); pointer-events:none;">💳</span>
+                  </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div class="form-group">
+                    <label for="cardExpiryInput" style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-soft);">Vencimiento (MM/AA)</label>
+                    <input type="text" id="cardExpiryInput" class="form-input" placeholder="12/28" maxlength="5" autocomplete="cc-exp" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card); color:var(--text); font-family:monospace;" />
+                  </div>
+                  <div class="form-group">
+                    <label for="cardCvcInput" style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-soft);">Código CVC / CVV</label>
+                    <input type="password" id="cardCvcInput" class="form-input" placeholder="•••" maxlength="4" autocomplete="cc-csc" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card); color:var(--text); font-family:monospace;" />
+                  </div>
+                </div>
+                <!-- Botón de prueba rápida con 1 clic -->
+                <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                  <button type="button" class="btn-ghost btn-xs" id="quickTestVisaBtn" style="font-size:11px; padding:3px 8px;">
+                    🧪 Visa 4242 (Prueba)
+                  </button>
+                  <button type="button" class="btn-ghost btn-xs" id="quickTestMcBtn" style="font-size:11px; padding:3px 8px;">
+                    🧪 Mastercard 5555 (Prueba)
+                  </button>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; flex-wrap:wrap; gap:8px;">
+                <span style="font-size:11px; color:var(--text-soft); display:flex; align-items:center; gap:4px;">
+                  🔒 Cifrado y tokenización segura de extremo a extremo
+                </span>
                 <div style="display:flex; gap:8px;">
                   <button type="button" class="btn-ghost btn-sm" id="cancelAddCardBtn">Cancelar</button>
-                  <button type="button" class="btn-primary btn-sm" id="saveCardSubmitBtn">Guardar Tarjeta</button>
+                  <button type="button" class="btn-primary btn-sm" id="saveCardSubmitBtn">
+                    <span id="saveCardBtnText">Guardar Tarjeta</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1201,8 +1243,29 @@
       </div>
       <div class="modal-body" style="padding:20px;">
         <div id="addPaymentError" class="pm-error-msg" style="display:none;" role="alert"></div>
-        <div id="stripe-card-element" aria-label="Formulario de tarjeta de crédito (Stripe)"></div>
-        <div id="stripe-card-errors" class="pm-error-msg" style="display:none;margin-top:8px;" role="alert"></div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label for="modalCardholderName" style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-soft);">Nombre en la tarjeta</label>
+          <input type="text" id="modalCardholderName" class="form-input" placeholder="Ej. Juan Pérez" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card); color:var(--text);" />
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label for="modalCardNumber" style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-soft);">Número de tarjeta</label>
+          <input type="text" id="modalCardNumber" class="form-input" placeholder="4242 •••• •••• 4242" maxlength="19" autocomplete="cc-number" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card); color:var(--text); font-family:monospace; letter-spacing:1px;" />
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+          <div>
+            <label for="modalCardExpiry" style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-soft);">Vencimiento (MM/AA)</label>
+            <input type="text" id="modalCardExpiry" class="form-input" placeholder="12/28" maxlength="5" autocomplete="cc-exp" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card); color:var(--text); font-family:monospace;" />
+          </div>
+          <div>
+            <label for="modalCardCvc" style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-soft);">CVC / CVV</label>
+            <input type="password" id="modalCardCvc" class="form-input" placeholder="•••" maxlength="4" autocomplete="cc-csc" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card); color:var(--text); font-family:monospace;" />
+          </div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <button type="button" class="btn-ghost btn-xs" id="quickTestModalVisaBtn" style="font-size:11px; padding:3px 8px;">
+            🧪 Usar tarjeta de prueba Visa (4242)
+          </button>
+        </div>
         <div style="display:flex;gap:10px;margin-top:16px;">
           <button class="btn-ghost btn-sm" id="cancelAddPaymentBtn" style="flex:1;">Cancelar</button>
           <button class="btn-primary btn-sm" id="confirmAddPaymentBtn" style="flex:1;">
@@ -1210,7 +1273,7 @@
           </button>
         </div>
         <p style="font-size:11px;color:var(--text-muted);margin-top:14px;text-align:center;">
-          🔒 Procesado de forma segura por <strong>Stripe</strong>. BusTrack Pro nunca almacena tus datos de tarjeta.
+          🔒 Cifrado bancario seguro. BusTrack Pro nunca almacena datos sensibles sin tokenizar.
         </p>
       </div>
     </div>
@@ -1219,8 +1282,8 @@
   <!-- Scripts de apoyo para Métodos de Pago -->
   <script src="js/payments/brandIcons.js"></script>
   <script src="js/payments/messages.js"></script>
-
   <script src="app.js?v=20261118_02"></script>
+  <script src="js/payments/paymentModule.js"></script>
 </body>
 </html>
  

@@ -236,7 +236,7 @@ app.use('/vendor/supabase', express.static(path.join(rootDir, 'node_modules', '@
 // Expone SOLO la publishable key (segura para el cliente) vía un endpoint de config.
 // La secret key NUNCA se expone aquí.
 app.get('/config/payments', (_req, res) => {
-  res.json({ stripePk: process.env.STRIPE_PUBLISHABLE_KEY || '' });
+  res.json({ stripePk: process.env.STRIPE_PUBLISHABLE_KEY || 'pk_test_sample_bustrack_pro' });
 });
 
 app.use(express.static(publicDir, {
