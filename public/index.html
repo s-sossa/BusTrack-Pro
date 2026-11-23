@@ -27,7 +27,7 @@
     })();
   </script>
   <title>BusTrack Pro — Rastreo de flotas en tiempo real</title>
-  <meta name="description" content="Panel de rastreo de flotas de buses: mapa en vivo, estado de la flota, rutas, horarios y reportes." />
+  <meta name="description" content="Panel de rastreo de flotas de buses: mapa en vivo, estado de la flota, rutas y horarios oficiales." />
   <!-- CSP aligned with server/index.js Helmet policy; primary enforcement is server-side. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; script-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https://ui-avatars.com https://*.ui-avatars.com https://unpkg.com https://*.arcgisonline.com https://server.arcgisonline.com https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.basemaps.cartocdn.com https://api.dicebear.com https://images.unsplash.com https://cdnjs.cloudflare.com; connect-src 'self' ws: wss: https://*.supabase.co wss://*.supabase.co https://jhuvaqrdhkzxqmvcrlws.supabase.co wss://jhuvaqrdhkzxqmvcrlws.supabase.co https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://server.arcgisonline.com https://services.arcgisonline.com https://*.arcgisonline.com https://*.basemaps.cartocdn.com https://basemaps.cartocdn.com https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://api.dicebear.com https://ui-avatars.com https://*.ui-avatars.com;" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b6ef5'/><rect x='8' y='7' width='16' height='16' rx='4' fill='none' stroke='white' stroke-width='2'/><path d='M8 15h16' stroke='white' stroke-width='2'/></svg>" />
@@ -129,35 +129,6 @@
           </span>
           <span class="home-chip" id="chipRoutes">—</span>
         </button>
- 
- 
-        <button class="home-tile" data-go="reports" style="--tone:var(--brand-500)">
-          <span class="home-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M6 3.5h7.2L19 9v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 20V5a1.5 1.5 0 0 1 1-1.5Z"/>
-              <path d="M13 3.6V9h5.4M9 17v-2.5M12 17v-5M15 17v-3.5"/>
-            </svg>
-          </span>
-          <span class="home-tile-text">
-            <span class="home-tile-name">Reportes</span>
-            <span class="home-tile-desc">Gráficos, resumen e impresión</span>
-          </span>
-          <span class="home-chip" id="chipReports">—</span>
-        </button>
- 
-        <button class="home-tile" data-go="drivers" style="--tone:var(--ok)">
-          <span class="home-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"/>
-              <path d="M16 5.2a3.2 3.2 0 0 1 0 5.6M17 14.6a5.5 5.5 0 0 1 3.5 4.9"/>
-            </svg>
-          </span>
-          <span class="home-tile-text">
-            <span class="home-tile-name">Conductores</span>
-            <span class="home-tile-desc">Turnos, viajes y calificación</span>
-          </span>
-          <span class="home-chip" id="chipDrivers">—</span>
-        </button>
       </nav>
     </div>
   </div>
@@ -221,20 +192,6 @@
           <li class="nav-item" id="nav-routes" data-view="routes" role="button" tabindex="0" title="Rutas">
             <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M4 3a2 2 0 100 4 2 2 0 000-4zm12 10a2 2 0 100 4 2 2 0 000-4zM4 8.5v3a3.5 3.5 0 003.5 3.5h5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M16 11.5v-3A3.5 3.5 0 0012.5 5h-5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
             <span>Rutas</span>
-          </li>
-
-        </ul>
-      </div>
-      <div class="nav-section">
-        <span class="nav-label">Análisis</span>
-        <ul class="nav-list">
-          <li class="nav-item" id="nav-reports" data-view="reports" role="button" tabindex="0" title="Reportes">
-            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v7a1 1 0 102 0V8z" clip-rule="evenodd"/></svg>
-            <span>Reportes</span>
-          </li>
-          <li class="nav-item" id="nav-drivers" data-view="drivers" role="button" tabindex="0" title="Conductores">
-            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
-            <span>Conductores</span>
           </li>
         </ul>
       </div>
@@ -346,7 +303,7 @@
       <div class="topbar-right">
         <div class="search-bar">
           <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.48l4.82 4.81a1 1 0 01-1.42 1.42l-4.81-4.82A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-          <input type="search" id="globalSearch" placeholder="Buscar bus, placa, ruta o conductor" aria-label="Búsqueda global" autocomplete="off" />
+          <input type="search" id="globalSearch" placeholder="Buscar bus, placa o ruta" aria-label="Búsqueda global" autocomplete="off" />
         </div>
         <button class="icon-btn only-mobile" id="mobileSearchBtn" aria-label="Buscar">
           <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.48l4.82 4.81a1 1 0 01-1.42 1.42l-4.81-4.82A6 6 0 012 8z" clip-rule="evenodd"/></svg>
@@ -603,29 +560,6 @@
       <div class="routes-grid" id="routesGrid"></div>
     </section>
  
-    <!-- ============ REPORTES ============ -->
-    <section class="view" id="view-reports">
-      <div class="reports-container">
-        <div class="reports-header">
-          <h2>Reportes y analíticas</h2>
-          <div class="report-actions">
-            <button class="btn-ghost" id="printReportBtn">Imprimir / PDF</button>
-            <button class="btn-primary" id="generateReportBtn">Generar reporte</button>
-          </div>
-        </div>
-        <div class="report-summary" id="reportSummary" hidden></div>
-        <div class="reports-grid">
-          <div class="card report-card"><h3>Eficiencia por ruta</h3><canvas id="reportChart1" height="200"></canvas></div>
-          <div class="card report-card"><h3>Pasajeros por ruta</h3><canvas id="reportChart2" height="200"></canvas></div>
-          <div class="card report-card full-width"><h3>Retraso promedio — últimas 4 semanas</h3><canvas id="reportChart3" height="160"></canvas></div>
-        </div>
-      </div>
-    </section>
- 
-    <!-- ============ CONDUCTORES ============ -->
-    <section class="view" id="view-drivers">
-      <div class="drivers-grid" id="driversGrid"></div>
-    </section>
 
     <!-- ============ MI CUENTA / PERFIL DE USUARIO ============ -->
     <section class="view" id="view-account">
@@ -818,14 +752,12 @@
           </select>
         </div>
         <div class="modal-info-grid">
-          <div class="modal-info-item"><span class="info-label">Conductor</span><span class="info-value" id="modalDriver">—</span></div>
           <div class="modal-info-item"><span class="info-label">Placa</span><span class="info-value" id="modalPlate">—</span></div>
           <div class="modal-info-item"><span class="info-label">Próxima parada</span><span class="info-value" id="modalNextStop">—</span></div>
           <div class="modal-info-item"><span class="info-label">Llegada estimada</span><span class="info-value" id="modalETA">—</span></div>
         </div>
         <div class="modal-actions">
           <button class="btn-primary" id="trackBusBtn">Rastrear en el mapa</button>
-          <button class="btn-ghost" id="contactDriverBtn">Contactar conductor</button>
         </div>
       </div>
     </div>
@@ -1023,7 +955,7 @@
     <div class="command-palette-box" role="dialog" aria-modal="true" aria-label="Búsqueda rápida y comandos">
       <div class="cmd-header">
         <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.48l4.82 4.81a1 1 0 01-1.42 1.42l-4.81-4.82A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-        <input type="search" id="cmdInput" placeholder="Escribe un comando o busca un bus, ruta, conductor..." autocomplete="off" />
+        <input type="search" id="cmdInput" placeholder="Escribe un comando o busca un bus o ruta..." autocomplete="off" />
         <span class="cmd-key">ESC</span>
       </div>
       <div class="cmd-results" id="cmdResults">
@@ -1077,17 +1009,6 @@
             </select>
           </div>
           <div class="form-group">
-            <label for="newBusDriver">Conductor Asignado</label>
-            <select id="newBusDriver" class="status-select-lg" style="width:100%" required>
-              <option value="D001">Carlos Mendoza</option>
-              <option value="D002">Ana García</option>
-              <option value="D003">Roberto López</option>
-              <option value="D004">María Flores</option>
-              <option value="D005">Jorge Ramírez</option>
-              <option value="D006">Lucía Castro</option>
-            </select>
-          </div>
-          <div class="form-group">
             <label for="newBusPlate">Número de Placa</label>
             <input type="text" id="newBusPlate" placeholder="ej. SJ-9842" required />
           </div>
@@ -1097,31 +1018,6 @@
     </div>
   </div>
 
-  <!-- ============ MODAL CONTACTAR CONDUCTOR ============ -->
-  <div class="modal-overlay" id="contactDriverModal">
-    <div class="modal modal-narrow" role="dialog" aria-modal="true" aria-labelledby="contactTitle">
-      <div class="modal-header">
-        <div class="modal-title-area">
-          <h2 id="contactTitle">Contactar Conductor</h2>
-          <p id="contactSubtitle">Comunicación directa con la unidad</p>
-        </div>
-        <button class="modal-close" id="contactClose" aria-label="Cerrar">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="driver-contact-card">
-          <div class="driver-avatar-lg" id="contactDriverInitials">CM</div>
-          <div style="text-align:center">
-            <h3 id="contactDriverName" style="font-size:16px; font-weight:700">Carlos Mendoza</h3>
-            <p id="contactDriverBus" style="font-size:12px; color:var(--text-soft); margin-top:2px">Asignado a BUS-001 (Ruta A)</p>
-            <span class="status-badge status-active" id="contactDriverStatus" style="margin-top:6px; display:inline-block">En turno activo</span>
-          </div>
-        </div>
-        <div class="contact-actions-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:1rem">
-          <button class="btn-primary" id="callDriverBtn">📞 Llamada Directa</button>
-          <button class="btn-ghost" id="msgDriverBtn">💬 WhatsApp / SMS</button>
-        </div>
-      </div>
-    </div>
   <!-- ============ BARRA DE NAVEGACIÓN MÓVIL (inferior para celulares) ============ -->
   <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Navegación principal para celulares">
     <button class="mobile-tab-btn active" data-view="dashboard" aria-label="Ir al Panel Principal">

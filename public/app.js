@@ -9,7 +9,7 @@
      4. Panel principal
      5. Flota (tabla, filtros, orden, CSV)
      6. Mapas (render, zoom, arrastre)
-     7. Rutas, conductores, reportes
+     7. Rutas y estado de flota
      8. Notificaciones y avisos
      9. Ciclo de vida (intervalos, resize, init)
    ============================================================ */
@@ -91,15 +91,6 @@ const ROUTES = [
     stopIds: ['stop-7-10', 'stop-hospital-calderon', 'stop-limon-zurqui', 'stop-limon-rio-sucio', 'stop-guapiles', 'stop-guacimo', 'stop-limon-guácimo-africa', 'stop-siquirres', 'stop-batan', 'stop-liverpool', 'stop-moin', 'stop-limon-centro'] },
 ];
 
- 
-const DRIVERS = [
-  { id: 'D001', name: 'Operador 1',  initials: 'OP1', license: 'OP-001-SIM', trips: 1248, rating: 4.9, hours: 8.5 },
-  { id: 'D002', name: 'Operador 2',  initials: 'OP2', license: 'OP-002-SIM', trips: 987,  rating: 4.8, hours: 7.2 },
-  { id: 'D003', name: 'Operador 3',  initials: 'OP3', license: 'OP-003-SIM', trips: 1567, rating: 4.7, hours: 6.8 },
-  { id: 'D004', name: 'Operador 4',  initials: 'OP4', license: 'OP-004-SIM', trips: 732,  rating: 5.0, hours: 9.0 },
-  { id: 'D005', name: 'Operador 5',  initials: 'OP5', license: 'OP-005-SIM', trips: 2103, rating: 4.6, hours: 5.5 },
-  { id: 'D006', name: 'Operador 6',  initials: 'OP6', license: 'OP-006-SIM', trips: 891,  rating: 4.9, hours: 8.0 },
-];
  
 const STOPS = [
   // ==========================================
@@ -373,14 +364,13 @@ function generateBuses(count) {
   const list = [];
   for (let i = 1; i <= count; i++) {
     const route = ROUTES[(i - 1) % ROUTES.length];
-    const driver = DRIVERS[(i - 1) % DRIVERS.length];
     const status = pick(statuses);
     const moving = status === 'active' || status === 'delayed';
     list.push({
       id: 'BUS-' + String(i).padStart(3, '0'),
       num: String(i).padStart(3, '0'),
       plate: 'SJB-' + String(1000 + i),
-      route, driver, status,
+      route, status,
       speed: moving ? randInt(24, 62) : 0,
       passengers: randInt(0, 46),
       capacity: 52,
@@ -493,9 +483,6 @@ function applyTheme(theme, showToast = false) {
   if (typeof drawMainChart === 'function') {
     requestAnimationFrame(drawMainChart);
   }
-  if (typeof drawReportCharts === 'function' && typeof state !== 'undefined' && state.view === 'reports') {
-    requestAnimationFrame(drawReportCharts);
-  }
 
   if (showToast && typeof toast === 'function') {
     toast(`Modo ${isLight ? 'claro' : 'oscuro'} activado`, 'info');
@@ -562,8 +549,6 @@ const VIEW_TITLES = {
   schedules: 'Horarios de Buses (Costa Rica)',
   fleet: 'Horarios de Buses (Costa Rica)',
   routes: 'Rutas',
-  reports: 'Reportes',
-  drivers: 'Conductores',
   account: 'Mi Cuenta',
 };
 
@@ -597,11 +582,9 @@ function navigate(view) {
   const _pageMeta = {
     dashboard: 'Resumen en tiempo real del estado de la flota, mapa interactivo y métricas.',
     map: 'Seguimiento satelital y mapa esquemático de todas las unidades en circulación.',
-    schedules: 'Tabla completa de unidades, conductores asignados, estados y exportación CSV.',
-    fleet: 'Tabla completa de unidades, conductores asignados, estados y exportación CSV.',
+    schedules: 'Tabla completa de unidades, rutas asignadas, estados y exportación CSV.',
+    fleet: 'Tabla completa de unidades, rutas asignadas, estados y exportación CSV.',
     routes: 'Detalle de trazados, paradas e indicadores por recorrido.',
-    reports: 'Gráficos de eficiencia, volumen de pasajeros y tiempos de retraso.',
-    drivers: 'Turnos, calificaciones y asignación de buses por conductor.',
     account: 'Gestión de la cuenta de usuario, perfil y preferencias en BusTrack Pro.',
   };
   const _metaEl = document.querySelector('meta[name="description"]');
@@ -609,7 +592,6 @@ function navigate(view) {
 
   if (view === 'schedules' || view === 'fleet') renderSchedules();
   if (view === 'routes') renderRoutes();
-  if (view === 'drivers') renderDrivers();
   if (view === 'account') {
     if (typeof renderAccountView === 'function') renderAccountView();
   }
@@ -645,7 +627,6 @@ function navigate(view) {
       }
     });
   }
-  if (view === 'reports') requestAnimationFrame(drawReportCharts);
  
   closeSidebar();
   if (homeOpen) hideHome();
@@ -732,7 +713,7 @@ function renderBusList() {
       <span class="bus-item-icon" style="background:${esc(b.route.color)}22;color:${esc(b.route.color)}">${esc(b.num)}</span>
       <span class="bus-item-info">
         <span class="bus-item-id">${esc(b.id)}</span>
-        <span class="bus-item-route">Ruta ${esc(b.route.id)} · ${esc(b.driver.name.split(' ')[0])}</span>
+        <span class="bus-item-route">Ruta ${esc(b.route.id)} · ${esc(b.route.operator ? b.route.operator.split(' ')[0] : b.route.name)}</span>
       </span>
       <span class="bus-item-meta">
         <span class="bus-item-speed">${esc(b.speed)} km/h</span>
@@ -812,7 +793,6 @@ function pushActivity() {
 function sortValue(bus, key) {
   switch (key) {
     case 'route': return bus.route.id;
-    case 'driver': return bus.driver.name;
     case 'status': return STATUS_ORDER[bus.status];
     case 'speed': return bus.speed;
     case 'passengers': return bus.passengers;
@@ -1562,7 +1542,7 @@ function visibleBuses() {
   const route = $('routeFilter') ? $('routeFilter').value : '';
 
   const rows = buses.filter(b => {
-    const haystack = [b.id, b.plate, b.driver.name, b.route.name, 'ruta ' + b.route.id].join(' ').toLowerCase();
+    const haystack = [b.id, b.plate, b.route.name, 'ruta ' + b.route.id].join(' ').toLowerCase();
     return (!q || haystack.includes(q))
       && (!status || b.status === status)
       && (!route || b.route.id === route);
@@ -1598,7 +1578,6 @@ function renderFleet() {
       <td>${esc(b.id)}</td>
       <td class="mono">${esc(b.plate)}</td>
       <td><span class="route-pill" style="background:${esc(b.route.color)}22;color:${esc(b.route.color)}">Ruta ${esc(b.route.id)}</span></td>
-      <td>${esc(b.driver.name)}</td>
       <td class="mono">${esc(b.speed)} km/h</td>
       <td>
         <span style="display:inline-flex;align-items:center;gap:7px">
@@ -1668,9 +1647,9 @@ $$('.fleet-table th[data-sort]').forEach(th => {
 if ($('exportCsvBtn')) {
   $('exportCsvBtn').addEventListener('click', () => {
     const rows = visibleBuses();
-    const head = ['Bus', 'Placa', 'Ruta', 'Conductor', 'Velocidad (km/h)', 'Pasajeros', 'Capacidad', 'Estado', 'Combustible (%)', 'Retraso (min)'];
+    const head = ['Bus', 'Placa', 'Ruta', 'Velocidad (km/h)', 'Pasajeros', 'Capacidad', 'Estado', 'Combustible (%)', 'Retraso (min)'];
     const body = rows.map(b => [
-      b.id, b.plate, 'Ruta ' + b.route.id, b.driver.name,
+      b.id, b.plate, 'Ruta ' + b.route.id,
       b.speed, b.passengers, b.capacity, statusLabel(b.status), b.fuel, b.delay,
     ]);
     const csv = [head, ...body]
@@ -2994,7 +2973,7 @@ function setupMapControls() {
 }
 
 /* ==========================================================
-   7. RUTAS, CONDUCTORES, REPORTES
+   7. RUTAS Y RED VIAL
    ========================================================== */
  
 function routeStats(r) {
@@ -3053,67 +3032,6 @@ function openRoute(id) {
   }, 150);
 }
 
-function renderDrivers() {
-  $('driversGrid').innerHTML = DRIVERS.map((d, i) => {
-    const bus = buses.find(b => b.driver.id === d.id && b.status !== 'stopped');
-    const color = ROUTES[i % ROUTES.length].color;
-    return `
-    <article class="driver-card" data-driver="${esc(d.name)}" role="button" tabindex="0">
-      <div class="driver-top">
-        <span class="driver-avatar" style="background:linear-gradient(135deg,${color},${color}99)">${d.initials}</span>
-        <div>
-          <p class="driver-name">${esc(d.name)}</p>
-          <p class="driver-license">${d.license}</p>
-          <p style="margin-top:5px">
-            ${bus ? `<span class="status-badge status-active">En servicio · ${bus.id}</span>`
-                  : '<span class="status-badge status-stopped">Sin asignar</span>'}
-          </p>
-        </div>
-      </div>
-      <div class="driver-stats">
-        <div><p class="driver-stat-val">${fmt(d.trips)}</p><p class="driver-stat-lbl">Viajes</p></div>
-        <div><p class="driver-stat-val">${String(d.hours).replace('.', ',')} h</p><p class="driver-stat-lbl">Turno hoy</p></div>
-        <div><p class="driver-stat-val"><span class="stars">★</span> ${String(d.rating).replace('.', ',')}</p><p class="driver-stat-lbl">Calificación</p></div>
-      </div>
-    </article>`;
-  }).join('');
-}
- 
-/* ---------- Reportes ---------- */
- 
-$('generateReportBtn').addEventListener('click', () => {
-  const total = buses.length;
-  const circulando = buses.filter(b => b.status === 'active' || b.status === 'delayed').length;
-  const pasajeros = buses.reduce((s, b) => s + b.passengers, 0);
-  const ocupacion = Math.round((pasajeros / buses.reduce((s, b) => s + b.capacity, 0)) * 100);
-  const retraso = buses.reduce((s, b) => s + b.delay, 0) / total;
-  const taller = buses.filter(b => b.status === 'maintenance').length;
-  const combustibleBajo = buses.filter(b => b.fuel < 20).length;
-  const ahora = new Date();
- 
-  const box = $('reportSummary');
-  box.hidden = false;
-  box.innerHTML = `
-    <h3>Reporte de operación</h3>
-    <p class="stamp">Generado el ${ahora.toLocaleDateString('es-CR')} a las ${ahora.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}</p>
-    <div class="summary-grid">
-      <div class="summary-cell"><b>${circulando}/${total}</b><span>Buses circulando</span></div>
-      <div class="summary-cell"><b>${pasajeros}</b><span>Pasajeros a bordo</span></div>
-      <div class="summary-cell"><b>${ocupacion}%</b><span>Ocupación media</span></div>
-      <div class="summary-cell"><b>${retraso.toFixed(1).replace('.', ',')} min</b><span>Retraso promedio</span></div>
-      <div class="summary-cell"><b>${taller}</b><span>En mantenimiento</span></div>
-      <div class="summary-cell"><b>${combustibleBajo}</b><span>Combustible bajo 20%</span></div>
-    </div>`;
-  if (box.scrollIntoView) box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  toast('Reporte generado con los datos actuales', 'ok');
-});
- 
-$('printReportBtn').addEventListener('click', () => {
-  if ($('reportSummary').hidden) $('generateReportBtn').click();
-  toast('Abriendo el diálogo de impresión');
-  setTimeout(() => window.print(), 350);
-});
- 
 /* ==========================================================
    MODALES
    ========================================================== */
@@ -3155,7 +3073,6 @@ function fillBusModal(b) {
   fuel.textContent = b.fuel + '%';
   fuel.style.color = b.fuel < 20 ? cssVar('--risk') : '';
  
-  $('modalDriver').textContent = b.driver.name;
   $('modalPlate').textContent = b.plate;
   $('modalNextStop').textContent = b.nextStop;
   $('modalETA').textContent = b.etaMin ? b.etaMin + ' min' : '—';
@@ -3187,11 +3104,6 @@ $('trackBusBtn').addEventListener('click', () => {
   const id = busModal.currentBusId;
   closeModal(busModal);
   focusBus(id);
-});
- 
-$('contactDriverBtn').addEventListener('click', () => {
-  const b = buses.find(x => x.id === busModal.currentBusId);
-  if (b) toast('Llamando a ' + b.driver.name + ' (' + b.id + ')…');
 });
  
 $('modalStatusSelect').addEventListener('change', async function () {
@@ -3245,7 +3157,6 @@ on('accentPicker', 'click', e => {
   renderBusList();
   if (state.view === 'fleet') renderFleet();
   if (state.view === 'routes') renderRoutes();
-  if (state.view === 'drivers') renderDrivers();
   toast('Acento actualizado');
 });
  
@@ -3392,17 +3303,6 @@ document.addEventListener('click', e => {
   const route = e.target.closest('[data-route]');
   if (route) { openRoute(route.dataset.route); return; }
  
-  const driver = e.target.closest('[data-driver]');
-  if (driver) {
-    navigate('fleet');
-    $('fleetSearch').value = driver.dataset.driver;
-    $('statusFilter').value = '';
-    $('routeFilter').value = '';
-    renderFleet();
-    toast('Buses asignados a ' + driver.dataset.driver);
-    return;
-  }
- 
   const mapBus = e.target.closest('#mapBusList .map-bus-item, .map-bus-item');
   if (mapBus && mapBus.dataset.bus) {
     focusBus(mapBus.dataset.bus);
@@ -3423,7 +3323,7 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Enter' && e.key !== ' ') return;
   const t = e.target;
   if (!t.closest) return;
-  const el = t.closest('[data-bus], [data-route], [data-driver]');
+  const el = t.closest('[data-bus], [data-route]');
   if (el && el.getAttribute('tabindex') === '0') {
     e.preventDefault();
     el.click();
@@ -3570,94 +3470,9 @@ $$('.period-btn').forEach(btn => {
   });
 });
  
-function drawReportCharts() {
-  // Eficiencia por ruta
-  const c1 = $('reportChart1');
-  if (c1 && c1.offsetParent) {
-    const { ctx, w, h } = fitCanvas(c1, 200);
-    const vals = ROUTES.map(r => {
-      const s = routeStats(r);
-      return Math.max(40, Math.round(100 - s.retraso * 6));
-    });
-    const slot = w / ROUTES.length, bw = slot * 0.46;
-    ctx.font = 'bold 12px Inter, sans-serif';
-    vals.forEach((v, i) => {
-      const x = i * slot + (slot - bw) / 2;
-      const bh = (v / 100) * (h - 48);
-      const y = h - bh - 24;
-      const color = ROUTES[i].color;
-      const g = ctx.createLinearGradient(0, y, 0, y + bh);
-      g.addColorStop(0, color); g.addColorStop(1, color + '55');
-      ctx.fillStyle = g; bar(ctx, x, y, bw, bh, 4);
-      ctx.fillStyle = color; ctx.textAlign = 'center';
-      ctx.fillText(v + '%', x + bw / 2, y - 7);
-      ctx.fillStyle = cssVar('--text-soft'); ctx.font = '11px Inter, sans-serif';
-      ctx.fillText('Ruta ' + ROUTES[i].id, x + bw / 2, h - 7);
-      ctx.font = 'bold 12px Inter, sans-serif';
-    });
-  }
- 
-  // Dona de pasajeros por ruta
-  const c2 = $('reportChart2');
-  if (c2 && c2.offsetParent) {
-    const { ctx, w, h } = fitCanvas(c2, 200);
-    const vals = ROUTES.map(r => routeStats(r).pasajeros);
-    const total = vals.reduce((a, b) => a + b, 0) || 1;
-    const cx = w / 2, cy = h / 2;
-    const r = Math.min(w, h) / 2 - 16, ri = r * 0.58;
-    let start = -Math.PI / 2;
-    vals.forEach((v, i) => {
-      const ang = (v / total) * Math.PI * 2;
-      ctx.beginPath(); ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, r, start, start + ang); ctx.closePath();
-      ctx.fillStyle = ROUTES[i].color; ctx.fill();
-      start += ang;
-    });
-    ctx.beginPath(); ctx.arc(cx, cy, ri, 0, Math.PI * 2);
-    ctx.fillStyle = cssVar('--bg-card'); ctx.fill();
-    ctx.textAlign = 'center';
-    ctx.fillStyle = cssVar('--text-strong'); ctx.font = 'bold 20px Inter, sans-serif';
-    ctx.fillText(fmt(total), cx, cy + 3);
-    ctx.fillStyle = cssVar('--text-soft'); ctx.font = '10px Inter, sans-serif';
-    ctx.fillText('a bordo ahora', cx, cy + 18);
-  }
- 
-  // Línea de retrasos
-  const c3 = $('reportChart3');
-  if (c3 && c3.offsetParent) {
-    const { ctx, w, h } = fitCanvas(c3, 160);
-    const data = [3.5, 3.1, 2.9, 3.3, 2.8, 3.0, 2.6, 2.7, 2.4, 2.5, 2.3, 2.4, 2.2, 2.3,
-      2.1, 2.4, 2.2, 2.0, 2.3, 2.1, 2.4, 2.3, 2.1, 2.3, 2.2, 2.0, 2.3, 2.1];
-    const pad = 34, cw = w - pad * 2, ch = h - pad * 2;
-    const max = Math.max(...data), min = 1.5, range = max - min;
-    ctx.font = '10px Inter, sans-serif';
-    [0, 0.25, 0.5, 0.75, 1].forEach(p => {
-      const y = Math.round(pad + ch - p * ch) + 0.5;
-      ctx.strokeStyle = 'rgba(148,163,200,0.13)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad + cw, y); ctx.stroke();
-      ctx.fillStyle = cssVar('--text-soft'); ctx.textAlign = 'right';
-      ctx.fillText((min + range * p).toFixed(1).replace('.', ',') + ' m', pad - 6, y + 3.5);
-    });
- 
-    const pt = (v, i) => ({ x: pad + (i / (data.length - 1)) * cw, y: pad + ch - ((v - min) / range) * ch });
-    const trace = () => data.forEach((v, i) => { const p = pt(v, i); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); });
-    const line = cssVar('--route-c');
- 
-    const g = ctx.createLinearGradient(0, pad, 0, pad + ch);
-    g.addColorStop(0, line + '55'); g.addColorStop(1, line + '00');
-    ctx.beginPath(); trace();
-    ctx.lineTo(pad + cw, pad + ch); ctx.lineTo(pad, pad + ch); ctx.closePath();
-    ctx.fillStyle = g; ctx.fill();
- 
-    ctx.beginPath(); trace();
-    ctx.strokeStyle = line; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
-  }
-}
- 
 function redrawAll() {
   drawSparklines();
   drawMainChart();
-  if (state.view === 'reports') drawReportCharts();
   if (realLeafletMap) {
     try { realLeafletMap.invalidateSize({ animate: false }); } catch (_) {}
   }
@@ -3681,8 +3496,6 @@ function updateHomeChips() {
   $('chipDashboard').textContent = circulando + '/' + buses.length;
   if ($('chipFleet')) $('chipFleet').textContent = buses.length + ' buses';
   if ($('chipRoutes')) $('chipRoutes').textContent = ROUTES.length + ' rutas';
-  if ($('chipReports')) $('chipReports').textContent = fmt(pasajeros);
-  if ($('chipDrivers')) $('chipDrivers').textContent = DRIVERS.length;
  
   $('homeStatus').textContent = circulando
     ? circulando + ' de ' + buses.length + ' unidades en circulación'
@@ -4743,10 +4556,10 @@ function init() {
       const savedCode = currentUser.username || localStorage.getItem('bustrack_user_code') || '';
       editCode.value = savedCode;
     }
-    if (displayRole) displayRole.textContent = `${role} — ${isAdmin ? 'Control total y reportes' : 'Consulta de rutas y buses en vivo'}`;
+    if (displayRole) displayRole.textContent = `${role} — ${isAdmin ? 'Control total y supervisión' : 'Consulta de rutas y buses en vivo'}`;
     if (roleDesc) {
       roleDesc.textContent = isAdmin
-        ? 'Tienes permisos elevados para gestionar conductores, configurar rutas y supervisar telemetría en tiempo real.'
+        ? 'Tienes permisos elevados para gestionar la flota, configurar rutas y supervisar telemetría en tiempo real.'
         : 'Tienes permisos para consultar mapas satelitales, horarios oficiales y paradas en tiempo real.';
     }
     if (displayId) {
@@ -4992,7 +4805,6 @@ function init() {
       e.preventDefault();
       const id = $('newBusId').value.trim().toUpperCase();
       const routeId = $('newBusRoute').value;
-      const driverId = $('newBusDriver').value;
       const plate = $('newBusPlate').value.trim().toUpperCase();
 
       // Validación estricta anti-XSS y formato
@@ -5012,13 +4824,11 @@ function init() {
       }
 
       const route = ROUTES.find(r => r.id === routeId) || ROUTES[0];
-      const driver = DRIVERS.find(d => d.id === driverId) || DRIVERS[0];
 
       const newBus = {
         id,
         num: id.replace('BUS-', ''),
         route,
-        driver,
         plate,
         status: 'active',
         speed: 42,
@@ -5057,48 +4867,6 @@ function init() {
       if (filter) filter.value = '';
       renderFleet();
       toast('Filtros de la flota reiniciados', 'info');
-    });
-  }
-
-  // ------------------------------------------------------------------
-  // DRIVER CONTACT MODAL HANDLERS
-  // ------------------------------------------------------------------
-  const contactDriverBtn = $('contactDriverBtn');
-  const contactModal = $('contactDriverModal');
-  const contactClose = $('contactClose');
-
-  if (contactDriverBtn && contactModal) {
-    contactDriverBtn.addEventListener('click', () => {
-      const bus = buses.find(b => b.id === state.highlightBus) || buses[0];
-      $('contactDriverName').textContent = bus.driver.name;
-      $('contactDriverBus').textContent = `Asignado a ${bus.id} (Ruta ${bus.route.id})`;
-      $('contactDriverInitials').textContent = bus.driver.initials;
-      const statusBadge = $('contactDriverStatus');
-      if (statusBadge) {
-        statusBadge.className = `status-badge status-${bus.status}`;
-        statusBadge.textContent = statusLabel(bus.status);
-      }
-      if ($('busModal')) $('busModal').classList.remove('active');
-      contactModal.classList.add('active');
-    });
-  }
-  if (contactClose && contactModal) {
-    contactClose.addEventListener('click', () => contactModal.classList.remove('active'));
-  }
-
-  const callDriverBtn = $('callDriverBtn');
-  const msgDriverBtn = $('msgDriverBtn');
-
-  if (callDriverBtn) {
-    callDriverBtn.addEventListener('click', () => {
-      toast('📞 Conectando llamada con la cabina del conductor...', 'ok');
-      if (contactModal) contactModal.classList.remove('active');
-    });
-  }
-  if (msgDriverBtn) {
-    msgDriverBtn.addEventListener('click', () => {
-      toast('💬 Canal de mensajería enviado al terminal de abordo', 'ok');
-      if (contactModal) contactModal.classList.remove('active');
     });
   }
 

@@ -1007,64 +1007,6 @@ html[data-theme="light"] .map-btn-geo.active:hover {
 .route-stat-value { font-size: 15px; font-weight: 700; }
 .route-stat-label { font-size: 9.5px; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.5px; }
  
-/* ============ REPORTES ============ */
-.reports-container { display: flex; flex-direction: column; gap: var(--gap); }
-.reports-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.reports-header h2 { font-size: 17px; font-weight: 700; }
-.report-actions { display: flex; gap: 9px; flex-wrap: wrap; }
-.reports-grid { display: grid; gap: var(--gap); grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.report-card { padding: 18px; }
-.report-card h3 { font-size: 13.5px; font-weight: 600; margin-bottom: 14px; }
-.report-card canvas { max-width: 100%; display: block; }
-.report-card.full-width { grid-column: 1 / -1; }
- 
-.report-summary {
-  padding: 18px;  background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
-  background: var(--bg-card);
-  border: 1px solid var(--line-brand);
-}
-.report-summary h3 { font-size: 14px; margin-bottom: 4px; }
-.report-summary .stamp { font-size: 11.5px; color: var(--text-soft); margin-bottom: 14px; }
-.summary-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
-.summary-cell {
-  padding: 12px; border-radius: var(--radius-sm);
-  background: rgba(255,255,255,0.03); border: 1px solid var(--line);
-}
-.summary-cell b { display: block; font-size: 18px; font-weight: 700; }
-.summary-cell span { font-size: 11px; color: var(--text-soft); }
- 
-/* ============ CONDUCTORES ============ */
-.drivers-grid { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); }
-.driver-card {
-  padding: 18px; cursor: pointer;
-  background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
-  transition: border-color var(--t), transform var(--t), box-shadow var(--t);
-}
-.driver-card:hover {
-  border-color: var(--line-brand);
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 15px color-mix(in srgb, var(--brand-500) 20%, transparent);
-}
-.driver-card:hover .driver-avatar {
-  transform: scale(1.06);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--brand-500) 50%, transparent);
-}
-.driver-avatar {
-  transition: transform var(--t), box-shadow var(--t);
-}
-.driver-top { display: flex; align-items: center; gap: 13px; margin-bottom: 14px; }
-.driver-avatar {
-  width: 46px; height: 46px; flex-shrink: 0; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; font-weight: 700; color: #fff;
-}
-.driver-name { font-size: 14.5px; font-weight: 700; }
-.driver-license { font-size: 10.5px; color: var(--text-soft); font-family: 'JetBrains Mono', monospace; margin-top: 1px; }
-.driver-stats { display: flex; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
-.driver-stat-val { font-size: 14.5px; font-weight: 700; }
-.driver-stat-lbl { font-size: 10px; color: var(--text-soft); }
-.stars { color: var(--warn); }
- 
 /* ============ MODALES ============ */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 200; padding: 18px;
@@ -1810,20 +1752,6 @@ body.home-open .sidebar-overlay,
 }
 
 
-
-/* Tarjeta de contacto de conductor */
-.driver-contact-card {
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 16px; border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--brand-500) 10%, var(--bg-card));
-  border: 1px solid var(--line);
-}
-.driver-avatar-lg {
-  width: 54px; height: 54px; border-radius: 50%;
-  background: var(--brand-500); color: #ffffff;
-  font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 14px rgba(91,110,245,0.4);
-}
 
 /* ==============================================================================
    AUTH INITIAL LANDING SCREEN (PANTALLA DE INICIO Y REGISTRO) - MULTI-DISPOSITIVO
@@ -3757,14 +3685,12 @@ html[data-theme="light"] .sched-action-btn.secondary:hover {
 }
 
 /* Rutas y Conductores */
-html[data-theme="light"] .route-card,
-html[data-theme="light"] .driver-card {
+html[data-theme="light"] .route-card {
   background: #ffffff;
   border-color: var(--line);
   box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
 }
-html[data-theme="light"] .route-card:hover,
-html[data-theme="light"] .driver-card:hover {
+html[data-theme="light"] .route-card:hover {
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
 }
 html[data-theme="light"] .route-name { color: var(--text-soft); }
@@ -3773,15 +3699,6 @@ html[data-theme="light"] .route-stat-value { color: var(--text-strong); }
 html[data-theme="light"] .route-stat-label { color: var(--text-soft); }
 html[data-theme="light"] .route-progress-head { color: var(--text-soft); }
 html[data-theme="light"] .route-progress-bar { background: #e2e8f0; }
-
-html[data-theme="light"] .driver-name { color: var(--text-strong); }
-html[data-theme="light"] .driver-license { color: var(--text-soft); }
-html[data-theme="light"] .driver-stat-val { color: var(--text-strong); }
-html[data-theme="light"] .driver-stat-lbl { color: var(--text-soft); }
-html[data-theme="light"] .driver-contact-card {
-  background: var(--bg-surface);
-  border-color: var(--line);
-}
 
 /* Bus list */
 html[data-theme="light"] .bus-item-id { color: var(--text-strong); }
