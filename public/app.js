@@ -2921,20 +2921,21 @@ function requestUserLocation(userInitiated = true) {
       );
     },
     (error) => {
-      console.warn('Geolocation error:', error);
+      // Manejo limpio y silencioso de GeolocationPositionError si el usuario declina o no tiene GPS
+      if (userInitiated) {
+        console.info('Información GPS:', error.message || error.code);
+      }
       stopUserLocationWatch();
       userLocationState.active = false;
       updateUserLocationUI();
       const geoSwitch = document.getElementById('geoSwitch');
       if (geoSwitch) geoSwitch.setAttribute('aria-checked', 'false');
       if (error.code === error.PERMISSION_DENIED) {
-        toast('⚠️ Permiso de ubicación denegado. Permite el acceso en la barra de direcciones de tu navegador.', 'warn');
+        if (userInitiated) toast('⚠️ Permiso de ubicación denegado en tu navegador.', 'warn');
       } else if (error.code === error.POSITION_UNAVAILABLE) {
-        toast('⚠️ Posición GPS no disponible en este dispositivo.', 'warn');
+        if (userInitiated) toast('⚠️ Posición GPS no disponible.', 'warn');
       } else if (error.code === error.TIMEOUT) {
-        toast('⏱️ Tiempo de espera agotado al obtener el GPS.', 'warn');
-      } else if (userInitiated) {
-        toast('No se pudo acceder a tu ubicación actual.', 'warn');
+        if (userInitiated) toast('⏱️ Tiempo de espera agotado al obtener GPS.', 'warn');
       }
     },
     options

@@ -586,10 +586,15 @@
 
   // ── Inicialización ────────────────────────────────────────────────────────
   function _init() {
+    // Intentar /config/payments o /api/v1/payments/config con fallback silencioso
     fetch('/config/payments')
-      .then(r => r.json())
-      .then(({ stripePk }) => { _stripePk = stripePk || 'pk_test_sample'; })
-      .catch(() => { _stripePk = 'pk_test_sample'; });
+      .then(r => r.ok ? r.json() : fetch('/api/v1/payments/config').then(r2 => r2.json()))
+      .then((cfg) => {
+        _stripePk = cfg?.stripePk || 'pk_test_sample';
+      })
+      .catch(() => {
+        _stripePk = 'pk_test_sample';
+      });
 
     _setupCardInputs();
 

@@ -22,6 +22,15 @@ apiRouter.use('/auth', authRouter);
 // --- PAYMENT ROUTES ---
 apiRouter.use('/payments', paymentRouter);
 
+// Fallback de configuración de pagos en la API principal
+apiRouter.get('/config/payments', (req, res) => {
+  res.json({
+    provider: process.env.PAYMENT_PROVIDER || 'onvopay',
+    stripePk: process.env.STRIPE_PUBLISHABLE_KEY || 'pk_test_sample_bustrack_pro',
+    onvoPk: process.env.ONVO_PUBLISHABLE_KEY || 'onvo_test_pk_sample_bustrack_pro',
+  });
+});
+
 // --- 1. SYSTEM HEALTH & DIAGNOSTICS ---
 // Note: Does NOT expose stack traces, environment secrets, or internal paths
 apiRouter.get('/health', (req, res) => {

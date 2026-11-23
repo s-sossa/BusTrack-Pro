@@ -42,6 +42,17 @@ function handleServiceError(res, err) {
 }
 
 // ==============================================================================
+// GET /api/v1/payments/config (y fallback /config/payments)
+// ==============================================================================
+paymentRouter.get('/config', generalLimiter, (_req, res) => {
+  res.json({
+    provider: process.env.PAYMENT_PROVIDER || 'onvopay',
+    stripePk: process.env.STRIPE_PUBLISHABLE_KEY || 'pk_test_sample_bustrack_pro',
+    onvoPk: process.env.ONVO_PUBLISHABLE_KEY || 'onvo_test_pk_sample_bustrack_pro',
+  });
+});
+
+// ==============================================================================
 // POST /api/v1/payments/setup-intent
 // ==============================================================================
 paymentRouter.post('/setup-intent', authenticateToken, writeLimiter, async (req, res) => {
