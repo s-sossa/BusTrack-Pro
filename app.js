@@ -550,6 +550,7 @@ const VIEW_TITLES = {
   fleet: 'Horarios de Buses (Costa Rica)',
   routes: 'Rutas',
   account: 'Mi Cuenta',
+  premium: 'BusTrack Premium — ₡500',
 };
 
 // Declaración en alcance superior para que navigate('account') siempre tenga acceso
@@ -586,6 +587,7 @@ function navigate(view) {
     fleet: 'Tabla completa de unidades, rutas asignadas, estados y exportación CSV.',
     routes: 'Detalle de trazados, paradas e indicadores por recorrido.',
     account: 'Gestión de la cuenta de usuario, perfil y preferencias en BusTrack Pro.',
+    premium: 'Desbloquea BusTrack Pro Premium por ₡500 CRC y accede a telemetría VIP, predicción de asientos y alertas instantáneas.',
   };
   const _metaEl = document.querySelector('meta[name="description"]');
   if (_metaEl && _pageMeta[view]) _metaEl.content = _pageMeta[view];
@@ -594,6 +596,12 @@ function navigate(view) {
   if (view === 'routes') renderRoutes();
   if (view === 'account') {
     if (typeof renderAccountView === 'function') renderAccountView();
+  }
+  if (view === 'premium') {
+    // Verificar estado premium desde backend y actualizar UI
+    if (typeof window.loadPaymentMethods === 'function') {
+      setTimeout(() => window.loadPaymentMethods(), 100);
+    }
   }
   if (view === 'map') {
     if (!realLeafletMap) {
@@ -632,6 +640,9 @@ function navigate(view) {
   if (homeOpen) hideHome();
   window.scrollTo(0, 0);
 }
+
+// Exponer navigate globalmente para que paymentModule.js y otros módulos puedan usarlo
+window.navigate = navigate;
  
 $$('.nav-item').forEach(item => {
   item.addEventListener('click', () => navigate(item.dataset.view));

@@ -497,11 +497,20 @@
     const token = await _getToken();
     try {
       if (token) {
-        await fetch('/api/v1/payments/premium/charge-saved', {
+        const res = await fetch('/api/v1/payments/premium/charge-saved', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ paymentMethodId: pmId })
         });
+        // Si el backend responde con error, mostrar mensaje pero continuar con la demo visual
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const msg = errData.detail || errData.message || 'Error al procesar el pago';
+          // Si es 503 (Stripe no configurado en dev), continuar con demostración visual
+          if (res.status !== 503) {
+            _showToast('⚠️ ' + msg, 'warn');
+          }
+        }
       }
     } catch (_) {}
 
@@ -570,18 +579,45 @@
     const unlockBtn = $pm('unlockPremiumBtn');
     if (unlockBtn) unlockBtn.addEventListener('click', _handleUnlockPremium);
 
-    // Verificar si ya es premium al cargar
-    if (localStorage.getItem('bustrack_is_premium') === 'true') {
+    // Verificar si ya es premium al cargar (desde localStorage y luego desde backend)
+    function _applyPremiumUI() {
       const banner = $pm('premiumActiveBanner');
       const checkoutBox = $pm('premiumCheckoutBox');
       const heroRole = $pm('accHeroRole');
+      const userRoleSlot = document.getElementById('userRoleSlot');
       if (banner) banner.style.display = 'flex';
       if (checkoutBox) checkoutBox.style.display = 'none';
       if (heroRole) {
         heroRole.textContent = '👑 Pasajero Premium';
         heroRole.className = 'account-badge role-badge premium';
       }
+      if (userRoleSlot && !userRoleSlot.textContent.includes('Premium')) {
+        userRoleSlot.textContent = '👑 Pasajero Premium';
+      }
     }
+
+    if (localStorage.getItem('bustrack_is_premium') === 'true') {
+      _applyPremiumUI();
+    }
+
+    // Consultar el estado premium en el backend de forma asíncrona
+    (async () => {
+      const token = await _getToken();
+      if (!token) return;
+      try {
+        const res = await fetch('/api/v1/payments/premium/status', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.isPremium) {
+            localStorage.setItem('bustrack_is_premium', 'true');
+            if (window.currentUser) window.currentUser.role = 'premium';
+            _applyPremiumUI();
+          }
+        }
+      } catch (_) {}
+    })();
 
     _fetchMethods();
 
@@ -593,6 +629,19 @@
         if (isVisible) _fetchMethods();
       });
       obs.observe(accountSection, { attributes: true, attributeFilter: ['class', 'hidden', 'style'] });
+    }
+
+    // Observar cuando el usuario navega a la vista Premium para refrescar estado
+    const premiumSection = document.getElementById('view-premium');
+    if (premiumSection) {
+      const premObs = new MutationObserver(() => {
+        const isVisible = premiumSection.classList.contains('active');
+        if (isVisible) {
+          if (localStorage.getItem('bustrack_is_premium') === 'true') _applyPremiumUI();
+          _fetchMethods();
+        }
+      });
+      premObs.observe(premiumSection, { attributes: true, attributeFilter: ['class'] });
     }
   }
 

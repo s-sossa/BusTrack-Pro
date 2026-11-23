@@ -14,7 +14,9 @@ let _stripe = null;
 function getStripe() {
   if (!_stripe) {
     if (!process.env.STRIPE_SECRET_KEY) {
-      throw new Error('STRIPE_SECRET_KEY no está configurada. Configura la variable de entorno antes de usar el módulo de pagos.');
+      const err = new Error('STRIPE_SECRET_KEY no está configurada. El módulo de pagos no está activo en este entorno.');
+      err.httpStatus = 503;
+      throw err;
     }
     _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
   }

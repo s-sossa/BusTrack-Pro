@@ -1,9 +1,15 @@
 /**
- * BusTrack Pro — Textos y mensajes del módulo de Métodos de Pago (español)
+ * BusTrack Pro — Textos y mensajes del módulo de Métodos de Pago y Suscripción (español)
  * Centraliza todos los strings visibles al usuario para facilitar revisiones.
  */
 (function () {
   window.PM_MESSAGES = {
+    // Monto y Cobro (₡500 CRC / 50000 céntimos)
+    amountCRC:          '₡500',
+    amountFormatted:    '₡500 CRC',
+    subscriptionFee:    '₡500 CRC al mes',
+    chargeDescription:  'Suscripción Premium BusTrack Pro (₡500 CRC)',
+
     // Estados de la lista
     loading:            'Cargando métodos de pago...',
     empty:              'Aún no tienes tarjetas guardadas.',
@@ -16,18 +22,32 @@
     setDefault:         'Usar como predeterminado',
     deleteCard:         'Eliminar tarjeta',
 
-    // Modal de agregar
-    modalTitle:         'Agregar Tarjeta',
-    modalSubtitle:      'Tus datos viajan cifrados directamente a Stripe',
-    modalSecurity:      '🔒 Procesado de forma segura por Stripe. BusTrack Pro nunca almacena tus datos de tarjeta.',
+    // Modal de agregar y cobro de 500 CRC
+    modalTitle:         'Agregar Tarjeta y Suscripción Premium',
+    modalSubtitle:      'Acceso completo a BusTrack Pro por solo ₡500 CRC al mes',
+    modalSecurity:      '🔒 Procesado de forma segura por Stripe. Tarifa mensual de ₡500 CRC (50000 céntimos).',
+
+    // Beneficios Premium y Suscripción
+    premiumTitle:       'BusTrack Pro Premium',
+    premiumBadge:       'PRO',
+    subscriptionActive: 'Suscripción activa',
+    subscriptionInactive: 'Sin suscripción activa',
+    benefitsHeader:     'Beneficios incluidos por ₡500 CRC/mes:',
+    benefitsList: [
+      'Monitoreo en tiempo real de buses y rutas sin límite',
+      'Alertas instantáneas de llegada y desvíos',
+      'Historial completo de viajes y favoritos ilimitados',
+      'Soporte prioritario 24/7'
+    ],
 
     // Confirmación de eliminación
     deleteConfirm:      (last4) => `¿Eliminar la tarjeta terminada en ${last4}? Esta acción no se puede deshacer.`,
 
     // Toasts de éxito
-    successAdd:         '✅ Tarjeta agregada exitosamente',
+    successAdd:         '✅ Tarjeta agregada y suscripción de ₡500 CRC activada',
     successDelete:      '🗑️ Tarjeta eliminada',
     successDefault:     '✅ Método predeterminado actualizado',
+    successSubscription:'✨ ¡Suscripción Premium activada exitosamente por ₡500 CRC!',
 
     // Errores de API
     errNoSession:       'Debes iniciar sesión para usar esta función.',
@@ -46,7 +66,7 @@
       'card_declined':        'Tu tarjeta fue rechazada. Verifica los datos o usa otra tarjeta.',
       'expired_card':         'Tu tarjeta está vencida.',
       'incorrect_cvc':        'El código de seguridad es incorrecto.',
-      'insufficient_funds':   'Fondos insuficientes en la tarjeta.',
+      'insufficient_funds':   'Fondos insuficientes en la tarjeta (cobro de ₡500 CRC).',
       'processing_error':     'Error al procesar la tarjeta. Intenta de nuevo.',
       'invalid_card_number':  'El número de tarjeta no es válido.',
     },
