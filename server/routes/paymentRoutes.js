@@ -14,6 +14,10 @@ import {
   listPaymentMethods,
   setDefaultPaymentMethod,
   deletePaymentMethod,
+  createPremiumPaymentIntent,
+  chargePremiumWithSavedCard,
+  confirmPremiumPayment,
+  getPremiumStatus,
   handleStripeWebhook,
 } from '../services/paymentService.js';
 
@@ -38,7 +42,6 @@ function handleServiceError(res, err) {
 
 // ==============================================================================
 // POST /api/v1/payments/setup-intent
-// Crea un SetupIntent y, si es necesario, el Stripe Customer del usuario.
 // ==============================================================================
 paymentRouter.post('/setup-intent', authenticateToken, writeLimiter, async (req, res) => {
   try {
@@ -51,8 +54,6 @@ paymentRouter.post('/setup-intent', authenticateToken, writeLimiter, async (req,
 
 // ==============================================================================
 // POST /api/v1/payments/methods
-// Guarda un método de pago confirmado (tras verificar el SetupIntent con Stripe).
-// ⛔ NUNCA acepta datos de tarjeta directamente.
 // ==============================================================================
 paymentRouter.post('/methods', authenticateToken, writeLimiter, async (req, res) => {
   const { setupIntentId } = req.body || {};
@@ -71,7 +72,6 @@ paymentRouter.post('/methods', authenticateToken, writeLimiter, async (req, res)
 
 // ==============================================================================
 // GET /api/v1/payments/methods
-// Lista todos los métodos de pago del usuario autenticado.
 // ==============================================================================
 paymentRouter.get('/methods', authenticateToken, generalLimiter, async (req, res) => {
   try {
@@ -84,8 +84,6 @@ paymentRouter.get('/methods', authenticateToken, generalLimiter, async (req, res
 
 // ==============================================================================
 // PUT /api/v1/payments/methods/:id/default
-// Establece el método indicado como predeterminado.
-// Anti-IDOR: verifica que el método pertenece al usuario antes de cualquier acción.
 // ==============================================================================
 paymentRouter.put('/methods/:id/default', authenticateToken, writeLimiter, async (req, res) => {
   if (!UUID_RE.test(req.params.id)) {
@@ -102,8 +100,6 @@ paymentRouter.put('/methods/:id/default', authenticateToken, writeLimiter, async
 
 // ==============================================================================
 // DELETE /api/v1/payments/methods/:id
-// Elimina un método de pago (desvincula en Stripe + borra en Supabase).
-// Anti-IDOR: verifica que el método pertenece al usuario antes de cualquier acción.
 // ==============================================================================
 paymentRouter.delete('/methods/:id', authenticateToken, writeLimiter, async (req, res) => {
   if (!UUID_RE.test(req.params.id)) {
@@ -119,10 +115,61 @@ paymentRouter.delete('/methods/:id', authenticateToken, writeLimiter, async (req
 });
 
 // ==============================================================================
+// PREMIUM ENDPOINTS
+// ==============================================================================
+
+// POST /api/v1/payments/premium/create-intent
+paymentRouter.post('/premium/create-intent', authenticateToken, writeLimiter, async (req, res) => {
+  try {
+    const result = await createPremiumPaymentIntent(req.user.id);
+    res.json({ status: 'success', ...result });
+  } catch (err) {
+    handleServiceError(res, err);
+  }
+});
+
+// POST /api/v1/payments/premium/charge-saved
+paymentRouter.post('/premium/charge-saved', authenticateToken, writeLimiter, async (req, res) => {
+  const { paymentMethodId } = req.body || {};
+  if (!paymentMethodId || typeof paymentMethodId !== 'string') {
+    return problemJson(res, 400, 'Bad Request', 'El campo paymentMethodId es obligatorio.');
+  }
+
+  try {
+    const result = await chargePremiumWithSavedCard(req.user.id, paymentMethodId);
+    res.json(result);
+  } catch (err) {
+    handleServiceError(res, err);
+  }
+});
+
+// POST /api/v1/payments/premium/confirm
+paymentRouter.post('/premium/confirm', authenticateToken, writeLimiter, async (req, res) => {
+  const { paymentIntentId } = req.body || {};
+  if (!paymentIntentId || typeof paymentIntentId !== 'string') {
+    return problemJson(res, 400, 'Bad Request', 'El campo paymentIntentId es obligatorio.');
+  }
+
+  try {
+    const result = await confirmPremiumPayment(req.user.id, paymentIntentId);
+    res.json(result);
+  } catch (err) {
+    handleServiceError(res, err);
+  }
+});
+
+// GET /api/v1/payments/premium/status
+paymentRouter.get('/premium/status', authenticateToken, generalLimiter, async (req, res) => {
+  try {
+    const status = await getPremiumStatus(req.user.id);
+    res.json({ status: 'success', ...status });
+  } catch (err) {
+    handleServiceError(res, err);
+  }
+});
+
+// ==============================================================================
 // POST /api/v1/payments/webhook
-// Endpoint para webhooks de Stripe.
-// ⛔ NO usa authenticateToken — Stripe llama directamente con su firma.
-// ⛔ REQUIERE express.raw() para verificar la firma de Stripe correctamente.
 // ==============================================================================
 paymentRouter.post(
   '/webhook',

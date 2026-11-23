@@ -5133,15 +5133,18 @@ if (document.readyState === 'loading') {
     const modal = $pm('addPaymentModal');
     if (!modal) return;
 
+    // Verificar sesión
     if (typeof currentUser === 'undefined' || !currentUser) {
       toast('Debes iniciar sesión para agregar un método de pago', 'warn');
       return;
     }
+    // Verificar publishable key
     if (!_stripePk) {
       toast('El módulo de pagos no está configurado. Contacta al administrador.', 'warn');
       return;
     }
 
+    // Limpiar estado del modal
     const errBox = $pm('addPaymentError');
     const cardErrors = $pm('stripe-card-errors');
     const btnText = $pm('addPaymentBtnText');
@@ -5153,6 +5156,7 @@ if (document.readyState === 'loading') {
 
     modal.classList.add('active');
 
+    // Inicializar Stripe
     if (!_stripeInstance && typeof Stripe !== 'undefined') {
       _stripeInstance = Stripe(_stripePk);
     }
@@ -5161,6 +5165,7 @@ if (document.readyState === 'loading') {
       return;
     }
 
+    // Crear Elements
     const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
     const elements = _stripeInstance.elements({
       appearance: {
@@ -5218,7 +5223,7 @@ if (document.readyState === 'loading') {
     if (errBox) errBox.style.display = 'none';
 
     try {
-      // 1. Obtener clientSecret del servidor
+      // 1. Obtener clientSecret del servidor (SetupIntent)
       const setupRes = await fetch('/api/v1/payments/setup-intent', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
@@ -5231,7 +5236,7 @@ if (document.readyState === 'loading') {
 
       if (btnText) btnText.textContent = 'Verificando…';
 
-      // 2. Confirmar SetupIntent con Stripe (datos de tarjeta van directo a Stripe, nunca al servidor)
+      // 2. Confirmar SetupIntent con Stripe Elements (datos de tarjeta van directo a Stripe)
       const result = await _stripeInstance.confirmCardSetup(clientSecret, {
         payment_method: { card: _cardElement }
       });
@@ -5263,12 +5268,13 @@ if (document.readyState === 'loading') {
 
   // ── Inicialización ────────────────────────────────────────────────────────────
   function _init() {
-    // Cargar publishable key desde el servidor (endpoint público seguro)
+    // Cargar publishable key desde el servidor (endpoint público y seguro)
     fetch('/config/payments')
       .then(r => r.json())
       .then(({ stripePk }) => { _stripePk = stripePk || null; })
       .catch(() => { _stripePk = null; });
 
+    // Bind de botones del modal
     const addBtn     = $pm('addPaymentMethodBtn');
     const closeBtn   = $pm('addPaymentClose');
     const cancelBtn  = $pm('cancelAddPaymentBtn');
@@ -5280,15 +5286,17 @@ if (document.readyState === 'loading') {
     if (cancelBtn)  cancelBtn.addEventListener('click', _closeModal);
     if (confirmBtn) confirmBtn.addEventListener('click', _handleConfirm);
 
+    // Cerrar con Escape
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && modal?.classList.contains('active')) _closeModal();
     });
 
+    // Cerrar al hacer clic fuera del modal
     if (modal) {
       modal.addEventListener('click', e => { if (e.target === modal) _closeModal(); });
     }
 
-    // Cargar métodos cuando la vista de cuenta se activa
+    // Cargar métodos cuando la vista de cuenta es activada (MutationObserver)
     const accountSection = document.getElementById('view-account');
     if (accountSection) {
       let _lastVisible = false;
@@ -5306,8 +5314,10 @@ if (document.readyState === 'loading') {
     _pmInitialized = true;
   }
 
+  // Exponer función para carga manual (ej. desde navigate())
   window.loadPaymentMethods = _fetchMethods;
 
+  // Inicializar una vez el DOM esté listo
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', _init);
   } else {

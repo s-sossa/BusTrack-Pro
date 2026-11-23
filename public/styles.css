@@ -4176,9 +4176,24 @@ html[data-theme="light"] .account-uuid-box {
 
 
 /* ============================================================
-   MÉTODOS DE PAGO — BusTrack Pro
-   Stripe Elements + tarjetas guardadas
+   MÉTODOS DE PAGO Y PREMIUM — BusTrack Pro
+   Stripe Elements + tarjetas guardadas + vista Premium
    ============================================================ */
+
+.add-card-inline-section {
+  animation: fadeInDown 0.25s ease-out;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.gold-badge {
+  background: linear-gradient(135deg, #f5a623, #d98b2a) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
 
 /* Lista de tarjetas guardadas */
 .pm-list {

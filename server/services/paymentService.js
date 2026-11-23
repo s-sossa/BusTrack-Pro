@@ -37,6 +37,36 @@ async function getUserEmail(userId) {
   return data.user.email;
 }
 
+/** Activa la membresía premium en Supabase (users.role = 'premium' + insert en premium_memberships) */
+async function activatePremiumMembershipDb(userId, paymentIntentId, amount = 500, currency = 'CRC') {
+  // 1. Actualizar role en auth.users user_metadata o tabla users si existe, o en premium_memberships
+  // Nota: actualizamos public.users si existe o insertamos/actualizamos premium_memberships
+  const { error: upsertErr } = await supabaseAdmin
+    .from('premium_memberships')
+    .upsert({
+      user_id: userId,
+      stripe_payment_intent_id: paymentIntentId,
+      amount,
+      currency: currency.toLowerCase(),
+      status: 'active',
+      activated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+
+  if (upsertErr) {
+    throw paymentError(`Error activando membresía premium en base de datos: ${upsertErr.message}`, 500);
+  }
+
+  // También actualizar opcionalmente public.users si la tabla existe
+  try {
+    await supabaseAdmin
+      .from('users')
+      .update({ role: 'premium' })
+      .eq('id', userId);
+  } catch (e) {
+    // Tabla users opcional o con esquema distinto, ignorar si no existe
+  }
+}
+
 // ==============================================================================
 // FUNCIÓN 1: Obtener o crear Stripe Customer para el usuario autenticado
 // ==============================================================================
@@ -211,14 +241,13 @@ export async function setDefaultPaymentMethod(userId, paymentMethodId) {
 
   if (checkErr) throw paymentError(`Error consultando método de pago: ${checkErr.message}`, 500);
   if (!existing) throw paymentError('Método de pago no encontrado.', 404);
-  if (existing.user_id !== userId) throw paymentError('Método de pago no encontrado.', 404); // 404 intencional, no revela existencia de métodos ajenos
+  if (existing.user_id !== userId) throw paymentError('Método de pago no encontrado.', 404);
 
-  // Actualizar (el trigger enforce_single_default_payment se encarga de desmarcar el anterior)
   const { error: updateErr } = await supabaseAdmin
     .from('payment_methods')
     .update({ is_default: true })
     .eq('id', paymentMethodId)
-    .eq('user_id', userId); // doble verificación
+    .eq('user_id', userId);
 
   if (updateErr) throw paymentError(`Error actualizando método predeterminado: ${updateErr.message}`, 500);
 }
@@ -227,7 +256,6 @@ export async function setDefaultPaymentMethod(userId, paymentMethodId) {
 // FUNCIÓN 6: Eliminar método de pago (desvincula en Stripe + borra en Supabase)
 // ==============================================================================
 export async function deletePaymentMethod(userId, paymentMethodId) {
-  // Anti-IDOR: obtener el registro verificando que pertenece al usuario
   const { data: existing, error: checkErr } = await supabaseAdmin
     .from('payment_methods')
     .select('id, user_id, provider_payment_method_id')
@@ -238,18 +266,15 @@ export async function deletePaymentMethod(userId, paymentMethodId) {
   if (!existing) throw paymentError('Método de pago no encontrado.', 404);
   if (existing.user_id !== userId) throw paymentError('Método de pago no encontrado.', 404);
 
-  // 1. Desvincular de Stripe
   const stripe = getStripe();
   try {
     await stripe.paymentMethods.detach(existing.provider_payment_method_id);
   } catch (stripeErr) {
-    // Si ya está desvinculado en Stripe, continuamos con la eliminación en Supabase
     if (stripeErr.code !== 'payment_method_not_attached') {
       throw paymentError(`Error al desvincular método en Stripe: ${stripeErr.message}`, 500);
     }
   }
 
-  // 2. Eliminar de Supabase (el trigger promote_next_default_on_delete se encarga de promover)
   const { error: deleteErr } = await supabaseAdmin
     .from('payment_methods')
     .delete()
@@ -260,7 +285,144 @@ export async function deletePaymentMethod(userId, paymentMethodId) {
 }
 
 // ==============================================================================
-// FUNCIÓN 7: Procesar webhook de Stripe
+// FUNCIÓN 7: Crear PaymentIntent para la membresía Premium (₡500 CRC)
+// ==============================================================================
+export async function createPremiumPaymentIntent(userId) {
+  const userEmail = await getUserEmail(userId);
+  const customerId = await getOrCreateStripeCustomer(userId, userEmail || undefined);
+  const stripe = getStripe();
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: 50000, // 500.00 CRC
+    currency: 'crc',
+    customer: customerId,
+    description: 'BusTrack Pro — Membresía Premium (₡500)',
+    metadata: { userId, product: 'bustrack_premium' },
+    automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
+  });
+
+  return {
+    clientSecret: paymentIntent.client_secret,
+    paymentIntentId: paymentIntent.id,
+    amount: 500,
+    currency: 'CRC',
+  };
+}
+
+// ==============================================================================
+// FUNCIÓN 8: Cobrar membresía Premium con tarjeta guardada (off_session)
+// ==============================================================================
+export async function chargePremiumWithSavedCard(userId, paymentMethodId) {
+  if (!paymentMethodId) {
+    throw paymentError('El campo paymentMethodId es obligatorio.', 400);
+  }
+
+  // Anti-IDOR: verificar que el paymentMethod pertenezca al usuario en Supabase
+  const { data: pmRecord, error: pmErr } = await supabaseAdmin
+    .from('payment_methods')
+    .select('provider_payment_method_id, provider_customer_id, user_id')
+    .eq('id', paymentMethodId)
+    .maybeSingle();
+
+  if (pmErr) throw paymentError(`Error consultando método de pago: ${pmErr.message}`, 500);
+  if (!pmRecord || pmRecord.user_id !== userId) {
+    throw paymentError('Método de pago no encontrado o no pertenece al usuario.', 404);
+  }
+
+  const stripe = getStripe();
+
+  let paymentIntent;
+  try {
+    paymentIntent = await stripe.paymentIntents.create({
+      amount: 50000,
+      currency: 'crc',
+      customer: pmRecord.provider_customer_id,
+      payment_method: pmRecord.provider_payment_method_id,
+      confirm: true,
+      off_session: true,
+      description: 'BusTrack Pro — Membresía Premium (₡500) con tarjeta guardada',
+      metadata: { userId, product: 'bustrack_premium' },
+    });
+  } catch (stripeErr) {
+    throw paymentError(`Error procesando cobro en Stripe: ${stripeErr.message}`, 400);
+  }
+
+  if (paymentIntent.status !== 'succeeded') {
+    throw paymentError(`El pago no se pudo completar (estado: ${paymentIntent.status}).`, 400);
+  }
+
+  // Activar membresía en base de datos
+  await activatePremiumMembershipDb(userId, paymentIntent.id, 500, 'CRC');
+
+  return {
+    status: 'success',
+    message: '¡Membresía Premium activada con éxito!',
+  };
+}
+
+// ==============================================================================
+// FUNCIÓN 9: Confirmar pago Premium tras confirmación frontend (SetupIntent/PaymentIntent)
+// ==============================================================================
+export async function confirmPremiumPayment(userId, paymentIntentId) {
+  if (!paymentIntentId || typeof paymentIntentId !== 'string') {
+    throw paymentError('El campo paymentIntentId es obligatorio.', 400);
+  }
+
+  const stripe = getStripe();
+  let paymentIntent;
+  try {
+    paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+  } catch (stripeErr) {
+    throw paymentError('No se pudo verificar el PaymentIntent en Stripe.', 500);
+  }
+
+  if (paymentIntent.status !== 'succeeded') {
+    throw paymentError(`El PaymentIntent no está completado (estado: ${paymentIntent.status}).`, 400);
+  }
+
+  if (paymentIntent.metadata?.userId !== userId || paymentIntent.metadata?.product !== 'bustrack_premium') {
+    throw paymentError('El PaymentIntent no corresponde a este usuario o producto.', 400);
+  }
+
+  if (paymentIntent.amount !== 50000 || paymentIntent.currency.toLowerCase() !== 'crc') {
+    throw paymentError('El monto o moneda del PaymentIntent no coincide con la membresía Premium.', 400);
+  }
+
+  // Activar membresía en base de datos
+  await activatePremiumMembershipDb(userId, paymentIntent.id, 500, 'CRC');
+
+  return {
+    status: 'success',
+    isPremium: true,
+  };
+}
+
+// ==============================================================================
+// FUNCIÓN 10: Consultar estado Premium del usuario
+// ==============================================================================
+export async function getPremiumStatus(userId) {
+  const { data, error } = await supabaseAdmin
+    .from('premium_memberships')
+    .select('status, expires_at, amount, currency, activated_at')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle();
+
+  if (error) {
+    // Si la tabla no existe o hay error, retornar false de manera segura
+    return { isPremium: false, tier: 'standard' };
+  }
+
+  const isPremium = Boolean(data && data.status === 'active');
+  return {
+    isPremium,
+    tier: isPremium ? 'premium' : 'standard',
+    details: data || null,
+  };
+}
+
+// ==============================================================================
+// FUNCIÓN 11: Procesar webhook de Stripe
 // ⛔ La firma DEBE verificarse antes de procesar cualquier evento.
 // ==============================================================================
 export async function handleStripeWebhook(rawBody, signature) {
@@ -276,11 +438,17 @@ export async function handleStripeWebhook(rawBody, signature) {
     throw paymentError(`Firma de webhook inválida: ${err.message}`, 400);
   }
 
-  // Procesar eventos relevantes
   switch (event.type) {
+    case 'payment_intent.succeeded': {
+      const pi = event.data.object;
+      if (pi.metadata?.product === 'bustrack_premium' && pi.metadata?.userId) {
+        await activatePremiumMembershipDb(pi.metadata.userId, pi.id, pi.amount / 100, pi.currency);
+        console.info(`[Payments] Premium membership activated via webhook for user ${pi.metadata.userId}`);
+      }
+      break;
+    }
     case 'payment_method.detached': {
       const pmId = event.data.object.id;
-      // Eliminar de Supabase si existe (puede que ya se haya eliminado desde la app)
       await supabaseAdmin
         .from('payment_methods')
         .delete()
@@ -288,12 +456,10 @@ export async function handleStripeWebhook(rawBody, signature) {
       break;
     }
     case 'setup_intent.succeeded': {
-      // Log informacional — el guardado real ocurre en POST /methods
       console.info(`[Payments] SetupIntent succeeded: ${event.data.object.id}`);
       break;
     }
     default:
-      // Eventos no manejados: se ignoran silenciosamente
       break;
   }
 

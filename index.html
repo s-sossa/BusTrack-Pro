@@ -195,6 +195,11 @@
             <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M4 3a2 2 0 100 4 2 2 0 000-4zm12 10a2 2 0 100 4 2 2 0 000-4zM4 8.5v3a3.5 3.5 0 003.5 3.5h5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M16 11.5v-3A3.5 3.5 0 0012.5 5h-5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
             <span>Rutas</span>
           </li>
+          <li class="nav-item" id="nav-premium" data-view="premium" role="button" tabindex="0" title="BusTrack Premium">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            <span>BusTrack Premium</span>
+            <span class="nav-count gold-badge">👑 ₡500</span>
+          </li>
         </ul>
       </div>
       <div class="nav-section">
@@ -561,6 +566,90 @@
     <section class="view" id="view-routes">
       <div class="routes-grid" id="routesGrid"></div>
     </section>
+
+    <!-- ============ BUSTRACK PREMIUM (₡500 CRC) ============ -->
+    <section class="view" id="view-premium">
+      <div class="premium-container" style="max-width:960px; margin:0 auto; padding:12px 24px 48px 24px;">
+        <!-- Banner Hero Premium -->
+        <div class="card premium-hero-card" style="background:linear-gradient(135deg, rgba(124,77,219,0.18), rgba(91,110,245,0.22)); border:1px solid color-mix(in srgb, var(--brand-alt) 40%, transparent); border-radius:var(--radius); padding:32px; margin-bottom:24px; position:relative; overflow:hidden;">
+          <div style="position:absolute; top:-20px; right:-20px; font-size:120px; opacity:0.08; pointer-events:none;">👑</div>
+          <div style="max-width:640px; position:relative; z-index:2;">
+            <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(245,166,35,0.18); border:1px solid rgba(245,166,35,0.4); color:#f5a623; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; margin-bottom:12px;">
+              <span>👑</span> BusTrack Pro VIP Member
+            </div>
+            <h1 style="font-size:28px; font-weight:800; color:var(--text-strong); margin-bottom:8px;">BusTrack Pro Premium</h1>
+            <p style="font-size:15px; color:var(--text); line-height:1.6; margin-bottom:20px;">
+              Accede a telemetría de alta frecuencia, predicción de ocupación y alertas instantáneas.
+            </p>
+
+            <!-- Banner Activo si ya es Premium -->
+            <div id="premiumActiveBanner" style="display:none; background:rgba(46,184,133,0.15); border:1px solid rgba(46,184,133,0.4); padding:14px 18px; border-radius:10px; margin-bottom:20px; align-items:center; gap:12px;">
+              <span style="font-size:24px;">👑</span>
+              <div>
+                <strong style="color:var(--ok); display:block; font-size:14px;">¡Tu cuenta ya tiene beneficios Premium activos!</strong>
+                <span style="font-size:12px; color:var(--text-soft);">Disfrutas de telemetría VIP en tiempo real, predicción de asientos y prioridad máxima.</span>
+              </div>
+            </div>
+
+            <!-- Caja de Pago si NO es Premium -->
+            <div id="premiumCheckoutBox" style="background:var(--bg-card); border:1px solid var(--line); border-radius:14px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+                <div>
+                  <span style="font-size:12px; color:var(--text-soft); display:block;">PAGO ÚNICO DE POR VIDA O ANUAL</span>
+                  <div style="display:flex; align-items:baseline; gap:8px;">
+                    <span class="premium-price-tag" style="font-size:32px; font-weight:800; color:var(--text-strong);">₡500</span>
+                    <span style="font-size:13px; color:var(--text-soft);">CRC (Colones costarricenses)</span>
+                  </div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <button type="button" class="btn-ghost btn-sm" id="premiumAddCardBtn" style="padding:10px 16px;">💳 Agregar método de pago</button>
+                </div>
+              </div>
+
+              <!-- Selector de tarjeta guardada si existe -->
+              <div id="premiumSavedCardContainer" style="margin-bottom:16px; display:none;">
+                <label for="premiumSavedCardSelect" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text-soft);">Selecciona una tarjeta guardada para pagar:</label>
+                <select id="premiumSavedCardSelect" class="form-input" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-raised); color:var(--text-strong);">
+                  <!-- Se llena dinámicamente -->
+                </select>
+              </div>
+
+              <button type="button" class="btn-primary full-width" id="unlockPremiumBtn" style="padding:14px; font-size:15px; font-weight:700; background:linear-gradient(135deg, #f5a623, #d98b2a); border-color:#d98b2a; color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <span>👑</span> Desbloquear Premium por ₡500
+              </button>
+              <div style="text-align:center; margin-top:8px; font-size:11px; color:var(--text-soft);">
+                🔒 Procesamiento seguro mediante Stripe con cifrado bancario TLS 256-bit.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Beneficios en Tarjetas -->
+        <h3 style="font-size:18px; font-weight:700; margin-bottom:16px; color:var(--text-strong);">Beneficios Exclusivos de la Membresía</h3>
+        <div class="premium-perks-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
+          <div class="card" style="padding:20px; background:var(--bg-card); border:1px solid var(--line);">
+            <div style="font-size:28px; margin-bottom:10px;">⚡</div>
+            <h4 style="font-size:15px; font-weight:700; margin-bottom:6px; color:var(--text-strong);">Telemetría VIP en vivo</h4>
+            <p style="font-size:13px; color:var(--text-soft); line-height:1.5;">Monitoreo de posición cada 1 segundo con trazado continuo en el mapa en tiempo real.</p>
+          </div>
+          <div class="card" style="padding:20px; background:var(--bg-card); border:1px solid var(--line);">
+            <div style="font-size:28px; margin-bottom:10px;">💺</div>
+            <h4 style="font-size:15px; font-weight:700; margin-bottom:6px; color:var(--text-strong);">Ocupación de asientos</h4>
+            <p style="font-size:13px; color:var(--text-soft); line-height:1.5;">Estimador predictivo de capacidad libre y asientos disponibles en cada parada.</p>
+          </div>
+          <div class="card" style="padding:20px; background:var(--bg-card); border:1px solid var(--line);">
+            <div style="font-size:28px; margin-bottom:10px;">🔔</div>
+            <h4 style="font-size:15px; font-weight:700; margin-bottom:6px; color:var(--text-strong);">Alertas prioritarias</h4>
+            <p style="font-size:13px; color:var(--text-soft); line-height:1.5;">Notificaciones inmediatas push y SMS de desvíos, accidentes y retrasos en tu ruta.</p>
+          </div>
+          <div class="card" style="padding:20px; background:var(--bg-card); border:1px solid var(--line);">
+            <div style="font-size:28px; margin-bottom:10px;">👑</div>
+            <h4 style="font-size:15px; font-weight:700; margin-bottom:6px; color:var(--text-strong);">Insignia de Pasajero VIP</h4>
+            <p style="font-size:13px; color:var(--text-soft); line-height:1.5;">Distintivo exclusivo en tu perfil, tabla de clasificación y reportes telemáticos.</p>
+          </div>
+        </div>
+      </div>
+    </section>
  
 
     <!-- ============ MI CUENTA / PERFIL DE USUARIO ============ -->
@@ -718,9 +807,32 @@
               </svg>
               <h2>Métodos de Pago</h2>
             </div>
-            <button class="btn-primary btn-sm" id="addPaymentMethodBtn" title="Agregar tarjeta de crédito o débito">+ Agregar</button>
+            <button class="btn-primary btn-sm" id="addPaymentMethodBtn" title="Agregar tarjeta de crédito o débito">💳 Agregar método de pago</button>
           </div>
-          <div class="account-card-body">
+          <div class="card-body">
+            <!-- Sección expandible para agregar tarjeta -->
+            <div class="add-card-inline-section" id="addCardInlineSection" style="display:none; margin-bottom:16px; padding:16px; background:var(--bg-raised); border-radius:12px; border:1px solid var(--line-brand);">
+              <h3 style="font-size:15px; margin-bottom:10px; color:var(--text-strong); display:flex; align-items:center; gap:8px;">
+                <span>💳</span> Agregar nueva tarjeta
+              </h3>
+              <div class="form-group" style="margin-bottom:12px;">
+                <label for="cardholderNameInput" style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-soft);">Nombre en la tarjeta (Opcional)</label>
+                <input type="text" id="cardholderNameInput" class="form-input" placeholder="Ej. María Pérez" style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card); color:var(--text);" />
+              </div>
+              <div class="form-group" style="margin-bottom:12px;">
+                <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px; color:var(--text-soft);">Datos seguros de tarjeta (Stripe Elements)</label>
+                <div id="stripe-card-element" style="padding:12px; border-radius:8px; border:1px solid var(--line); background:var(--bg-card);"></div>
+                <div id="stripe-card-errors" role="alert" style="color:var(--risk); font-size:12px; margin-top:6px;"></div>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px;">
+                <span style="font-size:11px; color:var(--text-soft); display:flex; align-items:center; gap:4px;">🔒 Encriptación SSL 256-bit por Stripe</span>
+                <div style="display:flex; gap:8px;">
+                  <button type="button" class="btn-ghost btn-sm" id="cancelAddCardBtn">Cancelar</button>
+                  <button type="button" class="btn-primary btn-sm" id="saveCardSubmitBtn">Guardar Tarjeta</button>
+                </div>
+              </div>
+            </div>
+
             <div id="pmLoadingState" class="pm-state-box" style="display:none;" aria-live="polite">
               <span class="pm-spinner" aria-label="Cargando métodos de pago"></span>
               <span>Cargando métodos de pago...</span>

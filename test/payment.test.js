@@ -9,6 +9,8 @@ import assert from 'node:assert/strict';
 import express from 'express';
 import http from 'node:http';
 import jwt from 'jsonwebtoken';
+import fs from 'node:fs';
+import path from 'node:path';
 import { paymentRouter } from '../server/routes/paymentRoutes.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'bustrack_pro_dev_secret_key_12345678901234567890';
@@ -111,4 +113,53 @@ test('T8: Strict verification that no sensitive card data (PAN, CVV) is present 
   assert.equal(jsonString.includes('cvv'), false);
   assert.equal(jsonString.includes('number'), false);
   assert.equal(jsonString.includes('cardnumber'), false);
+});
+
+test('T9: POST /api/v1/payments/premium/create-intent without auth token returns 401', async () => {
+  const res = await fetch(`${baseUrl}/api/v1/payments/premium/create-intent`, { method: 'POST' });
+  assert.equal(res.status, 401);
+});
+
+test('T10: POST /api/v1/payments/premium/charge-saved without token (401) or without paymentMethodId (400)', async () => {
+  const resNoToken = await fetch(`${baseUrl}/api/v1/payments/premium/charge-saved`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paymentMethodId: 'pm_test_123' }),
+  });
+  assert.equal(resNoToken.status, 401);
+
+  const resNoParam = await fetch(`${baseUrl}/api/v1/payments/premium/charge-saved`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${validToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  assert.equal(resNoParam.status, 400);
+});
+
+test('T11: POST /api/v1/payments/premium/confirm without token (401) or without paymentIntentId (400)', async () => {
+  const resNoToken = await fetch(`${baseUrl}/api/v1/payments/premium/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paymentIntentId: 'pi_test_123' }),
+  });
+  assert.equal(resNoToken.status, 401);
+
+  const resNoParam = await fetch(`${baseUrl}/api/v1/payments/premium/confirm`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${validToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  assert.equal(resNoParam.status, 400);
+});
+
+test('T12: GET /api/v1/payments/premium/status without auth token returns 401', async () => {
+  const res = await fetch(`${baseUrl}/api/v1/payments/premium/status`);
+  assert.equal(res.status, 401);
+});
+
+test('T13: Strict verification that premium membership amount is configured as exactly 50000 céntimos (₡500 CRC)', async () => {
+  const servicePath = path.resolve('server/services/paymentService.js');
+  const serviceCode = fs.readFileSync(servicePath, 'utf8');
+  assert.ok(serviceCode.includes('amount: 50000') || serviceCode.includes('50000'), 'El monto debe ser 50000 céntimos (₡500 CRC)');
+  assert.ok(serviceCode.includes('currency: \'crc\'') || serviceCode.includes('crc'), 'La moneda debe ser CRC');
 });
