@@ -8,7 +8,18 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 2. ENUMS
+-- 2.5 USERS TABLE (MANAGED VIA SUPABASE AUTH + PUBLIC PROFILE)
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    full_name TEXT,
+    username TEXT UNIQUE,
+    role TEXT DEFAULT 'passenger' NOT NULL,
+    auth_provider TEXT DEFAULT 'email' NOT NULL,
+    avatar_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 DO $$ BEGIN
     CREATE TYPE bus_status AS ENUM ('active', 'delayed', 'stopped', 'maintenance');
 EXCEPTION
@@ -119,6 +130,30 @@ ALTER TABLE drivers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE buses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE alerts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- ⛔ Users RLS: Cada usuario solo ve y edita su propio registro; sin auto-escalación de 'role'
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Ver propio perfil" ON users;
+    DROP POLICY IF EXISTS "users_select_policy" ON users;
+    CREATE POLICY "users_select_policy" ON users FOR SELECT TO authenticated
+        USING (id = (SELECT auth.uid()) OR (SELECT private.is_admin()));
+
+    DROP POLICY IF EXISTS "Actualizar propio perfil" ON users;
+    DROP POLICY IF EXISTS "users_update_own_profile" ON users;
+    CREATE POLICY "users_update_own_profile" ON users FOR UPDATE TO authenticated
+        USING (id = (SELECT auth.uid()))
+        WITH CHECK (
+            id = (SELECT auth.uid())
+            AND (role = (SELECT u.role FROM public.users u WHERE u.id = (SELECT auth.uid())) OR (SELECT private.is_admin()))
+        );
+
+    DROP POLICY IF EXISTS "Eliminar propio perfil" ON users;
+    DROP POLICY IF EXISTS "users_delete_policy" ON users;
+    CREATE POLICY "users_delete_policy" ON users FOR DELETE TO authenticated
+        USING (id = (SELECT auth.uid()) OR (SELECT private.is_admin()));
+EXCEPTION WHEN undefined_object THEN null;
+END $$;
 
 -- Routes: Public Read
 DO $$ BEGIN
@@ -171,7 +206,13 @@ END $$;
 
 DO $$ BEGIN
     DROP POLICY IF EXISTS activity_logs_admin_read ON activity_logs;
-    CREATE POLICY activity_logs_admin_read ON activity_logs FOR SELECT TO authenticated
-        USING (EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role IN ('admin', 'dispatcher')));
+    DROP POLICY IF EXISTS activity_logs_select_policy ON activity_logs;
+    CREATE POLICY activity_logs_select_policy ON activity_logs FOR SELECT TO authenticated
+        USING (user_id = (SELECT auth.uid()) OR (SELECT private.is_admin()));
+
+    DROP POLICY IF EXISTS activity_logs_admin_insert ON activity_logs;
+    DROP POLICY IF EXISTS activity_logs_insert_policy ON activity_logs;
+    CREATE POLICY activity_logs_insert_policy ON activity_logs FOR INSERT TO authenticated
+        WITH CHECK (user_id = (SELECT auth.uid()) OR (SELECT private.is_admin()));
 EXCEPTION WHEN undefined_object THEN null;
 END $$;

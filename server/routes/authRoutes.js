@@ -44,7 +44,7 @@ authRouter.post('/login', authLimiter, writeLimiter, async (req, res) => {
 authRouter.get('/me', authenticateToken, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('users')
-    .select('id, email, full_name, role, auth_provider, avatar_url')
+    .select('id, email, full_name, role, auth_provider, avatar_url, username')
     .eq('id', req.user.id)
     .maybeSingle();
   if (error || !data) {
@@ -54,6 +54,7 @@ authRouter.get('/me', authenticateToken, async (req, res) => {
     user: {
       id: data.id, email: data.email, name: data.full_name,
       role: data.role, provider: data.auth_provider, avatarUrl: data.avatar_url,
+      username: data.username,
     },
   });
 });

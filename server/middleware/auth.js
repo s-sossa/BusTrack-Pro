@@ -51,7 +51,17 @@ export async function authenticateToken(req, res, next) {
         const { data, error } = await supabaseAdmin.auth.getUser(token);
         if (!error && data?.user) {
           const u = data.user;
-          const role = u.app_metadata?.role || u.user_metadata?.role || 'passenger';
+          // ⛔ SECURITY: Nunca usar user_metadata para autorización (es modificable por el cliente).
+          // El rol legítimo se obtiene de app_metadata o de public.users en la DB.
+          let role = u.app_metadata?.role;
+          if (!role) {
+            const { data: dbUser } = await supabaseAdmin
+              .from('users')
+              .select('role')
+              .eq('id', u.id)
+              .maybeSingle();
+            role = dbUser?.role || 'passenger';
+          }
           const provider = u.app_metadata?.provider || (u.identities?.[0]?.provider) || 'email';
           req.user = {
             id: u.id,
@@ -94,10 +104,20 @@ export async function optionalAuth(req, res, next) {
           const { data, error } = await supabaseAdmin.auth.getUser(token);
           if (!error && data?.user) {
             const u = data.user;
+            // ⛔ SECURITY: Solo app_metadata o public.users; nunca user_metadata
+            let role = u.app_metadata?.role;
+            if (!role) {
+              const { data: dbUser } = await supabaseAdmin
+                .from('users')
+                .select('role')
+                .eq('id', u.id)
+                .maybeSingle();
+              role = dbUser?.role || 'passenger';
+            }
             req.user = {
               id: u.id,
               email: u.email,
-              role: u.app_metadata?.role || u.user_metadata?.role || 'passenger',
+              role,
               provider: u.app_metadata?.provider || (u.identities?.[0]?.provider) || 'email',
               authSource: 'supabase'
             };
