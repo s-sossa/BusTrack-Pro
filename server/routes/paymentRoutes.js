@@ -18,6 +18,7 @@ import {
   chargePremiumWithSavedCard,
   confirmPremiumPayment,
   getPremiumStatus,
+  cancelPremiumSubscription,
   handleStripeWebhook,
 } from '../services/paymentService.js';
 
@@ -163,6 +164,16 @@ paymentRouter.get('/premium/status', authenticateToken, generalLimiter, async (r
   try {
     const status = await getPremiumStatus(req.user.id);
     res.json({ status: 'success', ...status });
+  } catch (err) {
+    handleServiceError(res, err);
+  }
+});
+
+// POST /api/v1/payments/premium/cancel
+paymentRouter.post('/premium/cancel', authenticateToken, writeLimiter, async (req, res) => {
+  try {
+    const result = await cancelPremiumSubscription(req.user.id);
+    res.json(result);
   } catch (err) {
     handleServiceError(res, err);
   }

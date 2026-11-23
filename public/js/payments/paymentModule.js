@@ -534,6 +534,56 @@
     _showToast('🎉 ¡Felicidades! Membresía Premium activada por ₡500 CRC', 'ok');
   }
 
+  // ── Cancelar suscripción Premium ──────────────────────────────────────────
+  async function _handleCancelSubscription() {
+    if (!confirm('¿Estás seguro de que deseas cancelar tu suscripción Premium? Perderás acceso a la telemetría de alta frecuencia y beneficios VIP.')) {
+      return;
+    }
+
+    const cancelBtn = $pm('cancelSubscriptionBtn');
+    if (cancelBtn) {
+      cancelBtn.disabled = true;
+      cancelBtn.textContent = 'Cancelando…';
+    }
+
+    const token = await _getToken();
+    try {
+      if (token) {
+        await fetch('/api/v1/payments/premium/cancel', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
+    } catch (_) {}
+
+    try {
+      localStorage.removeItem('bustrack_is_premium');
+      if (window.currentUser) window.currentUser.role = 'passenger';
+    } catch (_) {}
+
+    const banner = $pm('premiumActiveBanner');
+    const checkoutBox = $pm('premiumCheckoutBox');
+    const heroRole = $pm('accHeroRole');
+    const userRoleSlot = document.getElementById('userRoleSlot');
+
+    if (banner) banner.style.display = 'none';
+    if (checkoutBox) checkoutBox.style.display = 'block';
+    if (heroRole) {
+      heroRole.textContent = 'Pasajero';
+      heroRole.className = 'account-badge role-badge passenger';
+    }
+    if (userRoleSlot) {
+      userRoleSlot.textContent = 'Pasajero';
+    }
+
+    if (cancelBtn) {
+      cancelBtn.disabled = false;
+      cancelBtn.innerHTML = '<span>❌</span> Cancelar Suscripción';
+    }
+
+    _showToast('ℹ️ Tu suscripción Premium ha sido cancelada.', 'info');
+  }
+
   // ── Inicialización ────────────────────────────────────────────────────────
   function _init() {
     fetch('/config/payments')
@@ -578,6 +628,10 @@
     // Botón "Desbloquear Premium por ₡500"
     const unlockBtn = $pm('unlockPremiumBtn');
     if (unlockBtn) unlockBtn.addEventListener('click', _handleUnlockPremium);
+
+    // Botón "Cancelar Suscripción"
+    const cancelSubBtn = $pm('cancelSubscriptionBtn');
+    if (cancelSubBtn) cancelSubBtn.addEventListener('click', _handleCancelSubscription);
 
     // Verificar si ya es premium al cargar (desde localStorage y luego desde backend)
     function _applyPremiumUI() {

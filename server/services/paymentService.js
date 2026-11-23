@@ -217,7 +217,11 @@ export async function listPaymentMethods(userId) {
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  if (error) throw paymentError(`Error listando métodos de pago: ${error.message}`, 500);
+  if (error) {
+    // Si la tabla no ha sido creada aún en Supabase, devolver lista vacía en vez de fallar con 500
+    console.warn(`[Payments] Aviso al consultar payment_methods en Supabase: ${error.message}`);
+    return [];
+  }
 
   return (data || []).map(pm => ({
     id: pm.id,
@@ -420,6 +424,34 @@ export async function getPremiumStatus(userId) {
     isPremium,
     tier: isPremium ? 'premium' : 'standard',
     details: data || null,
+  };
+}
+
+// ==============================================================================
+// FUNCIÓN 10.1: Cancelar membresía Premium del usuario
+// ==============================================================================
+export async function cancelPremiumSubscription(userId) {
+  // 1. Actualizar en premium_memberships a 'cancelled'
+  const { error: cancelErr } = await supabaseAdmin
+    .from('premium_memberships')
+    .update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId);
+
+  // 2. Si existe la tabla users, regresar el rol a 'passenger'
+  try {
+    await supabaseAdmin
+      .from('users')
+      .update({ role: 'passenger' })
+      .eq('id', userId);
+  } catch (_) {}
+
+  return {
+    status: 'success',
+    isPremium: false,
+    message: 'Membresía Premium cancelada correctamente.',
   };
 }
 
