@@ -43,6 +43,7 @@ app.use(helmet({
         'https://unpkg.com',
         'https://cdn.jsdelivr.net',
         'https://cdnjs.cloudflare.com',
+        'https://js.stripe.com',
       ],
       scriptSrcElem: [
         "'self'",
@@ -50,6 +51,7 @@ app.use(helmet({
         'https://unpkg.com',
         'https://cdn.jsdelivr.net',
         'https://cdnjs.cloudflare.com',
+        'https://js.stripe.com',
       ],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: [
@@ -109,6 +111,10 @@ app.use(helmet({
         'https://api.dicebear.com',
         'https://ui-avatars.com',
         'https://*.ui-avatars.com',
+        'https://api.stripe.com',
+      ],
+      frameSrc: [
+        'https://js.stripe.com',
       ],
       frameAncestors: ["'none'"],
     },
@@ -225,6 +231,13 @@ app.get('/thanks', (_req, res) => {
 // ✅ Servir SOLO la carpeta public/ — nunca la raíz del repositorio.
 app.use('/vendor/leaflet', express.static(path.join(rootDir, 'node_modules', 'leaflet', 'dist')));
 app.use('/vendor/supabase', express.static(path.join(rootDir, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd')));
+
+// ─── 9.1 Inyección de configuración pública de Stripe (publishable key) ─────────
+// Expone SOLO la publishable key (segura para el cliente) vía un endpoint de config.
+// La secret key NUNCA se expone aquí.
+app.get('/config/payments', (_req, res) => {
+  res.json({ stripePk: process.env.STRIPE_PUBLISHABLE_KEY || '' });
+});
 
 app.use(express.static(publicDir, {
   index: 'index.html',

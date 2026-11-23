@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "test": "node --test test/database.test.js test/auth.test.js test/api.test.js test/production.test.js"
+    "test": "node --test test/database.test.js test/auth.test.js test/api.test.js test/production.test.js test/payment.test.js"
   },
   "keywords": [
     "transit",
@@ -31,6 +31,7 @@
     "jsonwebtoken": "^9.0.3",
     "leaflet": "^1.9.4",
     "pg": "^8.13.3",
+    "stripe": "^23.2.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {

@@ -9,6 +9,7 @@ import { PassengerService } from '../services/passengerService.js';
 import { telemetryEngine } from '../services/telemetrySimulator.js';
 import { db } from '../database/db.js';
 import { authRouter } from './authRoutes.js';
+import { paymentRouter } from './paymentRoutes.js';
 import { writeLimiter } from '../middleware/rateLimiter.js';
 import { validateBusStatus, validateAlertSeverity } from '../middleware/sanitizer.js';
 import { authenticateToken, optionalAuth, requireRole } from '../middleware/auth.js';
@@ -17,6 +18,9 @@ export const apiRouter = Router();
 
 // --- AUTHENTICATION ROUTES ---
 apiRouter.use('/auth', authRouter);
+
+// --- PAYMENT ROUTES ---
+apiRouter.use('/payments', paymentRouter);
 
 // --- 1. SYSTEM HEALTH & DIAGNOSTICS ---
 // Note: Does NOT expose stack traces, environment secrets, or internal paths

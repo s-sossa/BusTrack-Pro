@@ -4982,3 +4982,336 @@ if (document.readyState === 'loading') {
 }
 
 
+
+// ==============================================================================
+// MÓDULO: Métodos de Pago (Stripe Elements + API /api/v1/payments)
+// ⛔ Este módulo NUNCA maneja ni almacena datos de tarjeta directamente.
+//    Stripe Elements captura y tokeniza los datos en el navegador.
+// ==============================================================================
+(function initPaymentMethods() {
+  'use strict';
+
+  // ── Estado del módulo ─────────────────────────────────────────────────────────
+  let _stripePk        = null;  // publishable key (cargada desde /config/payments)
+  let _stripeInstance  = null;
+  let _cardElement     = null;
+  let _pmInitialized   = false;
+
+  // ── Referencias DOM ───────────────────────────────────────────────────────────
+  const $pm = (id) => document.getElementById(id);
+
+  // ── Helper: obtener Bearer token del usuario ──────────────────────────────────
+  async function _getToken() {
+    try {
+      const session = await supabaseClient?.auth?.getSession();
+      return session?.data?.session?.access_token || null;
+    } catch (_) { return null; }
+  }
+
+  // ── Helper: estado visual de la lista ────────────────────────────────────────
+  function _pmSetState(state) {
+    const loading = $pm('pmLoadingState');
+    const empty   = $pm('pmEmptyState');
+    const error   = $pm('pmErrorState');
+    const list    = $pm('pmList');
+    if (loading) loading.style.display = state === 'loading' ? 'flex' : 'none';
+    if (empty)   empty.style.display   = state === 'empty'   ? 'flex' : 'none';
+    if (error)   error.style.display   = state === 'error'   ? 'flex' : 'none';
+    if (list)    list.style.display    = state === 'list'    ? 'flex' : 'none';
+  }
+
+  // ── Helper: ícono de marca de tarjeta ─────────────────────────────────────────
+  function _brandIcon(brand) {
+    const b = (brand || 'unknown').toLowerCase();
+    if (window.PM_BRAND_ICONS && window.PM_BRAND_ICONS[b]) return window.PM_BRAND_ICONS[b];
+    if (window.PM_BRAND_ICONS && window.PM_BRAND_ICONS.unknown) return window.PM_BRAND_ICONS.unknown;
+    return `<span style="font-size:9px;font-weight:700;color:var(--text-muted);">${(brand || 'CARD').toUpperCase()}</span>`;
+  }
+
+  // ── Render: lista de métodos de pago ──────────────────────────────────────────
+  function _renderList(methods) {
+    const list = $pm('pmList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (!methods || methods.length === 0) { _pmSetState('empty'); return; }
+    _pmSetState('list');
+
+    methods.forEach(pm => {
+      const li = document.createElement('li');
+      li.className = `pm-card-item${pm.isDefault ? ' is-default' : ''}`;
+      li.dataset.pmId = pm.id;
+
+      const exp = `${String(pm.expMonth).padStart(2, '0')}/${pm.expYear}`;
+      const isDefaultBadge = pm.isDefault
+        ? `<span class="pm-default-badge" aria-label="Método predeterminado">Predeterminado</span>`
+        : '';
+      const setDefaultBtn = !pm.isDefault
+        ? `<button class="btn-ghost btn-xs pm-set-default-btn" data-id="${pm.id}" data-last4="${pm.last4}"
+             title="Usar como predeterminado" aria-label="Marcar tarjeta terminada en ${pm.last4} como predeterminada">⭐</button>`
+        : '';
+
+      li.innerHTML = `
+        <span class="pm-card-brand" aria-hidden="true">${_brandIcon(pm.brand)}</span>
+        <span class="pm-card-info">
+          <span class="pm-card-number">•••• •••• •••• ${pm.last4}</span>
+          <span class="pm-card-expiry">Vence ${exp}</span>
+        </span>
+        ${isDefaultBadge}
+        <span class="pm-card-actions">
+          ${setDefaultBtn}
+          <button class="btn-ghost btn-xs pm-delete-btn" data-id="${pm.id}" data-last4="${pm.last4}"
+            title="Eliminar tarjeta" aria-label="Eliminar tarjeta terminada en ${pm.last4}"
+            style="color:var(--danger,#ef4444);">🗑️</button>
+        </span>`;
+      list.appendChild(li);
+    });
+
+    // Bind de eventos
+    list.querySelectorAll('.pm-set-default-btn').forEach(btn =>
+      btn.addEventListener('click', () => _handleSetDefault(btn.dataset.id)));
+    list.querySelectorAll('.pm-delete-btn').forEach(btn =>
+      btn.addEventListener('click', () => _handleDelete(btn.dataset.id, btn.dataset.last4)));
+  }
+
+  // ── API: Cargar lista de métodos ───────────────────────────────────────────────
+  async function _fetchMethods() {
+    _pmSetState('loading');
+    try {
+      const token = await _getToken();
+      if (!token) { _pmSetState('empty'); return; }
+      const res = await fetch('/api/v1/payments/methods', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) { _pmSetState('error'); return; }
+      const { paymentMethods } = await res.json();
+      _renderList(paymentMethods || []);
+    } catch (_) { _pmSetState('error'); }
+  }
+
+  // ── API: Establecer predeterminado ────────────────────────────────────────────
+  async function _handleSetDefault(pmId) {
+    const token = await _getToken();
+    if (!token) { toast('Inicia sesión para continuar', 'warn'); return; }
+    try {
+      const res = await fetch(`/api/v1/payments/methods/${pmId}/default`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast(err.detail || 'No se pudo actualizar el método predeterminado', 'warn');
+        return;
+      }
+      toast('✅ Método predeterminado actualizado', 'ok');
+      _fetchMethods();
+    } catch (_) { toast('Error de red al actualizar', 'warn'); }
+  }
+
+  // ── API: Eliminar método ──────────────────────────────────────────────────────
+  async function _handleDelete(pmId, last4) {
+    if (!confirm(`¿Eliminar la tarjeta terminada en ${last4}? Esta acción no se puede deshacer.`)) return;
+    const token = await _getToken();
+    if (!token) { toast('Inicia sesión para continuar', 'warn'); return; }
+    try {
+      const res = await fetch(`/api/v1/payments/methods/${pmId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast(err.detail || 'No se pudo eliminar el método de pago', 'warn');
+        return;
+      }
+      toast('🗑️ Tarjeta eliminada', 'ok');
+      _fetchMethods();
+    } catch (_) { toast('Error de red al eliminar', 'warn'); }
+  }
+
+  // ── Stripe Elements: Abrir modal ──────────────────────────────────────────────
+  function _openModal() {
+    const modal = $pm('addPaymentModal');
+    if (!modal) return;
+
+    if (typeof currentUser === 'undefined' || !currentUser) {
+      toast('Debes iniciar sesión para agregar un método de pago', 'warn');
+      return;
+    }
+    if (!_stripePk) {
+      toast('El módulo de pagos no está configurado. Contacta al administrador.', 'warn');
+      return;
+    }
+
+    const errBox = $pm('addPaymentError');
+    const cardErrors = $pm('stripe-card-errors');
+    const btnText = $pm('addPaymentBtnText');
+    const confirmBtn = $pm('confirmAddPaymentBtn');
+    if (errBox) errBox.style.display = 'none';
+    if (cardErrors) cardErrors.style.display = 'none';
+    if (btnText) btnText.textContent = 'Guardar Tarjeta';
+    if (confirmBtn) confirmBtn.disabled = false;
+
+    modal.classList.add('active');
+
+    if (!_stripeInstance && typeof Stripe !== 'undefined') {
+      _stripeInstance = Stripe(_stripePk);
+    }
+    if (!_stripeInstance) {
+      if (errBox) { errBox.textContent = 'No se pudo cargar el módulo de pago. Recarga la página.'; errBox.style.display = 'block'; }
+      return;
+    }
+
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    const elements = _stripeInstance.elements({
+      appearance: {
+        theme: isDark ? 'night' : 'stripe',
+        variables: { colorPrimary: '#5b6ef5', borderRadius: '8px', fontFamily: 'Inter, sans-serif' },
+      },
+    });
+
+    _cardElement = elements.create('card', {
+      hidePostalCode: true,
+      style: {
+        base: {
+          fontSize: '14px',
+          color: isDark ? '#e2e8f0' : '#1a202c',
+          fontFamily: 'Inter, sans-serif',
+          '::placeholder': { color: isDark ? '#718096' : '#a0aec0' },
+        },
+      },
+    });
+
+    const mountEl = $pm('stripe-card-element');
+    if (mountEl) { mountEl.innerHTML = ''; _cardElement.mount('#stripe-card-element'); }
+
+    _cardElement.on('change', event => {
+      if (cardErrors) {
+        cardErrors.textContent = event.error ? event.error.message : '';
+        cardErrors.style.display = event.error ? 'block' : 'none';
+      }
+    });
+  }
+
+  // ── Stripe Elements: Cerrar modal ─────────────────────────────────────────────
+  function _closeModal() {
+    const modal = $pm('addPaymentModal');
+    if (modal) modal.classList.remove('active');
+    if (_cardElement) { try { _cardElement.destroy(); } catch (_) {} _cardElement = null; }
+    const btn = $pm('confirmAddPaymentBtn');
+    const btnText = $pm('addPaymentBtnText');
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = 'Guardar Tarjeta';
+  }
+
+  // ── Stripe Elements: Confirmar y guardar ──────────────────────────────────────
+  async function _handleConfirm() {
+    if (!_cardElement || !_stripeInstance) return;
+    const token = await _getToken();
+    if (!token) { toast('Sesión expirada. Inicia sesión de nuevo.', 'warn'); return; }
+
+    const confirmBtn = $pm('confirmAddPaymentBtn');
+    const btnText    = $pm('addPaymentBtnText');
+    const errBox     = $pm('addPaymentError');
+
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (btnText) btnText.textContent = 'Creando sesión…';
+    if (errBox) errBox.style.display = 'none';
+
+    try {
+      // 1. Obtener clientSecret del servidor
+      const setupRes = await fetch('/api/v1/payments/setup-intent', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+      if (!setupRes.ok) {
+        const err = await setupRes.json().catch(() => ({}));
+        throw new Error(err.detail || 'No se pudo iniciar la sesión de pago.');
+      }
+      const { clientSecret } = await setupRes.json();
+
+      if (btnText) btnText.textContent = 'Verificando…';
+
+      // 2. Confirmar SetupIntent con Stripe (datos de tarjeta van directo a Stripe, nunca al servidor)
+      const result = await _stripeInstance.confirmCardSetup(clientSecret, {
+        payment_method: { card: _cardElement }
+      });
+      if (result.error) throw new Error(result.error.message);
+
+      if (btnText) btnText.textContent = 'Guardando…';
+
+      // 3. Notificar al servidor para guardar el token en Supabase
+      const saveRes = await fetch('/api/v1/payments/methods', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ setupIntentId: result.setupIntent.id })
+      });
+      if (!saveRes.ok) {
+        const err = await saveRes.json().catch(() => ({}));
+        throw new Error(err.detail || 'No se pudo guardar la tarjeta.');
+      }
+
+      _closeModal();
+      toast('✅ Tarjeta agregada exitosamente', 'ok');
+      _fetchMethods();
+
+    } catch (err) {
+      if (errBox) { errBox.textContent = err.message || 'Ocurrió un error. Intenta de nuevo.'; errBox.style.display = 'block'; }
+      if (confirmBtn) confirmBtn.disabled = false;
+      if (btnText) btnText.textContent = 'Guardar Tarjeta';
+    }
+  }
+
+  // ── Inicialización ────────────────────────────────────────────────────────────
+  function _init() {
+    // Cargar publishable key desde el servidor (endpoint público seguro)
+    fetch('/config/payments')
+      .then(r => r.json())
+      .then(({ stripePk }) => { _stripePk = stripePk || null; })
+      .catch(() => { _stripePk = null; });
+
+    const addBtn     = $pm('addPaymentMethodBtn');
+    const closeBtn   = $pm('addPaymentClose');
+    const cancelBtn  = $pm('cancelAddPaymentBtn');
+    const confirmBtn = $pm('confirmAddPaymentBtn');
+    const modal      = $pm('addPaymentModal');
+
+    if (addBtn)     addBtn.addEventListener('click', _openModal);
+    if (closeBtn)   closeBtn.addEventListener('click', _closeModal);
+    if (cancelBtn)  cancelBtn.addEventListener('click', _closeModal);
+    if (confirmBtn) confirmBtn.addEventListener('click', _handleConfirm);
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && modal?.classList.contains('active')) _closeModal();
+    });
+
+    if (modal) {
+      modal.addEventListener('click', e => { if (e.target === modal) _closeModal(); });
+    }
+
+    // Cargar métodos cuando la vista de cuenta se activa
+    const accountSection = document.getElementById('view-account');
+    if (accountSection) {
+      let _lastVisible = false;
+      const obs = new MutationObserver(() => {
+        const isVisible = accountSection.classList.contains('active') ||
+          (accountSection.style.display !== 'none' && !accountSection.hidden);
+        if (isVisible && !_lastVisible && typeof currentUser !== 'undefined' && currentUser) {
+          _fetchMethods();
+        }
+        _lastVisible = isVisible;
+      });
+      obs.observe(accountSection, { attributes: true, attributeFilter: ['class', 'hidden', 'style'] });
+    }
+
+    _pmInitialized = true;
+  }
+
+  window.loadPaymentMethods = _fetchMethods;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _init);
+  } else {
+    _init();
+  }
+
+})();
